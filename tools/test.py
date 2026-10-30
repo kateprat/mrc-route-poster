@@ -45,7 +45,7 @@ try:
         pg.fill("#lead", "kates.turn")
         pg.click('#capstyle button[data-v="classic"]')
         print("[classic + leader]", pg.input_value("#cap").replace("\n", " / "))
-        print("marker options:", pg.eval_on_selector_all("#marker button", "bs => bs.map(b => b.dataset.v + (b.getAttribute('aria-pressed')=='true' ? '*' : ''))"))
+        print("controls:", {k: pg.locator(k).count() for k in ["#width", "#simplify", "#round", "#trimS", "#trimE", "#cropB", "#marker", "#mapstyle"]})
         pg.fill("#cropB", "200"); pg.dispatch_event("#cropB", "input"); pg.wait_for_timeout(1500)
         print("cropped size:", pg.evaluate("[cv.width, cv.height]"))
         data = pg.evaluate("document.getElementById('cv').toDataURL('image/png')")

@@ -9,7 +9,6 @@ It replaces the old Inkscape workflow (GPX → SVG converter → Snazzy Maps scr
 - Reads the GPX on the phone (nothing is uploaded) and fills in the **distance**, the **title** (from the GPX name) and the **date** (next Wednesday).
 - Draws a light-grey street map around the route with the route on top in **burgundy `#882c29`** or **blue `#3584ba`**.
 - Writes the title, distance, **FREE BEER!** and date in **MikkelWind**, like the earlier route posts.
-- Optional dot marking the start and finish.
 - Formats: **Post 4:5** (1080×1350), **Story 9:16** (1080×1920), **Square** (1080×1080), and **Route only**: a transparent PNG of just the line, to put on a group photo.
 - Drag the picture to move the map, pinch or use the slider to zoom, and crop a strip off the bottom (the date and FREE BEER! move up with it).
 - Smooth out GPS wobble, round corners, line width, and **trim** a few metres off the start or finish (for when the start and finish lines don't quite meet at the bar).
@@ -37,7 +36,7 @@ The Gotham and Windsor fonts are commercial fonts supplied by Mikkeller for bran
 
 ## Map tiles
 
-The map is drawn in the phone's browser from [OpenFreeMap](https://openfreemap.org) vector tiles (OpenStreetMap data in the OpenMapTiles format): no API key, no account, no usage limits. The MRC look (grey ground, white streets, no labels) is defined in `mapStyle()` in `site/index.html`; colours are in `PALETTE`. The drawing library is MapLibre GL JS, bundled in `site/vendor/` (BSD licence). OpenStreetMap and OpenMapTiles require a credit, which is the small line at the bottom of each image, so leave it in. If the map can't load (offline), choose **Map → No map**.
+The map is drawn in the phone's browser from [OpenFreeMap](https://openfreemap.org) vector tiles (OpenStreetMap data in the OpenMapTiles format): no API key, no account, no usage limits. The MRC look (grey ground, white streets, no labels) is the only map style; it's defined in `mapStyle()` in `site/index.html`, with the colours in `PALETTE.grey`. The drawing library is MapLibre GL JS, bundled in `site/vendor/` (BSD licence). OpenStreetMap and OpenMapTiles require a credit. It isn't drawn on the image; instead the app adds “Map: © OpenStreetMap contributors, OpenMapTiles” as the last line of the caption, which OpenStreetMap's guidelines accept for images. Leave that line in when posting.
 
 ## Making a change
 

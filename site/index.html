@@ -142,12 +142,6 @@ footer a{color:inherit}
           <button type="button" class="swatch" data-v="#3584ba" aria-pressed="false" aria-label="Blue"><span style="background:#3584ba"></span></button>
         </div>
       </div>
-      <div class="row"><label>Start / finish marker</label>
-        <div class="seg" id="marker" role="group" aria-label="Start and finish marker">
-          <button type="button" data-v="none" aria-pressed="true">None</button>
-          <button type="button" data-v="dot" aria-pressed="false">Dot</button>
-        </div>
-      </div>
       <div class="row"><label for="width">Line width</label><span class="val" id="widthv">10</span></div>
       <input id="width" type="range" min="4" max="24" step="1" value="10">
       <div class="row"><label for="simplify">Smooth out GPS wobble</label><span class="val" id="simplifyv">6 m</span></div>
@@ -163,16 +157,6 @@ footer a{color:inherit}
         <input id="trimE" type="range" min="0" max="1000" step="10" value="0">
       </details>
 
-      <details style="margin-top:12px">
-        <summary>Map</summary>
-        <div class="row"><label>Map style</label>
-          <div class="seg" id="mapstyle" role="group" aria-label="Map style">
-            <button type="button" data-v="grey" aria-pressed="true">MRC grey</button>
-            <button type="button" data-v="light" aria-pressed="false">Light</button>
-            <button type="button" data-v="none" aria-pressed="false">No map</button>
-          </div>
-        </div>
-      </details>
     </div>
 
     <div class="card">
@@ -216,9 +200,9 @@ footer a{color:inherit}
 "use strict";
 /* ---------- constants ---------- */
 const FORMATS = {
-  feed:   {w:1080, h:1350, box:[0.10,0.36,0.90,0.80], title:150, dist:300, beer:0.865, dateY:40, attrib:true},
-  story:  {w:1080, h:1920, box:[0.10,0.33,0.90,0.72], title:270, dist:420, beer:0.78,  dateY:290, attrib:true},
-  square: {w:1080, h:1080, box:[0.12,0.40,0.88,0.80], title:100, dist:240, beer:0.87,  dateY:36, attrib:true},
+  feed:   {w:1080, h:1350, box:[0.10,0.36,0.90,0.80], title:150, dist:300, beer:0.865, dateY:40},
+  story:  {w:1080, h:1920, box:[0.10,0.33,0.90,0.72], title:270, dist:420, beer:0.78,  dateY:290},
+  square: {w:1080, h:1080, box:[0.12,0.40,0.88,0.80], title:100, dist:240, beer:0.87,  dateY:36},
   route:  {w:1080, h:1920, box:[0.12,0.15,0.88,0.85], title:null}
 };
 const TEXT = "#141414";
@@ -226,7 +210,7 @@ const TEXT = "#141414";
    ?source=<tilejson url> lets the offline test point at local data. */
 const params = new URLSearchParams(location.search);
 const MAP_SOURCE = params.get("source") || "https://tiles.openfreemap.org/planet";
-const ATTRIB = "© OpenStreetMap contributors · OpenMapTiles · OpenFreeMap";
+const MAP_CREDIT = "Map: © OpenStreetMap contributors, OpenMapTiles";   // credit goes in the caption, not on the image
 
 /* ---------- state ---------- */
 const S = {
@@ -234,7 +218,7 @@ const S = {
   cum: [],          // cumulative metres
   total: 0,
   name: "",
-  fmt: "feed", color: "#882c29", marker: "none", mapstyle: "grey",
+  fmt: "feed", color: "#882c29", mapstyle: "grey",   // always the MRC grey map
   zoom: 1, cropB: 0, width: 10, simplify: 8, round: false, trimS: 0, trimE: 0,
   pan: {x:0, y:0},  // in mercator units
 };
@@ -246,15 +230,13 @@ function loadPrefs(){
   try{
     const p = JSON.parse(localStorage.getItem("mrc-poster") || "{}");
     if (p.color) S.color = p.color;
-    if (p.marker === "dot" && p.v >= 2) S.marker = "dot";
-    if (p.mapstyle) S.mapstyle = p.mapstyle;
     if (p.width) S.width = p.width;
     if (p.lead) $("lead").value = p.lead;
     if (p.time) $("time").value = p.time;
   }catch(e){}
 }
 function savePrefs(){
-  try{ localStorage.setItem("mrc-poster", JSON.stringify({v:2, color:S.color, marker:S.marker, mapstyle:S.mapstyle, width:S.width, lead:$("lead").value, time:$("time").value})); }catch(e){}
+  try{ localStorage.setItem("mrc-poster", JSON.stringify({v:2, color:S.color, width:S.width, lead:$("lead").value, time:$("time").value})); }catch(e){}
 }
 
 /* ---------- GPX ---------- */
@@ -336,8 +318,7 @@ function computeView(F, W, H){
 
 /* ---------- map (MapLibre, drawn off-screen, copied into the post) ---------- */
 const PALETTE = {
-  grey:  {bg:"#e6e6e6", park:"#dedede", water:"#cfd3d4", building:"#dadada", road:"#ffffff", minor:"#fbfbfb", rail:"#d2d2d2"},
-  light: {bg:"#f4f2ee", park:"#eaeee4", water:"#d5dde2", building:"#ebe7e0", road:"#ffffff", minor:"#ffffff", rail:"#dcd8d0"}
+  grey:  {bg:"#e6e6e6", park:"#dedede", water:"#cfd3d4", building:"#dadada", road:"#ffffff", minor:"#fbfbfb", rail:"#d2d2d2"}
 };
 function mapStyle(name){
   const c=PALETTE[name]||PALETTE.grey;
@@ -415,13 +396,6 @@ function strokeRoute(px, w){
   ctx.save(); ctx.lineJoin="round"; ctx.lineCap="round"; ctx.lineWidth=w; ctx.strokeStyle=S.color;
   ctx.beginPath(); px.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke(); ctx.restore();
 }
-function drawMarker(p, w){
-  if(S.marker!=="dot") return;
-  ctx.save(); ctx.fillStyle=S.color;
-  ctx.beginPath(); ctx.arc(p.x,p.y,w*1.6,0,7); ctx.fill();
-  ctx.fillStyle="#fbf7ef"; ctx.beginPath(); ctx.arc(p.x,p.y,w*0.7,0,7); ctx.fill();
-  ctx.restore();
-}
 function fitText(text, font, maxW, size, min){
   let s=size; while(s>min){ ctx.font=`${s}px ${font}`; if(ctx.measureText(text).width<=maxW) break; s-=4; } return s;
 }
@@ -438,8 +412,6 @@ function drawText(F, W, H, Hc){
   if($("beer").checked){ ctx.font=`68px "MikkelWind"`; ctx.fillText("FREE BEER!", W/2, Math.min(H*F.beer, Hc-F.dateY-150)); }
   const date=fmtDate($("date").value);
   if(date){ ctx.textAlign="right"; ctx.textBaseline="bottom"; ctx.font=`58px "MikkelWind"`; ctx.fillText(date, W-40, Hc-F.dateY); }
-  if(F.attrib && S.mapstyle!=="none"){ ctx.textAlign="left"; ctx.textBaseline="bottom"; ctx.font=`400 17px "Gotham", Arial`;
-    ctx.fillStyle="rgba(20,20,20,.45)"; ctx.fillText(ATTRIB, 24, Hc-14); }
   ctx.restore();
 }
 function distLabel(){
@@ -469,10 +441,9 @@ function draw(target){
   else mapOk=drawMap(V,W,H);
   const px=routePixels(V);
   strokeRoute(px, S.width);
-  drawMarker(px[0], S.width);
   if(S.fmt!=="route") drawText(F,W,H,Hc);
   const st=$("status");
-  if(S.fmt!=="route" && S.mapstyle!=="none" && M.error && !M.ready){ st.textContent="Map couldn’t load (offline?). You can still use “No map”."; st.classList.add("warn"); }
+  if(S.fmt!=="route" && S.mapstyle!=="none" && M.error && !M.ready){ st.textContent="Map couldn’t load. Check your connection and reload."; st.classList.add("warn"); }
   else if(S.fmt!=="route" && S.mapstyle!=="none" && !mapOk){ st.textContent="Loading map…"; st.classList.remove("warn"); }
   else { st.textContent = S.fmt==="route" ? "Transparent PNG of just the route, for stickers on photos." : ""; st.classList.remove("warn"); }
   cv.style.background = S.fmt==="route" ? "repeating-conic-gradient(#ddd 0 25%, #fff 0 50%) 0 0/24px 24px" : "#e6e6e6";
@@ -511,7 +482,7 @@ const CAPTIONS={
   rain:    c=>`Rain or shine ☔️ ${c.when} we run ${c.title}${c.km?`: ${c.km} km`:""}, starting and finishing at @mikkellerzurich at ${c.time}${c.lead?`. ${c.lead} leads`:""}.\nFree beer when we’re back. ${PACE}`,
 };
 let capStyle="classic";
-function captionText(){ return (CAPTIONS[capStyle]||CAPTIONS.classic)(captionParts()); }
+function captionText(){ return (CAPTIONS[capStyle]||CAPTIONS.classic)(captionParts()) + (S.mapstyle!=="none" ? `\n\n${MAP_CREDIT}` : ""); }
 let capTouched=false;
 function refreshCaption(force){ if(force||!capTouched){ $("cap").value=captionText(); capTouched=false; } }
 
@@ -524,7 +495,7 @@ function fileName(){
   return `mrc-${t}-${S.fmt}.png`;
 }
 async function download(){
-  const b=await exportBlob(); if(!b) return alert("Couldn’t create the image. Try “No map” and save again.");
+  const b=await exportBlob(); if(!b) return alert("Couldn’t create the image. Check your connection, reload and try again.");
   const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=fileName(); document.body.appendChild(a); a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},2000);
 }
@@ -571,8 +542,6 @@ function init(){
   $("width").value=S.width;
   seg("fmt","fmt");
   seg("color","color");
-  seg("marker","marker");
-  seg("mapstyle","mapstyle");
   range("zoom","zoom",v=>v+"%",v=>v/100);
   range("cropB","cropB",v=>v+" px",Number);
   range("width","width",v=>v,Number,savePrefs);
