@@ -159,7 +159,7 @@ footer a{color:inherit}
 
     </div>
 
-    <div class="card">
+    <div class="card hidden" id="capcard">
       <h2>Caption</h2>
       <div class="grid">
         <div><label for="time">Start time</label><input id="time" type="time" value="18:30"></div>
@@ -180,6 +180,8 @@ footer a{color:inherit}
         <button type="button" class="btn ghost" id="copy">Copy caption</button>
       </div>
     </div>
+
+    <p class="hint" id="creditnote">When you post, add this line to the caption: <strong>Map: © OpenStreetMap contributors, OpenMapTiles</strong></p>
 
     <div style="text-align:center">
       <label class="btn ghost" for="gpx" style="margin:4px auto">Load a different GPX</label>
@@ -210,6 +212,10 @@ const TEXT = "#141414";
    ?source=<tilejson url> lets the offline test point at local data. */
 const params = new URLSearchParams(location.search);
 const MAP_SOURCE = params.get("source") || "https://tiles.openfreemap.org/planet";
+/* Who sees the Caption card: the email they signed in with at Cloudflare Access (lower case). */
+const CAPTION_EMAILS = [
+  "captain@example.com",
+];
 const MAP_CREDIT = "Map: © OpenStreetMap contributors, OpenMapTiles";   // credit goes in the caption, not on the image
 
 /* ---------- state ---------- */
@@ -537,8 +543,22 @@ async function loadFile(file){
   }catch(e){ alert(e.message||String(e)); }
 }
 
+/* Cloudflare Access tells a page who is signed in at /cdn-cgi/access/get-identity.
+   This only decides what is shown; it isn't a security boundary (the captions aren't secret). */
+async function applyAccess(){
+  let email="";
+  try{
+    const r=await fetch("/cdn-cgi/access/get-identity",{credentials:"include",cache:"no-store"});
+    if(r.ok){ const j=await r.json(); email=String(j.email||"").toLowerCase(); }
+  }catch(e){}
+  const allowed=CAPTION_EMAILS.map(e=>e.toLowerCase()).includes(email);
+  $("capcard").classList.toggle("hidden",!allowed);
+  $("creditnote").classList.toggle("hidden",allowed);
+}
+
 function init(){
   loadPrefs();
+  applyAccess();
   $("width").value=S.width;
   seg("fmt","fmt");
   seg("color","color");
