@@ -142,9 +142,9 @@ footer a{color:inherit}
       </div>
       <div class="row"><label>Start marker</label>
         <div class="seg" id="marker" role="group" aria-label="Start marker">
-          <button type="button" data-v="none" aria-pressed="false">None</button>
+          <button type="button" data-v="none" aria-pressed="true">None</button>
           <button type="button" data-v="dot" aria-pressed="false">Dot</button>
-          <button type="button" data-v="star" aria-pressed="true">Star</button>
+          <button type="button" data-v="star" aria-pressed="false">Star</button>
         </div>
       </div>
       <div class="row"><label for="width">Line width</label><span class="val" id="widthv">10</span></div>
@@ -224,7 +224,7 @@ const S = {
   cum: [],          // cumulative metres
   total: 0,
   name: "",
-  fmt: "feed", color: "#882c29", marker: "star", mapstyle: "grey",
+  fmt: "feed", color: "#882c29", marker: "none", mapstyle: "grey",
   zoom: 1, width: 10, simplify: 8, round: false, trimS: 0, trimE: 0,
   pan: {x:0, y:0},  // in mercator units
 };
@@ -236,7 +236,7 @@ function loadPrefs(){
   try{
     const p = JSON.parse(localStorage.getItem("mrc-poster") || "{}");
     if (p.color) S.color = p.color;
-    if (p.marker) S.marker = p.marker;
+    if (p.marker && p.v >= 2) S.marker = p.marker;
     if (p.mapstyle) S.mapstyle = p.mapstyle;
     if (p.width) S.width = p.width;
     if (p.lead) $("lead").value = p.lead;
@@ -244,7 +244,7 @@ function loadPrefs(){
   }catch(e){}
 }
 function savePrefs(){
-  try{ localStorage.setItem("mrc-poster", JSON.stringify({color:S.color, marker:S.marker, mapstyle:S.mapstyle, width:S.width, lead:$("lead").value, time:$("time").value})); }catch(e){}
+  try{ localStorage.setItem("mrc-poster", JSON.stringify({v:2, color:S.color, marker:S.marker, mapstyle:S.mapstyle, width:S.width, lead:$("lead").value, time:$("time").value})); }catch(e){}
 }
 
 /* ---------- GPX ---------- */
