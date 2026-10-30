@@ -15,7 +15,7 @@ errors = []
 try:
     with sync_playwright() as p:
         b = p.chromium.launch(args=["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
-        pg = b.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=2)
+        pg = b.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=2, timezone_id="Europe/Zurich")
         pg.on("pageerror", lambda e: errors.append(str(e)))
         pg.on("console", lambda m: m.type == "error" and errors.append(m.text))
         pg.goto(f"http://127.0.0.1:{PORT}/index.html?source=http://127.0.0.1:{PORT}/tilejson")
@@ -39,6 +39,17 @@ try:
         pg.wait_for_timeout(1200)
         data = pg.evaluate("document.getElementById('cv').toDataURL('image/png')")
         open(os.path.join(OUT, "feed-trim-drag.png"), "wb").write(base64.b64decode(data.split(",")[1]))
+        for style in ["classic", "short", "playful", "invite", "whosin", "rain"]:
+            pg.click(f'#capstyle button[data-v="{style}"]')
+            print(f"[{style}]", pg.input_value("#cap").replace("\n", " / "))
+        pg.fill("#lead", "kates.turn")
+        pg.click('#capstyle button[data-v="classic"]')
+        print("[classic + leader]", pg.input_value("#cap").replace("\n", " / "))
+        print("marker options:", pg.eval_on_selector_all("#marker button", "bs => bs.map(b => b.dataset.v + (b.getAttribute('aria-pressed')=='true' ? '*' : ''))"))
+        pg.fill("#cropB", "200"); pg.dispatch_event("#cropB", "input"); pg.wait_for_timeout(1500)
+        print("cropped size:", pg.evaluate("[cv.width, cv.height]"))
+        data = pg.evaluate("document.getElementById('cv').toDataURL('image/png')")
+        open(os.path.join(OUT, "feed-cropped.png"), "wb").write(base64.b64decode(data.split(",")[1]))
         with pg.expect_download() as dl:
             pg.click("#save")
         dl.value.save_as(os.path.join(OUT, "download.png"))

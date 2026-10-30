@@ -120,6 +120,8 @@ footer a{color:inherit}
         <label for="zoom">Zoom</label><span class="val" id="zoomv">100%</span>
       </div>
       <input id="zoom" type="range" min="50" max="200" step="1" value="100">
+      <div class="row"><label for="cropB">Crop from bottom</label><span class="val" id="cropBv">0 px</span></div>
+      <input id="cropB" type="range" min="0" max="300" step="10" value="0">
     </div>
 
     <div class="card">
@@ -140,11 +142,10 @@ footer a{color:inherit}
           <button type="button" class="swatch" data-v="#3584ba" aria-pressed="false" aria-label="Blue"><span style="background:#3584ba"></span></button>
         </div>
       </div>
-      <div class="row"><label>Start marker</label>
-        <div class="seg" id="marker" role="group" aria-label="Start marker">
+      <div class="row"><label>Start / finish marker</label>
+        <div class="seg" id="marker" role="group" aria-label="Start and finish marker">
           <button type="button" data-v="none" aria-pressed="true">None</button>
           <button type="button" data-v="dot" aria-pressed="false">Dot</button>
-          <button type="button" data-v="star" aria-pressed="false">Star</button>
         </div>
       </div>
       <div class="row"><label for="width">Line width</label><span class="val" id="widthv">10</span></div>
@@ -179,11 +180,20 @@ footer a{color:inherit}
       <div class="grid">
         <div><label for="time">Start time</label><input id="time" type="time" value="18:30"></div>
         <div><label for="lead">Led by (optional)</label><input id="lead" type="text" autocomplete="off" placeholder="@yourhandle"></div>
-        <div class="full"><label for="cap">Caption</label><textarea id="cap"></textarea></div>
+        <div class="full"><label>Caption style</label>
+          <div class="seg" id="capstyle" role="group" aria-label="Caption style">
+            <button type="button" data-v="classic" aria-pressed="true">Classic</button>
+            <button type="button" data-v="short" aria-pressed="false">Short</button>
+            <button type="button" data-v="playful" aria-pressed="false">Playful</button>
+            <button type="button" data-v="invite" aria-pressed="false">Newcomers</button>
+            <button type="button" data-v="whosin" aria-pressed="false">Who’s in?</button>
+            <button type="button" data-v="rain" aria-pressed="false">Rain or shine</button>
+          </div>
+        </div>
+        <div class="full"><label for="cap">Caption <span style="font-weight:400">(edit freely)</span></label><textarea id="cap"></textarea></div>
       </div>
       <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
         <button type="button" class="btn ghost" id="copy">Copy caption</button>
-        <button type="button" class="btn ghost" id="recap">Reset caption</button>
       </div>
     </div>
 
@@ -225,7 +235,7 @@ const S = {
   total: 0,
   name: "",
   fmt: "feed", color: "#882c29", marker: "none", mapstyle: "grey",
-  zoom: 1, width: 10, simplify: 8, round: false, trimS: 0, trimE: 0,
+  zoom: 1, cropB: 0, width: 10, simplify: 8, round: false, trimS: 0, trimE: 0,
   pan: {x:0, y:0},  // in mercator units
 };
 const $ = id => document.getElementById(id);
@@ -236,7 +246,7 @@ function loadPrefs(){
   try{
     const p = JSON.parse(localStorage.getItem("mrc-poster") || "{}");
     if (p.color) S.color = p.color;
-    if (p.marker && p.v >= 2) S.marker = p.marker;
+    if (p.marker === "dot" && p.v >= 2) S.marker = "dot";
     if (p.mapstyle) S.mapstyle = p.mapstyle;
     if (p.width) S.width = p.width;
     if (p.lead) $("lead").value = p.lead;
@@ -405,18 +415,11 @@ function strokeRoute(px, w){
   ctx.save(); ctx.lineJoin="round"; ctx.lineCap="round"; ctx.lineWidth=w; ctx.strokeStyle=S.color;
   ctx.beginPath(); px.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke(); ctx.restore();
 }
-function star(cx,cy,R,r,rot){
-  ctx.beginPath(); for(let k=0;k<8;k++){const a=rot+k*Math.PI/4, rr=k%2?r:R; ctx.lineTo(cx+rr*Math.cos(a), cy+rr*Math.sin(a));} ctx.closePath(); ctx.fill();
-}
 function drawMarker(p, w){
-  if(S.marker==="none") return;
+  if(S.marker!=="dot") return;
   ctx.save(); ctx.fillStyle=S.color;
-  if(S.marker==="dot"){
-    ctx.beginPath(); ctx.arc(p.x,p.y,w*1.6,0,7); ctx.fill();
-    ctx.fillStyle="#fbf7ef"; ctx.beginPath(); ctx.arc(p.x,p.y,w*0.7,0,7); ctx.fill();
-  }else{
-    const R=w*6.5; star(p.x,p.y,R,R*0.3,-Math.PI/2); star(p.x,p.y,R*0.55,R*0.2,-Math.PI/4);
-  }
+  ctx.beginPath(); ctx.arc(p.x,p.y,w*1.6,0,7); ctx.fill();
+  ctx.fillStyle="#fbf7ef"; ctx.beginPath(); ctx.arc(p.x,p.y,w*0.7,0,7); ctx.fill();
   ctx.restore();
 }
 function fitText(text, font, maxW, size, min){
@@ -425,18 +428,18 @@ function fitText(text, font, maxW, size, min){
 function fmtDate(v){
   if(!v) return ""; const [y,m,d]=v.split("-").map(Number); return `${d}/${m}/${y}`;
 }
-function drawText(F, W, H){
+function drawText(F, W, H, Hc){
   ctx.save(); ctx.fillStyle=TEXT; ctx.textAlign="center"; ctx.textBaseline="top";
   const title=($("title").value||"").toUpperCase().trim();
   let y=F.title;
   if(title){ const s=fitText(title,'"MikkelWind"',W*0.86,160,60); ctx.font=`${s}px "MikkelWind"`; ctx.fillText(title,W/2,y); y+=s*1.02; }
   const dist=distLabel();
   if(dist){ ctx.font=`100px "MikkelWind"`; ctx.fillText(dist,W/2, title?y+8:F.dist); }
-  if($("beer").checked){ ctx.font=`68px "MikkelWind"`; ctx.fillText("FREE BEER!", W/2, H*F.beer); }
+  if($("beer").checked){ ctx.font=`68px "MikkelWind"`; ctx.fillText("FREE BEER!", W/2, Math.min(H*F.beer, Hc-F.dateY-150)); }
   const date=fmtDate($("date").value);
-  if(date){ ctx.textAlign="right"; ctx.textBaseline="bottom"; ctx.font=`58px "MikkelWind"`; ctx.fillText(date, W-40, H-F.dateY); }
+  if(date){ ctx.textAlign="right"; ctx.textBaseline="bottom"; ctx.font=`58px "MikkelWind"`; ctx.fillText(date, W-40, Hc-F.dateY); }
   if(F.attrib && S.mapstyle!=="none"){ ctx.textAlign="left"; ctx.textBaseline="bottom"; ctx.font=`400 17px "Gotham", Arial`;
-    ctx.fillStyle="rgba(20,20,20,.45)"; ctx.fillText(ATTRIB, 24, H-14); }
+    ctx.fillStyle="rgba(20,20,20,.45)"; ctx.fillText(ATTRIB, 24, Hc-14); }
   ctx.restore();
 }
 function distLabel(){
@@ -458,7 +461,8 @@ function prepareRoute(){
 function draw(target){
   if(!S.mpts) return;
   const F=FORMATS[S.fmt]; const W=F.w, H=F.h;
-  if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
+  const Hc=H-(S.cropB||0);                                  // cropped height of the exported image
+  if(cv.width!==W||cv.height!==Hc){cv.width=W;cv.height=Hc;}
   const V=computeView(F,W,H); S.view=V;
   let mapOk=true;
   if(S.fmt==="route"){ ctx.clearRect(0,0,W,H); }
@@ -466,7 +470,7 @@ function draw(target){
   const px=routePixels(V);
   strokeRoute(px, S.width);
   drawMarker(px[0], S.width);
-  if(S.fmt!=="route") drawText(F,W,H);
+  if(S.fmt!=="route") drawText(F,W,H,Hc);
   const st=$("status");
   if(S.fmt!=="route" && S.mapstyle!=="none" && M.error && !M.ready){ st.textContent="Map couldn’t load (offline?). You can still use “No map”."; st.classList.add("warn"); }
   else if(S.fmt!=="route" && S.mapstyle!=="none" && !mapOk){ st.textContent="Loading map…"; st.classList.remove("warn"); }
@@ -483,20 +487,31 @@ function cleanTitle(n){
 /* ---------- caption ---------- */
 function nextWednesday(){
   const d=new Date(); const add=(3-d.getDay()+7)%7; d.setDate(d.getDate()+add);
-  return d.toISOString().slice(0,10);
+  const z=n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
 }
-function captionText(){
+function captionParts(){
   const t=($("title").value||"").trim();
   const title=t ? t.replace(/\w\S*/g, w=>w[0].toUpperCase()+w.slice(1).toLowerCase()) : "This week’s route";
   const dv=$("date").value; let when="This Wednesday";
   if(dv){ const d=new Date(dv+"T12:00:00"); const days=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
     when=`This ${days[d.getDay()]} ${d.getDate()}.${d.getMonth()+1}`; }
-  const lead=($("lead").value||"").trim(); const who=lead ? ` ${lead.startsWith("@")?lead:"@"+lead} leads us on` : " we run";
-  const km=($("dist").value||"").trim().replace(",", ".");
-  const kmTxt = km ? ` a ${km.replace(/\s*km/i,"")} km loop` : " a loop";
+  const l=($("lead").value||"").trim(); const lead=l ? (l.startsWith("@")?l:"@"+l) : "";
+  const km=($("dist").value||"").trim().replace(",", ".").replace(/\s*km/i,"");
   const time=$("time").value||"18:30";
-  return `${title} ✨ ${when}${who}${kmTxt} starting and finishing at @mikkellerzurich at ${time}.\nFree beer when we’re back. The slowest runner sets the pace 🍻`;
+  return {title, when, whenLc: when[0].toLowerCase()+when.slice(1), lead, km, time};
 }
+const PACE="The slowest runner sets the pace 🍻";
+const CAPTIONS={
+  classic: c=>`${c.title} ✨ ${c.when}${c.lead?` ${c.lead} leads us on`:" we run"} ${c.km?`a ${c.km} km loop`:"a loop"} starting and finishing at @mikkellerzurich at ${c.time}.\nFree beer when we’re back. ${PACE}`,
+  short:   c=>`${c.title} ✨ ${c.when}, ${c.time} at @mikkellerzurich${c.km?` · ${c.km} km`:""}${c.lead?` · led by ${c.lead}`:""}.\nFree beer after. ${PACE}`,
+  playful: c=>`${c.when} we’re taking on ${c.title} 🏃${c.km?` ${c.km} km`:""} out of @mikkellerzurich at ${c.time}${c.lead?`, with ${c.lead} leading the way`:""}.\nFree beer at the finish line. ${PACE}`,
+  invite:  c=>`New faces welcome 👋 ${c.when} we run ${c.title}${c.km?`, ${c.km} km`:""}, starting at @mikkellerzurich at ${c.time}${c.lead?` with ${c.lead}`:""}. No one gets left behind.\nFree beer when we’re back. ${PACE}`,
+  whosin:  c=>`Who’s in? 👟 ${c.title}${c.km?`, ${c.km} km`:""} from @mikkellerzurich, ${c.whenLc} at ${c.time}${c.lead?`, led by ${c.lead}`:""}.\nFree beer after. ${PACE}`,
+  rain:    c=>`Rain or shine ☔️ ${c.when} we run ${c.title}${c.km?`: ${c.km} km`:""}, starting and finishing at @mikkellerzurich at ${c.time}${c.lead?`. ${c.lead} leads`:""}.\nFree beer when we’re back. ${PACE}`,
+};
+let capStyle="classic";
+function captionText(){ return (CAPTIONS[capStyle]||CAPTIONS.classic)(captionParts()); }
 let capTouched=false;
 function refreshCaption(force){ if(force||!capTouched){ $("cap").value=captionText(); capTouched=false; } }
 
@@ -559,6 +574,7 @@ function init(){
   seg("marker","marker");
   seg("mapstyle","mapstyle");
   range("zoom","zoom",v=>v+"%",v=>v/100);
+  range("cropB","cropB",v=>v+" px",Number);
   range("width","width",v=>v,Number,savePrefs);
   range("simplify","simplify",v=>v+" m",Number,prepareRoute);
   range("trimS","trimS",v=>v+" m",Number,prepareRoute);
@@ -567,7 +583,8 @@ function init(){
   ["title","dist","date","beer"].forEach(i=>$(i).addEventListener("input",()=>{scheduleDraw(); refreshCaption();}));
   ["time","lead"].forEach(i=>$(i).addEventListener("input",()=>{refreshCaption(); savePrefs();}));
   $("cap").addEventListener("input",()=>{capTouched=true;});
-  $("recap").addEventListener("click",()=>refreshCaption(true));
+  $("capstyle").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; capStyle=b.dataset.v;
+    $("capstyle").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); refreshCaption(true); });
   $("copy").addEventListener("click",async()=>{ try{ await navigator.clipboard.writeText($("cap").value); $("copy").textContent="Copied ✓"; }catch(e){ $("cap").select(); document.execCommand("copy"); $("copy").textContent="Copied ✓"; } setTimeout(()=>$("copy").textContent="Copy caption",1800); });
   $("gpx").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadFile(f); e.target.value=""; });
   const drop=$("drop");

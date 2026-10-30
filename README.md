@@ -9,11 +9,11 @@ It replaces the old Inkscape workflow (GPX → SVG converter → Snazzy Maps scr
 - Reads the GPX on the phone (nothing is uploaded) and fills in the **distance**, the **title** (from the GPX name) and the **date** (next Wednesday).
 - Draws a light-grey street map around the route with the route on top in **burgundy `#882c29`** or **blue `#3584ba`**.
 - Writes the title, distance, **FREE BEER!** and date in **MikkelWind**, like the earlier route posts.
-- Start marker: north star, dot or none.
+- Optional dot marking the start and finish.
 - Formats: **Post 4:5** (1080×1350), **Story 9:16** (1080×1920), **Square** (1080×1080), and **Route only**: a transparent PNG of just the line, to put on a group photo.
-- Drag the picture to move the map, pinch or use the slider to zoom.
+- Drag the picture to move the map, pinch or use the slider to zoom, and crop a strip off the bottom (the date and FREE BEER! move up with it).
 - Smooth out GPS wobble, round corners, line width, and **trim** a few metres off the start or finish (for when the start and finish lines don't quite meet at the bar).
-- Writes a draft caption in the usual format (title, day, distance, @mikkellerzurich, start time, who leads, free beer, “The slowest runner sets the pace”) with a copy button.
+- Writes a draft caption with the title, day, distance, @mikkellerzurich, start time, who leads, free beer and “The slowest runner sets the pace”. Six style buttons (Classic, Short, Playful, Newcomers, Who’s in?, Rain or shine) each give a different version; edit it and copy it.
 - **Share** opens the phone's share sheet (Instagram, Photos, WhatsApp…). **Download PNG** saves the file.
 
 It is a single static page with no server, no database and no running costs. Settings like route colour and your handle are remembered on each phone.
@@ -41,7 +41,7 @@ The map is drawn in the phone's browser from [OpenFreeMap](https://openfreemap.o
 
 ## Making a change
 
-1. Edit `site/index.html`. The layout per format (where the title, FREE BEER! and the date sit, and the box the route is fitted into) is the `FORMATS` block near the top of the script. The caption template is in `captionText()`.
+1. Edit `site/index.html`. The layout per format (where the title, FREE BEER! and the date sit, and the box the route is fitted into) is the `FORMATS` block near the top of the script. The caption styles are in `CAPTIONS`.
 2. Optional: run the check
    ```bash
    pip install playwright pillow && python3 -m playwright install chromium
