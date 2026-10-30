@@ -1,0 +1,8 @@
+// Cloudflare config: publish the static site in ./site (no server code).
+{
+  "name": "mrc-route-poster",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./site"
+  }
+}

@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MRC Route Poster</title>
+<meta name="description" content="Turn a GPX file into a Mikkeller Run Club route post.">
+<meta name="theme-color" content="#882c29">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Route Poster">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>
+@font-face{font-family:"MikkelWind";src:url("fonts/MikkelWind.ttf") format("truetype");font-display:block}
+@font-face{font-family:"Windsor";src:url("fonts/Windsor-Bold.ttf") format("truetype");font-weight:700;font-display:swap}
+@font-face{font-family:"Gotham";src:url("fonts/GothamHTF-Book.otf") format("opentype");font-weight:400;font-display:swap}
+@font-face{font-family:"Gotham";src:url("fonts/GothamHTF-Black.otf") format("opentype");font-weight:900;font-display:swap}
+
+/* Layout: phone-first single column — preview on top, controls in cards below, sticky share bar */
+:root{
+  --paper:#eee5d2; --panel:#fbf7ef; --ink:#1a1714; --muted:#6b6358; --line:#ddd2bd;
+  --burgundy:#882c29; --blue:#3584ba; --accent:#882c29; --accent-ink:#fbf7ef;
+  --display:"Windsor",Georgia,serif; --sub:"Gotham","Helvetica Neue",Arial,sans-serif; --body:"Gotham","Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#1b1715; --panel:#262120; --ink:#f3ecdf; --muted:#b3a897; --line:#3b3431; --accent:#c2524d; --accent-ink:#1b1715; color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#1b1715; --panel:#262120; --ink:#f3ecdf; --muted:#b3a897; --line:#3b3431; --accent:#c2524d; --accent-ink:#1b1715; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;
+  padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) calc(96px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.wrap{max-width:640px;margin:0 auto}
+header{padding:20px 0 8px;display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:700;font-size:32px;line-height:1.05;margin:0;letter-spacing:-.01em}
+h1 span{color:var(--accent)}
+header p{margin:0;color:var(--muted);font-size:14px}
+h2{font-family:var(--sub);font-weight:900;font-size:13px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 12px;color:var(--muted)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
+
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;
+  border:2px dashed var(--line);border-radius:14px;padding:28px 16px;cursor:pointer;background:var(--panel)}
+.drop.over{border-color:var(--accent)}
+.drop strong{font-family:var(--display);font-size:22px}
+.drop small{color:var(--muted)}
+.btn{appearance:none;border:0;border-radius:999px;padding:12px 20px;min-height:44px;font:900 15px/1 var(--sub);letter-spacing:.04em;
+  background:var(--accent);color:var(--accent-ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.seg button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+
+.preview{position:relative;margin:14px 0 0}
+.preview canvas{display:block;width:100%;height:auto;border-radius:10px;box-shadow:0 1px 0 var(--line),0 8px 24px rgba(0,0,0,.12);
+  touch-action:none;cursor:grab;background:#e9e9e9}
+.preview canvas.dragging{cursor:grabbing}
+.hint{color:var(--muted);font-size:13px;margin:8px 2px 0;text-align:center}
+.status{font-size:13px;color:var(--muted);min-height:1.2em;margin:6px 2px 0;text-align:center}
+.status.warn{color:var(--accent)}
+
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{appearance:none;border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;
+  padding:9px 14px;min-height:40px;font:600 14px/1 var(--body);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.swatch{width:40px;height:40px;padding:0!important;border-radius:50%!important;display:inline-flex;align-items:center;justify-content:center}
+.swatch span{width:26px;height:26px;border-radius:50%;display:block}
+.swatch[aria-pressed="true"]{background:transparent!important;border:3px solid var(--ink)!important}
+
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.grid .full{grid-column:1/-1}
+label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:0 0 6px}
+input[type=text],input[type=date],input[type=time],textarea,select{width:100%;font:16px/1.3 var(--body);color:var(--ink);background:var(--paper);
+  border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
+textarea{min-height:120px;resize:vertical}
+input[type=range]{width:100%;accent-color:var(--accent);min-height:32px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0}
+.row label{margin:0}
+.check{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--ink);font-weight:500;min-height:40px;cursor:pointer}
+.check input{width:22px;height:22px;accent-color:var(--accent)}
+.val{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600}
+details summary{cursor:pointer;font:900 13px/1 var(--sub);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);list-style:none;min-height:24px}
+details summary::-webkit-details-marker{display:none}
+details summary::after{content:" +"}
+details[open] summary::after{content:" –"}
+.actions{position:fixed;left:0;right:0;bottom:0;z-index:5;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(8px);
+  border-top:1px solid var(--line);padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.actions .wrap{display:flex;gap:10px}
+.actions .btn{flex:1}
+.hidden{display:none!important}
+footer{color:var(--muted);font-size:12px;text-align:center;margin:24px 0 0}
+footer a{color:inherit}
+@media (min-width:720px){h1{font-size:40px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Route <span>Poster</span></h1>
+    <p>Mikkeller Run Club Zürich</p>
+  </header>
+
+  <label class="drop" id="drop" for="gpx">
+    <strong>Choose a GPX file</strong>
+    <small>From Strava, Komoot, gpx.studio or your watch. It stays on your phone.</small>
+    <input id="gpx" type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" class="hidden">
+  </label>
+
+  <section id="editor" class="hidden">
+    <div class="card" style="padding:12px">
+      <div class="seg" id="fmt" role="group" aria-label="Format">
+        <button type="button" data-v="feed" aria-pressed="true">Post 4:5</button>
+        <button type="button" data-v="story" aria-pressed="false">Story 9:16</button>
+        <button type="button" data-v="square" aria-pressed="false">Square</button>
+        <button type="button" data-v="route" aria-pressed="false">Route only</button>
+      </div>
+      <div class="preview"><canvas id="cv" width="1080" height="1350" aria-label="Post preview"></canvas></div>
+      <p class="hint">Drag the picture to move the map. Use Zoom to resize.</p>
+      <p class="status" id="status" role="status"></p>
+      <div class="row" style="margin-top:4px">
+        <label for="zoom">Zoom</label><span class="val" id="zoomv">100%</span>
+      </div>
+      <input id="zoom" type="range" min="50" max="200" step="1" value="100">
+    </div>
+
+    <div class="card">
+      <h2>Text</h2>
+      <div class="grid">
+        <div class="full"><label for="title">Title</label><input id="title" type="text" autocomplete="off" placeholder="THE LITTLE DIPPER"></div>
+        <div><label for="dist">Distance (km)</label><input id="dist" type="text" inputmode="decimal" autocomplete="off"></div>
+        <div><label for="date">Run date</label><input id="date" type="date"></div>
+        <div class="full"><label class="check"><input id="beer" type="checkbox" checked> Show “FREE BEER!”</label></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Route</h2>
+      <div class="row"><label>Colour</label>
+        <div class="seg" id="color" role="group" aria-label="Route colour">
+          <button type="button" class="swatch" data-v="#882c29" aria-pressed="true" aria-label="Burgundy"><span style="background:#882c29"></span></button>
+          <button type="button" class="swatch" data-v="#3584ba" aria-pressed="false" aria-label="Blue"><span style="background:#3584ba"></span></button>
+        </div>
+      </div>
+      <div class="row"><label>Start marker</label>
+        <div class="seg" id="marker" role="group" aria-label="Start marker">
+          <button type="button" data-v="none" aria-pressed="false">None</button>
+          <button type="button" data-v="dot" aria-pressed="false">Dot</button>
+          <button type="button" data-v="star" aria-pressed="true">Star</button>
+        </div>
+      </div>
+      <div class="row"><label for="width">Line width</label><span class="val" id="widthv">10</span></div>
+      <input id="width" type="range" min="4" max="24" step="1" value="10">
+      <div class="row"><label for="simplify">Smooth out GPS wobble</label><span class="val" id="simplifyv">6 m</span></div>
+      <input id="simplify" type="range" min="0" max="30" step="1" value="8">
+      <label class="check"><input id="round" type="checkbox"> Round off corners</label>
+
+      <details style="margin-top:12px">
+        <summary>Trim the ends</summary>
+        <p class="hint" style="text-align:left">Cut a few metres off the start or finish, e.g. when the line doesn’t quite meet at the bar. The distance text is not changed.</p>
+        <div class="row"><label for="trimS">Trim start</label><span class="val" id="trimSv">0 m</span></div>
+        <input id="trimS" type="range" min="0" max="1000" step="10" value="0">
+        <div class="row"><label for="trimE">Trim finish</label><span class="val" id="trimEv">0 m</span></div>
+        <input id="trimE" type="range" min="0" max="1000" step="10" value="0">
+      </details>
+
+      <details style="margin-top:12px">
+        <summary>Map</summary>
+        <div class="row"><label>Map style</label>
+          <div class="seg" id="mapstyle" role="group" aria-label="Map style">
+            <button type="button" data-v="grey" aria-pressed="true">MRC grey</button>
+            <button type="button" data-v="light" aria-pressed="false">Light</button>
+            <button type="button" data-v="none" aria-pressed="false">No map</button>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <div class="card">
+      <h2>Caption</h2>
+      <div class="grid">
+        <div><label for="time">Start time</label><input id="time" type="time" value="18:30"></div>
+        <div><label for="lead">Led by (optional)</label><input id="lead" type="text" autocomplete="off" placeholder="@yourhandle"></div>
+        <div class="full"><label for="cap">Caption</label><textarea id="cap"></textarea></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+        <button type="button" class="btn ghost" id="copy">Copy caption</button>
+        <button type="button" class="btn ghost" id="recap">Reset caption</button>
+      </div>
+    </div>
+
+    <div style="text-align:center">
+      <label class="btn ghost" for="gpx" style="margin:4px auto">Load a different GPX</label>
+    </div>
+  </section>
+
+  <footer>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors, tiles © <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>. Your GPX file is never uploaded.</footer>
+</div>
+
+<div class="actions hidden" id="actions"><div class="wrap">
+  <button type="button" class="btn" id="share">Share</button>
+  <button type="button" class="btn ghost" id="save">Download PNG</button>
+</div></div>
+
+<script>
+"use strict";
+/* ---------- constants ---------- */
+const FORMATS = {
+  feed:   {w:1080, h:1350, box:[0.10,0.36,0.90,0.80], title:150, dist:300, beer:0.865, dateY:40, attrib:true},
+  story:  {w:1080, h:1920, box:[0.10,0.33,0.90,0.72], title:270, dist:420, beer:0.78,  dateY:290, attrib:true},
+  square: {w:1080, h:1080, box:[0.12,0.40,0.88,0.80], title:100, dist:240, beer:0.87,  dateY:36, attrib:true},
+  route:  {w:1080, h:1920, box:[0.12,0.15,0.88,0.85], title:null}
+};
+const TEXT = "#141414";
+const DEFAULT_TILES = "https://{s}.basemaps.cartocdn.com/{style}/{z}/{x}/{y}@2x.png";
+const TILE_PX = 512;
+const params = new URLSearchParams(location.search);
+const TILE_URL = params.get("tiles") || DEFAULT_TILES;   // ?tiles= lets tests use local tiles
+
+/* ---------- state ---------- */
+const S = {
+  pts: [],          // [{lat,lon}]
+  cum: [],          // cumulative metres
+  total: 0,
+  name: "",
+  fmt: "feed", color: "#882c29", marker: "star", mapstyle: "grey",
+  zoom: 1, width: 10, simplify: 8, round: false, trimS: 0, trimE: 0,
+  pan: {x:0, y:0},  // in mercator units
+};
+const $ = id => document.getElementById(id);
+const cv = $("cv"), ctx = cv.getContext("2d");
+
+/* ---------- saved preferences ---------- */
+function loadPrefs(){
+  try{
+    const p = JSON.parse(localStorage.getItem("mrc-poster") || "{}");
+    if (p.color) S.color = p.color;
+    if (p.marker) S.marker = p.marker;
+    if (p.mapstyle) S.mapstyle = p.mapstyle;
+    if (p.width) S.width = p.width;
+    if (p.lead) $("lead").value = p.lead;
+    if (p.time) $("time").value = p.time;
+  }catch(e){}
+}
+function savePrefs(){
+  try{ localStorage.setItem("mrc-poster", JSON.stringify({color:S.color, marker:S.marker, mapstyle:S.mapstyle, width:S.width, lead:$("lead").value, time:$("time").value})); }catch(e){}
+}
+
+/* ---------- GPX ---------- */
+function parseGPX(text){
+  const doc = new DOMParser().parseFromString(text, "application/xml");
+  if (doc.getElementsByTagName("parsererror").length) throw new Error("That file doesn’t look like a GPX file.");
+  let nodes = [...doc.getElementsByTagName("trkpt")];
+  if (!nodes.length) nodes = [...doc.getElementsByTagName("rtept")];
+  if (!nodes.length) nodes = [...doc.getElementsByTagName("wpt")];
+  const pts = nodes.map(n => ({lat:parseFloat(n.getAttribute("lat")), lon:parseFloat(n.getAttribute("lon"))}))
+                   .filter(p => isFinite(p.lat) && isFinite(p.lon));
+  if (pts.length < 2) throw new Error("No route points found in this GPX file.");
+  const nm = doc.querySelector("metadata > name, trk > name, rte > name");
+  return {pts, name: nm ? nm.textContent.trim() : ""};
+}
+function hav(a,b){
+  const R=6371008.8, r=Math.PI/180;
+  const dLat=(b.lat-a.lat)*r, dLon=(b.lon-a.lon)*r;
+  const h=Math.sin(dLat/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function cumulative(pts){
+  const c=[0]; for(let i=1;i<pts.length;i++) c.push(c[i-1]+hav(pts[i-1],pts[i])); return c;
+}
+
+/* ---------- projection (Web Mercator, 0..1 units) ---------- */
+function merc(p){
+  const x=(p.lon+180)/360;
+  const s=Math.sin(p.lat*Math.PI/180);
+  const y=0.5-Math.log((1+s)/(1-s))/(4*Math.PI);
+  return {x,y};
+}
+const metresPerUnit = lat => 40075016.686*Math.cos(lat*Math.PI/180);
+
+/* ---------- geometry helpers ---------- */
+function trimPoints(pts, cum, a, b){
+  const total=cum[cum.length-1]; const lo=Math.min(a,total), hi=Math.max(lo, total-b);
+  const out=[];
+  const at=(d)=>{ let i=cum.findIndex(v=>v>=d); if(i<0) return pts[pts.length-1]; if(i===0) return pts[0];
+    const t=(d-cum[i-1])/((cum[i]-cum[i-1])||1); return {lat:pts[i-1].lat+(pts[i].lat-pts[i-1].lat)*t, lon:pts[i-1].lon+(pts[i].lon-pts[i-1].lon)*t}; };
+  out.push(at(lo));
+  for(let i=0;i<pts.length;i++) if(cum[i]>lo && cum[i]<hi) out.push(pts[i]);
+  out.push(at(hi));
+  return out;
+}
+function douglasPeucker(p, eps){
+  if (p.length<3 || eps<=0) return p.slice();
+  const keep=new Uint8Array(p.length); keep[0]=keep[p.length-1]=1;
+  const stack=[[0,p.length-1]];
+  while(stack.length){
+    const [a,b]=stack.pop(); let md=0, mi=-1;
+    const ax=p[a].x, ay=p[a].y, dx=p[b].x-ax, dy=p[b].y-ay, L=dx*dx+dy*dy;
+    for(let i=a+1;i<b;i++){
+      let t=L?((p[i].x-ax)*dx+(p[i].y-ay)*dy)/L:0; t=Math.max(0,Math.min(1,t));
+      const ex=ax+t*dx-p[i].x, ey=ay+t*dy-p[i].y, d=ex*ex+ey*ey;
+      if(d>md){md=d;mi=i;}
+    }
+    if(mi>0 && md>eps*eps){keep[mi]=1; stack.push([a,mi],[mi,b]);}
+  }
+  return p.filter((_,i)=>keep[i]);
+}
+function chaikin(p, n){
+  let q=p; for(let k=0;k<n;k++){ if(q.length<3) break; const r=[q[0]];
+    for(let i=0;i<q.length-1;i++){const a=q[i],b=q[i+1]; r.push({x:.75*a.x+.25*b.x,y:.75*a.y+.25*b.y},{x:.25*a.x+.75*b.x,y:.25*a.y+.75*b.y});}
+    r.push(q[q.length-1]); q=r;} return q;
+}
+
+/* ---------- tiles ---------- */
+const tileCache = new Map();
+let tileErrors = 0;
+function tileURL(z,x,y,style){
+  const s="abcd"[(x+y)%4];
+  return TILE_URL.replace("{s}",s).replace("{style}",style).replace("{z}",z).replace("{x}",x).replace("{y}",y);
+}
+function getTile(z,x,y,style){
+  const key=style+"/"+z+"/"+x+"/"+y;
+  let t=tileCache.get(key);
+  if(!t){
+    const img=new Image(); img.crossOrigin="anonymous";
+    t={img, ok:false, failed:false};
+    img.onload=()=>{t.ok=true; scheduleDraw();};
+    img.onerror=()=>{t.failed=true; tileErrors++; scheduleDraw();};
+    img.src=tileURL(z,x,y,style);
+    tileCache.set(key,t);
+  }
+  return t;
+}
+
+/* ---------- view ---------- */
+function computeView(F, W, H){
+  const m=S.mpts; let minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9;
+  for(const p of m){minx=Math.min(minx,p.x);maxx=Math.max(maxx,p.x);miny=Math.min(miny,p.y);maxy=Math.max(maxy,p.y);}
+  const [bx0,by0,bx1,by1]=F.box; const bw=(bx1-bx0)*W, bh=(by1-by0)*H;
+  const rw=Math.max(maxx-minx,1e-9), rh=Math.max(maxy-miny,1e-9);
+  const scale=Math.min(bw/rw, bh/rh)*S.zoom;            // px per mercator unit
+  const cx=(minx+maxx)/2 - S.pan.x, cy=(miny+maxy)/2 - S.pan.y;
+  const ox=(bx0+bx1)/2*W, oy=(by0+by1)/2*H;
+  return {scale, cx, cy, ox, oy, toPx:(p)=>({x:ox+(p.x-cx)*scale, y:oy+(p.y-cy)*scale})};
+}
+
+function drawMap(V, W, H){
+  if(S.mapstyle==="none"){ ctx.fillStyle="#e9e9e9"; ctx.fillRect(0,0,W,H); return true; }
+  ctx.fillStyle="#ececec"; ctx.fillRect(0,0,W,H);
+  const style = "light_nolabels";
+  let z=Math.round(Math.log2(V.scale/TILE_PX)); z=Math.max(1,Math.min(19,z));
+  const n=2**z, tpx=V.scale/n;                            // drawn tile size in px
+  const x0=V.cx - V.ox/V.scale, y0=V.cy - V.oy/V.scale;   // top-left in units
+  const tx0=Math.floor(x0*n), ty0=Math.floor(y0*n);
+  const tx1=Math.floor((x0+W/V.scale)*n), ty1=Math.floor((y0+H/V.scale)*n);
+  let all=true;
+  for(let ty=ty0;ty<=ty1;ty++) for(let tx=tx0;tx<=tx1;tx++){
+    if(ty<0||ty>=n) continue; const wx=((tx%n)+n)%n;
+    const t=getTile(z,wx,ty,style);
+    const px=(tx/n - x0)*V.scale, py=(ty/n - y0)*V.scale;
+    if(t.ok) ctx.drawImage(t.img, Math.floor(px), Math.floor(py), Math.ceil(tpx)+1, Math.ceil(tpx)+1);
+    else all=false;
+  }
+  if(S.mapstyle==="grey") greyTone(W,H);
+  return all;
+}
+/* Positron is near-white; deepen it to the light-grey "MRC" look (white roads on grey). */
+function greyTone(W,H){
+  let id; try{ id=ctx.getImageData(0,0,W,H); }catch(e){ return; }   // tainted canvas: skip
+  const d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    const L=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+    const v=255-(255-L)*1.75 - 4;
+    const c=v<150?150:v>255?255:v;
+    d[i]=c; d[i+1]=c; d[i+2]=c+1>255?255:c+1;
+  }
+  ctx.putImageData(id,0,0);
+}
+
+function routePixels(V){
+  const r=S.rpts.map(V.toPx);
+  return S.round ? chaikin(r,3) : r;
+}
+function strokeRoute(px, w){
+  ctx.save(); ctx.lineJoin="round"; ctx.lineCap="round"; ctx.lineWidth=w; ctx.strokeStyle=S.color;
+  ctx.beginPath(); px.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke(); ctx.restore();
+}
+function star(cx,cy,R,r,rot){
+  ctx.beginPath(); for(let k=0;k<8;k++){const a=rot+k*Math.PI/4, rr=k%2?r:R; ctx.lineTo(cx+rr*Math.cos(a), cy+rr*Math.sin(a));} ctx.closePath(); ctx.fill();
+}
+function drawMarker(p, w){
+  if(S.marker==="none") return;
+  ctx.save(); ctx.fillStyle=S.color;
+  if(S.marker==="dot"){
+    ctx.beginPath(); ctx.arc(p.x,p.y,w*1.6,0,7); ctx.fill();
+    ctx.fillStyle="#fbf7ef"; ctx.beginPath(); ctx.arc(p.x,p.y,w*0.7,0,7); ctx.fill();
+  }else{
+    const R=w*6.5; star(p.x,p.y,R,R*0.3,-Math.PI/2); star(p.x,p.y,R*0.55,R*0.2,-Math.PI/4);
+  }
+  ctx.restore();
+}
+function fitText(text, font, maxW, size, min){
+  let s=size; while(s>min){ ctx.font=`${s}px ${font}`; if(ctx.measureText(text).width<=maxW) break; s-=4; } return s;
+}
+function fmtDate(v){
+  if(!v) return ""; const [y,m,d]=v.split("-").map(Number); return `${d}/${m}/${y}`;
+}
+function drawText(F, W, H){
+  ctx.save(); ctx.fillStyle=TEXT; ctx.textAlign="center"; ctx.textBaseline="top";
+  const title=($("title").value||"").toUpperCase().trim();
+  let y=F.title;
+  if(title){ const s=fitText(title,'"MikkelWind"',W*0.86,160,60); ctx.font=`${s}px "MikkelWind"`; ctx.fillText(title,W/2,y); y+=s*1.02; }
+  const dist=distLabel();
+  if(dist){ ctx.font=`100px "MikkelWind"`; ctx.fillText(dist,W/2, title?y+8:F.dist); }
+  if($("beer").checked){ ctx.font=`68px "MikkelWind"`; ctx.fillText("FREE BEER!", W/2, H*F.beer); }
+  const date=fmtDate($("date").value);
+  if(date){ ctx.textAlign="right"; ctx.textBaseline="bottom"; ctx.font=`58px "MikkelWind"`; ctx.fillText(date, W-40, H-F.dateY); }
+  if(F.attrib && S.mapstyle!=="none"){ ctx.textAlign="left"; ctx.textBaseline="bottom"; ctx.font=`400 17px "Gotham", Arial`;
+    ctx.fillStyle="rgba(20,20,20,.45)"; ctx.fillText("© OpenStreetMap contributors © CARTO", 24, H-14); }
+  ctx.restore();
+}
+function distLabel(){
+  const v=($("dist").value||"").trim().replace(",", "."); if(!v) return "";
+  return /km/i.test(v) ? v.toUpperCase() : `${v} KM`;
+}
+
+/* ---------- render ---------- */
+let raf=0;
+function scheduleDraw(){ if(!raf) raf=requestAnimationFrame(()=>{raf=0; draw();}); }
+function prepareRoute(){
+  if(!S.pts.length) return;
+  const tp=trimPoints(S.pts,S.cum,S.trimS,S.trimE);
+  const lat=S.pts[0].lat, mpu=metresPerUnit(lat);
+  const m=tp.map(merc);
+  S.mpts=m;
+  S.rpts=douglasPeucker(m, S.simplify/mpu);
+}
+function draw(target){
+  if(!S.mpts) return;
+  const F=FORMATS[S.fmt]; const W=F.w, H=F.h;
+  if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
+  const V=computeView(F,W,H); S.view=V;
+  let mapOk=true;
+  if(S.fmt==="route"){ ctx.clearRect(0,0,W,H); }
+  else mapOk=drawMap(V,W,H);
+  const px=routePixels(V);
+  strokeRoute(px, S.width);
+  drawMarker(px[0], S.width);
+  if(S.fmt!=="route") drawText(F,W,H);
+  const st=$("status");
+  if(S.fmt!=="route" && S.mapstyle!=="none" && tileErrors>0 && !mapOk){ st.textContent="Map couldn’t load (offline?). You can still use “No map”."; st.classList.add("warn"); }
+  else if(S.fmt!=="route" && S.mapstyle!=="none" && !mapOk){ st.textContent="Loading map…"; st.classList.remove("warn"); }
+  else { st.textContent = S.fmt==="route" ? "Transparent PNG of just the route, for stickers on photos." : ""; st.classList.remove("warn"); }
+  cv.style.background = S.fmt==="route" ? "repeating-conic-gradient(#ddd 0 25%, #fff 0 50%) 0 0/24px 24px" : "#e9e9e9";
+}
+
+/* ---------- caption ---------- */
+function nextWednesday(){
+  const d=new Date(); const add=(3-d.getDay()+7)%7; d.setDate(d.getDate()+add);
+  return d.toISOString().slice(0,10);
+}
+function captionText(){
+  const t=($("title").value||"").trim();
+  const title=t ? t.replace(/\w\S*/g, w=>w[0].toUpperCase()+w.slice(1).toLowerCase()) : "This week’s route";
+  const dv=$("date").value; let when="This Wednesday";
+  if(dv){ const d=new Date(dv+"T12:00:00"); const days=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    when=`This ${days[d.getDay()]} ${d.getDate()}.${d.getMonth()+1}`; }
+  const lead=($("lead").value||"").trim(); const who=lead ? ` ${lead.startsWith("@")?lead:"@"+lead} leads us on` : " we run";
+  const km=($("dist").value||"").trim().replace(",", ".");
+  const kmTxt = km ? ` a ${km.replace(/\s*km/i,"")} km loop` : " a loop";
+  const time=$("time").value||"18:30";
+  return `${title} ✨ ${when}${who}${kmTxt} starting and finishing at @mikkellerzurich at ${time}.\nFree beer when we’re back. The slowest runner sets the pace 🍻`;
+}
+let capTouched=false;
+function refreshCaption(force){ if(force||!capTouched){ $("cap").value=captionText(); capTouched=false; } }
+
+/* ---------- export ---------- */
+function exportBlob(){
+  return new Promise(res=>{ draw(); cv.toBlob(b=>res(b),"image/png"); });
+}
+function fileName(){
+  const t=($("title").value||"route").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"route";
+  return `mrc-${t}-${S.fmt}.png`;
+}
+async function download(){
+  const b=await exportBlob(); if(!b) return alert("Couldn’t create the image. Try “No map” and save again.");
+  const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=fileName(); document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},2000);
+}
+async function share(){
+  const b=await exportBlob(); if(!b) return download();
+  const f=new File([b], fileName(), {type:"image/png"});
+  if(navigator.canShare && navigator.canShare({files:[f]})){
+    try{ await navigator.share({files:[f]}); }catch(e){ if(e.name!=="AbortError") download(); }
+  } else download();
+}
+
+/* ---------- UI wiring ---------- */
+function seg(id, key, after){
+  const el=$(id);
+  const set=v=>{ S[key]=v; el.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.v===v))); };
+  set(S[key]);
+  el.addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; set(b.dataset.v); after&&after(); savePrefs(); scheduleDraw(); });
+}
+function range(id, key, fmt, conv, after){
+  const el=$(id), out=$(id+"v");
+  const upd=()=>{ S[key]=conv(el.value); out.textContent=fmt(el.value); };
+  el.addEventListener("input", ()=>{ upd(); after&&after(); scheduleDraw(); }); upd();
+}
+
+async function loadFile(file){
+  try{
+    const txt=await file.text(); const g=parseGPX(txt);
+    S.pts=g.pts; S.cum=cumulative(g.pts); S.total=S.cum[S.cum.length-1]; S.name=g.name;
+    S.pan={x:0,y:0}; S.zoom=1; $("zoom").value=100; $("zoomv").textContent="100%";
+    S.trimS=S.trimE=0; ["trimS","trimE"].forEach(i=>{ $(i).value=0; $(i+"v").textContent="0 m"; $(i).max=String(Math.max(50,Math.round(S.total/2/10)*10)); });
+    $("dist").value=(S.total/1000).toFixed(1);
+    if(g.name && !$("title").value) $("title").value=g.name.toUpperCase();
+    if(!$("date").value) $("date").value=nextWednesday();
+    $("editor").classList.remove("hidden"); $("actions").classList.remove("hidden");
+    $("drop").classList.add("hidden");
+    prepareRoute(); refreshCaption(true);
+    await document.fonts.load('100px "MikkelWind"'); draw();
+    cv.scrollIntoView({behavior:"smooth", block:"start"});
+  }catch(e){ alert(e.message||String(e)); }
+}
+
+function init(){
+  loadPrefs();
+  $("width").value=S.width;
+  seg("fmt","fmt");
+  seg("color","color");
+  seg("marker","marker");
+  seg("mapstyle","mapstyle");
+  range("zoom","zoom",v=>v+"%",v=>v/100);
+  range("width","width",v=>v,Number,savePrefs);
+  range("simplify","simplify",v=>v+" m",Number,prepareRoute);
+  range("trimS","trimS",v=>v+" m",Number,prepareRoute);
+  range("trimE","trimE",v=>v+" m",Number,prepareRoute);
+  $("round").addEventListener("change",e=>{S.round=e.target.checked; scheduleDraw();});
+  ["title","dist","date","beer"].forEach(i=>$(i).addEventListener("input",()=>{scheduleDraw(); refreshCaption();}));
+  ["time","lead"].forEach(i=>$(i).addEventListener("input",()=>{refreshCaption(); savePrefs();}));
+  $("cap").addEventListener("input",()=>{capTouched=true;});
+  $("recap").addEventListener("click",()=>refreshCaption(true));
+  $("copy").addEventListener("click",async()=>{ try{ await navigator.clipboard.writeText($("cap").value); $("copy").textContent="Copied ✓"; }catch(e){ $("cap").select(); document.execCommand("copy"); $("copy").textContent="Copied ✓"; } setTimeout(()=>$("copy").textContent="Copy caption",1800); });
+  $("gpx").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadFile(f); e.target.value=""; });
+  const drop=$("drop");
+  ["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault(); drop.classList.add("over");}));
+  ["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault(); drop.classList.remove("over");}));
+  drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) loadFile(f); });
+  $("save").addEventListener("click",download);
+  $("share").addEventListener("click",share);
+
+  // drag to pan, pinch to zoom
+  const ptrs=new Map(); let last=null, pinch0=null, zoom0=1;
+  cv.addEventListener("pointerdown",e=>{ cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); cv.classList.add("dragging");
+    if(ptrs.size===2){ const [a,b]=[...ptrs.values()]; pinch0=Math.hypot(a.x-b.x,a.y-b.y); zoom0=S.zoom; } last={x:e.clientX,y:e.clientY}; });
+  cv.addEventListener("pointermove",e=>{ if(!ptrs.has(e.pointerId)||!S.view) return; ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    const k=cv.width/cv.getBoundingClientRect().width;
+    if(ptrs.size===2 && pinch0){ const [a,b]=[...ptrs.values()]; const z=Math.max(.5,Math.min(2,zoom0*Math.hypot(a.x-b.x,a.y-b.y)/pinch0));
+      S.zoom=z; $("zoom").value=Math.round(z*100); $("zoomv").textContent=Math.round(z*100)+"%"; scheduleDraw(); return; }
+    if(ptrs.size===1 && last){ S.pan.x+=(e.clientX-last.x)*k/S.view.scale; S.pan.y+=(e.clientY-last.y)*k/S.view.scale; last={x:e.clientX,y:e.clientY}; scheduleDraw(); } });
+  const up=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) pinch0=null; if(!ptrs.size){ last=null; cv.classList.remove("dragging"); } else { const v=[...ptrs.values()][0]; last={x:v.x,y:v.y}; } };
+  cv.addEventListener("pointerup",up); cv.addEventListener("pointercancel",up);
+  document.fonts.load('60px "MikkelWind"');
+}
+init();
+</script>
+</body>
+</html>

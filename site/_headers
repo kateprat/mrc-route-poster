@@ -1,0 +1,6 @@
+/*
+  X-Robots-Tag: noindex, nofollow
+  Referrer-Policy: same-origin
+  X-Content-Type-Options: nosniff
+/fonts/*
+  Cache-Control: public, max-age=2592000
