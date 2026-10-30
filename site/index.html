@@ -188,7 +188,8 @@ footer a{color:inherit}
     </div>
   </section>
 
-  <footer>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors, map tiles by <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> and <a href="https://openmaptiles.org" target="_blank" rel="noopener">OpenMapTiles</a>. Your GPX file is never uploaded.</footer>
+  <footer>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors, map tiles by <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> and <a href="https://openmaptiles.org" target="_blank" rel="noopener">OpenMapTiles</a>. Your GPX file is never uploaded.
+    <span id="whoami" class="hidden"><br>Signed in as <strong id="whoemail"></strong> · <a href="/cdn-cgi/access/logout">Sign out</a></span></footer>
 </div>
 
 <div class="actions hidden" id="actions"><div class="wrap">
@@ -551,6 +552,7 @@ async function applyAccess(){
     const r=await fetch("/cdn-cgi/access/get-identity",{credentials:"include",cache:"no-store"});
     if(r.ok){ const j=await r.json(); email=String(j.email||"").toLowerCase(); }
   }catch(e){}
+  if(email){ $("whoemail").textContent=email; $("whoami").classList.remove("hidden"); }
   const allowed=CAPTION_EMAILS.map(e=>e.toLowerCase()).includes(email);
   $("capcard").classList.toggle("hidden",!allowed);
   $("creditnote").classList.toggle("hidden",allowed);

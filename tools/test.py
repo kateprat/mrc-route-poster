@@ -35,7 +35,7 @@ try:
         pg.wait_for_selector("#editor:not(.hidden)")
         pg.wait_for_timeout(4000)
         print("map loaded:", pg.evaluate("M.ready"), "| map error:", pg.evaluate("M.error"))
-        print(f"kate: caption visible={pg.is_visible('#capcard')} credit note visible={pg.is_visible('#creditnote')}")
+        print(f"kate: caption visible={pg.is_visible('#capcard')} credit note visible={pg.is_visible('#creditnote')} footer={pg.inner_text('#whoami')!r}")
         print("distance field:", pg.input_value("#dist"), "| title:", pg.input_value("#title"), "| date:", pg.input_value("#date"))
         print("caption:", pg.input_value("#cap"))
         pg.screenshot(path=os.path.join(OUT, "phone-editor.png"), full_page=True)
