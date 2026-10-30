@@ -33,7 +33,7 @@ It is a single static page with no server, no database and no running costs. Set
 
 ## Keep this repository private
 
-The Gotham and Windsor fonts are commercial fonts supplied by Mikkeller for brand use. Keep the repo private and the live site behind Cloudflare Access (see `SETUP.md`) so they aren't published openly.
+The Gotham and Windsor fonts are commercial fonts supplied by Mikkeller for brand use. Keep the repo private and the live site (https://mrc-route-poster.kate-pratsinis.workers.dev) behind Cloudflare Access (see `SETUP.md`) so they aren't published openly.
 
 ## Map tiles
 
