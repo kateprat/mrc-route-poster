@@ -23,11 +23,12 @@ It is a single static page with no server, no database and no running costs. Set
 | Path | What's in it |
 |---|---|
 | `site/index.html` | The whole app: layout, styles and code. |
+| `site/vendor/` | MapLibre GL JS, which draws the map. |
 | `site/fonts/` | MikkelWind, Windsor Bold, Gotham Black and Gotham Book. |
 | `site/manifest.webmanifest`, `site/icon-*.png` | Home-screen name and icon. |
 | `site/_headers`, `site/robots.txt` | Keep search engines out. |
 | `wrangler.jsonc` | Cloudflare config: publish `./site`. |
-| `tools/test.py` | End-to-end check in a headless browser, offline, with fake map tiles. |
+| `tools/test.py` | End-to-end check in a headless browser, offline, with locally generated vector map tiles. |
 | `test/sample.gpx` | A test route. |
 
 ## Keep this repository private
@@ -36,7 +37,7 @@ The Gotham and Windsor fonts are commercial fonts supplied by Mikkeller for bran
 
 ## Map tiles
 
-The map comes from CARTO's “Positron (no labels)” basemap, built from OpenStreetMap data, and is toned to light grey in the browser. It's free for low-volume, non-commercial use with attribution. The small credit line at the bottom of each image covers that, so leave it in. If the map can't load (offline), choose **Map → No map**.
+The map is drawn in the phone's browser from [OpenFreeMap](https://openfreemap.org) vector tiles (OpenStreetMap data in the OpenMapTiles format): no API key, no account, no usage limits. The MRC look (grey ground, white streets, no labels) is defined in `mapStyle()` in `site/index.html`; colours are in `PALETTE`. The drawing library is MapLibre GL JS, bundled in `site/vendor/` (BSD licence). OpenStreetMap and OpenMapTiles require a credit, which is the small line at the bottom of each image, so leave it in. If the map can't load (offline), choose **Map → No map**.
 
 ## Making a change
 

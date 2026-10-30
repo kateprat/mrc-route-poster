@@ -1,4 +1,4 @@
-"""Offline end-to-end check: serves site/ with fake map tiles, loads test/sample.gpx
+"""Offline end-to-end check: serves site/ with locally generated vector map tiles, loads test/sample.gpx
 in headless Chromium, renders every format and saves PNGs to test/out/.
 
     python3 tools/test.py
@@ -14,21 +14,21 @@ time.sleep(1)
 errors = []
 try:
     with sync_playwright() as p:
-        b = p.chromium.launch()
+        b = p.chromium.launch(args=["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
         pg = b.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=2)
         pg.on("pageerror", lambda e: errors.append(str(e)))
         pg.on("console", lambda m: m.type == "error" and errors.append(m.text))
-        tiles = f"http://127.0.0.1:{PORT}/tiles/{{style}}/{{z}}/{{x}}/{{y}}.png"
-        pg.goto(f"http://127.0.0.1:{PORT}/index.html?tiles={tiles}")
+        pg.goto(f"http://127.0.0.1:{PORT}/index.html?source=http://127.0.0.1:{PORT}/tilejson")
         pg.screenshot(path=os.path.join(OUT, "phone-start.png"))
         pg.set_input_files("#gpx", os.path.join(ROOT, "test", "sample.gpx"))
         pg.wait_for_selector("#editor:not(.hidden)")
-        pg.wait_for_timeout(1500)
+        pg.wait_for_timeout(4000)
+        print("map loaded:", pg.evaluate("M.ready"), "| map error:", pg.evaluate("M.error"))
         print("distance field:", pg.input_value("#dist"), "| title:", pg.input_value("#title"), "| date:", pg.input_value("#date"))
         print("caption:", pg.input_value("#cap"))
         pg.screenshot(path=os.path.join(OUT, "phone-editor.png"), full_page=True)
         for fmt in ["feed", "story", "square", "route"]:
-            pg.click(f'#fmt button[data-v="{fmt}"]'); pg.wait_for_timeout(1200)
+            pg.click(f'#fmt button[data-v="{fmt}"]'); pg.wait_for_timeout(2500)
             data = pg.evaluate("document.getElementById('cv').toDataURL('image/png')")
             open(os.path.join(OUT, f"{fmt}.png"), "wb").write(base64.b64decode(data.split(",")[1]))
         # star marker + trim + drag
