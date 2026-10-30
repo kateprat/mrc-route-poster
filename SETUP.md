@@ -12,7 +12,7 @@ This is already done. The steps are here in case it ever needs redoing or moving
 ## 2. Publish it as a Cloudflare Worker
 
 1. https://dash.cloudflare.com → **Workers & Pages → Create** → import a repository → `kateprat/mrc-route-poster`.
-2. Build command: *(leave empty)*. Deploy command: keep the default `npx wrangler deploy`. `wrangler.jsonc` tells Cloudflare to publish the `site` folder.
+2. Build command: *(leave empty)*. Deploy command: keep the default `npx wrangler deploy`. `wrangler.jsonc` tells Cloudflare to publish the `site` folder, run `src/worker.js`, and create the schedule's storage.
 3. Preview builds: off.
 4. **Deploy**. The address is `mrc-route-poster.<account-subdomain>.workers.dev`.
 
@@ -33,6 +33,10 @@ The free plan covers 50 users in total across your Access apps, so the crew hand
 - Send them the link. On first visit they enter their email and the code they receive.
 - iPhone: open in **Safari** → Share → **Add to Home Screen**. Android: Chrome menu → **Add to Home screen** / **Install app**. It shows the Little Dipper icon.
 - Add or remove someone: **Zero Trust → Access → Applications → mrc-route-poster → Policies → Captains**.
+
+## Captains' first visit to the Schedule tab
+
+Each captain picks their name once ("I am Felix") and adds their Instagram handle. If someone picks the wrong name, it can be fixed in the Cloudflare dashboard: **Workers & Pages → mrc-route-poster → Durable Objects → Schedule** (data browser, table `captains`: clear the `email` of the wrong row). Or ask Claude.
 
 ## Updating
 

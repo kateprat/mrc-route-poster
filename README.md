@@ -15,7 +15,17 @@ It replaces the old Inkscape workflow (GPX → SVG converter → Snazzy Maps scr
 - Writes a draft caption with the title, day, distance, @mikkellerzurich, start time, who leads, free beer and “The slowest runner sets the pace”. Six style buttons (Classic, Short, Playful, Newcomers, Who’s in?, Rain or shine) each give a different version; edit it and copy it.
 - **Share** opens the phone's share sheet (Instagram, Photos, WhatsApp…). **Download PNG** saves the file.
 
-It is a single static page with no server, no database and no running costs. Settings like route colour and your handle are remembered on each phone.
+### Schedule tab
+
+Replaces the old `MRC-leads.xlsx` availability sheet (its rows up to January 2027 were imported).
+
+- Each captain links their login email to their name once (Felix, Kate, Ale, Andrea, Fabio, or a new captain) and adds their Instagram handle.
+- For every run: **Coming / Not coming / Don't know**, everyone's answers at a glance, and how many are coming.
+- Any captain can pick the **lead**; the app shows who set it, and the lead is marked as coming.
+- Every Wednesday 18:30 and first Sunday 15:00 appear automatically about three months ahead. Special runs (e.g. the anniversary run) can be added; runs can be retimed, noted or cancelled.
+- The route post takes the **date, start time and “Led by” handle** of the next run from here.
+
+It costs nothing to run: a static page plus a small Cloudflare Worker (`src/worker.js`) that stores the schedule in a SQLite Durable Object, which Cloudflare creates on deploy. Only people let in by Cloudflare Access can use it; the Worker reads their email from the header Access adds. Settings like route colour are remembered on each phone.
 
 ## Folders
 
@@ -26,8 +36,11 @@ It is a single static page with no server, no database and no running costs. Set
 | `site/fonts/` | MikkelWind, Windsor Bold, Gotham Black and Gotham Book. |
 | `site/manifest.webmanifest`, `site/icon-*.png` | Home-screen name and icon. |
 | `site/_headers`, `site/robots.txt` | Keep search engines out. |
-| `wrangler.jsonc` | Cloudflare config: publish `./site`. |
-| `tools/test.py` | End-to-end check in a headless browser, offline, with locally generated vector map tiles. |
+| `src/worker.js` | The schedule API (`/api/*`) and its storage. |
+| `src/seed.json` | The old spreadsheet's runs and answers, imported on first start. |
+| `wrangler.jsonc` | Cloudflare config: the site, the Worker and its storage. |
+| `tools/test.py` | End-to-end check of the route post in a headless browser, offline, with locally generated vector map tiles. |
+| `tools/test_schedule.py` | End-to-end check of the Schedule tab against the Worker running locally (`wrangler dev`). |
 | `test/sample.gpx` | A test route. |
 
 ## Keep this repository private
@@ -40,11 +53,12 @@ The map is drawn in the phone's browser from [OpenFreeMap](https://openfreemap.o
 
 ## Making a change
 
-1. Edit `site/index.html`. The layout per format (where the title, FREE BEER! and the date sit, and the box the route is fitted into) is the `FORMATS` block near the top of the script. The caption styles are in `CAPTIONS`.
+1. Edit `site/index.html`. The layout per format (where the title, FREE BEER! and the date sit, and the box the route is fitted into) is the `FORMATS` block near the top of the script. The caption styles are in `CAPTIONS`; who sees them is `CAPTION_EMAILS`. The schedule screen is `renderSchedule()`, its API is `src/worker.js`.
 2. Optional: run the check
    ```bash
    pip install playwright pillow && python3 -m playwright install chromium
-   python3 tools/test.py        # writes test/out/*.png
+   python3 tools/test.py              # route post, writes test/out/*.png
+   python3 tools/test_schedule.py     # schedule (needs npx wrangler)
    ```
 3. Commit and push to `main`. Cloudflare publishes the new version within a minute or two.
 

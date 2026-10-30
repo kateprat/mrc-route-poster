@@ -19,16 +19,18 @@ try:
         pg.on("pageerror", lambda e: errors.append(str(e)))
         pg.on("console", lambda m: m.type == "error" and errors.append(m.text))
         # pretend Cloudflare Access: who is signed in
+        def no_schedule(route):  # this test serves only site/, without the Worker API
+            route.fulfill(status=200, content_type="application/json", body='{"me":{"email":"","captain":null},"captains":[],"runs":[]}')
         def who(email):
             return lambda route: route.fulfill(status=200, content_type="application/json", body='{"email":"%s"}' % email) if email else route.fulfill(status=404, body="")
         for email, label in [("someone.else@example.com", "other captain"), ("", "no login info")]:
             other = b.new_page(viewport={"width": 390, "height": 844})
-            other.route("**/cdn-cgi/access/get-identity", who(email))
+            other.route("**/cdn-cgi/access/get-identity", who(email)); other.route("**/api/**", no_schedule)
             other.goto(f"http://127.0.0.1:{PORT}/index.html?source=http://127.0.0.1:{PORT}/tilejson")
             other.set_input_files("#gpx", os.path.join(ROOT, "test", "sample.gpx")); other.wait_for_timeout(800)
             print(f"{label}: caption visible={other.is_visible('#capcard')} credit note visible={other.is_visible('#creditnote')}")
             other.close()
-        pg.route("**/cdn-cgi/access/get-identity", who("captain@example.com"))
+        pg.route("**/cdn-cgi/access/get-identity", who("captain@example.com")); pg.route("**/api/**", no_schedule)
         pg.goto(f"http://127.0.0.1:{PORT}/index.html?source=http://127.0.0.1:{PORT}/tilejson")
         pg.screenshot(path=os.path.join(OUT, "phone-start.png"))
         pg.set_input_files("#gpx", os.path.join(ROOT, "test", "sample.gpx"))
