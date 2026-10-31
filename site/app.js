@@ -480,9 +480,12 @@ function renderSchedule(){
         <button type="button" data-s="tbd" aria-pressed="${mine==="tbd"}">Don’t know</button></div>` : ""}
       <ul class="who" aria-label="Captains">${D.captains.map(c=>{ const st=r.avail[c.id]||"no";
         return `<li class="${st}">${esc(c.name)}<span class="sr"> — ${st==="yes"?"coming":st==="tbd"?"don’t know yet":"not coming"}</span></li>`; }).join("")}</ul>
-      <div class="leadrow"><span class="leadlabel">Lead${r.leads.length>1?"s":""}</span>
-        <div class="leadchips" role="group" aria-label="Leads on ${niceDate(r.date)}">${D.captains.map(c=>
-          `<button type="button" data-lead-id="${c.id}" aria-pressed="${r.leads.includes(c.id)}" ${me&&!past?"":"disabled"}>${esc(c.name)}</button>`).join("")}</div></div>
+      ${me&&!past ? `<details class="leadpick">
+        <summary><span class="leadlabel">Lead${r.leads.length>1?"s":""}</span><span class="leadval">${leadNames?esc(leadNames):"No lead yet"}</span></summary>
+        <div class="leadlist" role="group" aria-label="Leads on ${niceDate(r.date)}">${[...D.captains].sort((a,b)=>(r.avail[b.id]==="yes")-(r.avail[a.id]==="yes")).map(c=>
+          `<label class="check"><input type="checkbox" data-lead-id="${c.id}" ${r.leads.includes(c.id)?"checked":""}> ${esc(c.name)}${r.avail[c.id]==="yes"?' <span class="run-meta">coming</span>':""}</label>`).join("")}
+          <button type="button" class="btn ghost" data-leaddone>Done</button></div>
+      </details>` : `<p class="leadstatic"><span class="leadlabel">Lead${r.leads.length>1?"s":""}</span> ${leadNames?esc(leadNames):"No lead yet"}</p>`}
       ${r.leads.length&&r.leadBy?`<p class="run-meta" style="margin:6px 0 0">Set by ${esc(r.leadBy)}</p>`:""}
       ${me && !past ? `<details style="margin-top:8px"><summary>Edit run</summary>
         <div class="grid" style="margin-top:10px">
@@ -497,10 +500,7 @@ function renderSchedule(){
 function initSchedule(){
   $("runs").addEventListener("click",e=>{
     const art=e.target.closest(".run"); if(!art) return;
-    const lb=e.target.closest(".leadchips button");
-    if(lb){ const r=runOn(art.dataset.date), id=Number(lb.dataset.leadId);
-      const leads=r.leads.includes(id) ? r.leads.filter(x=>x!==id) : [...r.leads, id];
-      schedCall("/api/leads",{date:art.dataset.date, leads}); return; }
+    if(e.target.closest("[data-leaddone]")){ e.target.closest("details").open=false; refreshSchedule(); return; }
     const b=e.target.closest(".mine button");
     if(b){ schedCall("/api/status",{date:art.dataset.date, status:b.dataset.s}); return; }
     if(e.target.closest("[data-saverun]")){
@@ -509,6 +509,14 @@ function initSchedule(){
     }
   });
 
+  // ticking a name in the lead dropdown saves straight away; the list stays open for more ticks
+  $("runs").addEventListener("change",async e=>{
+    const cb=e.target.closest("input[data-lead-id]"); if(!cb) return;
+    const art=cb.closest(".run"), date=art.dataset.date;
+    const leads=[...art.querySelectorAll("input[data-lead-id]:checked")].map(x=>Number(x.dataset.leadId));
+    await schedCall("/api/leads",{date, leads});
+    const again=document.querySelector(`.run[data-date="${date}"] .leadpick`); if(again) again.open=true;
+  });
   $("showpast").addEventListener("click",()=>{ SCH.showPast=!SCH.showPast; renderSchedule(); });
   $("newsave").addEventListener("click",async()=>{ if(await schedCall("/api/run",{date:$("newdate").value, time:$("newtime").value, note:$("newnote").value, cancelled:false})){ $("newnote").value=""; $("addrun").open=false; } });
   const tabs={poster:$("tabbtn-poster"), schedule:$("tabbtn-schedule")};
