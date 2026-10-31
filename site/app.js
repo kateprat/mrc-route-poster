@@ -215,12 +215,34 @@ function drawMW(text, x, y, size, align="center"){
   ctx.fillText(base, x0, by);
   for(const m of marks){
     const before=ctx.measureText(base.slice(0,m.i)).width, ch=base[m.i];
-    const cm=ctx.measureText(ch), w=ctx.measureText(base.slice(0,m.i+1)).width-before;
-    const cx=x0+before+w/2, capTop=by-cm.actualBoundingBoxAscent;
-    drawMark(m.kind, cx, capTop, size, w);
+    const t=letterTop(ch, size);                                   // where the ink is at the top of this letter
+    drawMark(m.kind, x0+before+t.cx, by-t.top, size, t.w);
   }
   ctx.restore();
   return full.width;
+}
+/* Measure a letter as drawn: centre and width of its ink in the top fifth (the font leans a
+   little, so the top of a letter is not above the middle of its box), and its height. */
+const _lt=new Map();
+function letterTop(ch, size){
+  const key=ch+"|"+size; if(_lt.has(key)) return _lt.get(key);
+  const c=document.createElement("canvas"), pad=Math.ceil(size*0.5);
+  c.width=Math.ceil(size*1.6)+pad*2; c.height=Math.ceil(size*1.6);
+  const g=c.getContext("2d"); g.font=`${size}px "MikkelWind"`; g.textBaseline="alphabetic"; g.fillStyle="#000";
+  const base=Math.ceil(size*1.2); g.fillText(ch, pad, base);
+  const d=g.getImageData(0,0,c.width,c.height).data, W=c.width;
+  let top=-1, bottom=-1;
+  for(let y=0;y<c.height && top<0;y++) for(let x=0;x<W;x++) if(d[(y*W+x)*4+3]>128){ top=y; break; }
+  for(let y=base;y>top && bottom<0;y--) for(let x=0;x<W;x++) if(d[(y*W+x)*4+3]>128){ bottom=y; break; }
+  // centre: middle of the ink in the top 30% of the letter; spread: from the whole letter's width
+  // (an A is narrow at the top, but its dots should still sit as far apart as on an O)
+  const band=Math.max(2,Math.round((bottom-top)*0.3));
+  let n=0,minx=W,maxx=0,fminx=W,fmaxx=0;
+  for(let y=top;y<=bottom;y++) for(let x=0;x<W;x++) if(d[(y*W+x)*4+3]>128){
+    fminx=Math.min(fminx,x); fmaxx=Math.max(fmaxx,x);
+    if(y<top+band){ n++; minx=Math.min(minx,x); maxx=Math.max(maxx,x); } }
+  const r = n ? {cx:(minx+maxx)/2-pad, top:base-top, w:fmaxx-fminx} : {cx:size*0.3, top:size*0.7, w:size*0.6};
+  _lt.set(key,r); return r;
 }
 function drawMark(kind, cx, capTop, size, w){
   const dotFont=Math.round(size*0.8);
@@ -228,7 +250,7 @@ function drawMark(kind, cx, capTop, size, w){
     ctx.font=`${dotFont}px "MikkelWind"`;
     const pm=ctx.measureText("."), dh=pm.actualBoundingBoxAscent+pm.actualBoundingBoxDescent;
     const cy=capTop-size*0.06-dh/2;
-    for(const dx of [-w*0.2, w*0.2]){
+    for(const dx of [-w*0.22, w*0.22]){
       const px=cx+dx-(pm.actualBoundingBoxRight-pm.actualBoundingBoxLeft)/2;
       const py=cy-(pm.actualBoundingBoxDescent-pm.actualBoundingBoxAscent)/2;
       ctx.fillText(".", px, py);
