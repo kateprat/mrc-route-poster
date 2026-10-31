@@ -59,7 +59,18 @@ try:
         first = kate.locator(".run").first
         check(first.locator(".leadval").inner_text() == "Kate & Fabio", f"two leads on one run: {first.locator('.leadval').inner_text()}")
         check("Set by Kate" in first.inner_text(), "shows who set it")
-        check(first.locator(".who li", has_text="Fabio").get_attribute("class") == "yes", "second lead marked as coming")
+        check(first.locator(".who li", has_text="Fabio").get_attribute("class") == "yes", "Fabio (coming in the sheet) stays coming")
+        # Ale isn't coming: picking her as lead must not change her answer, but the run should flag it
+        first.locator(".leadpick summary").click(); first.locator(".leadlist label", has_text="Ale").locator("input").check(); kate.wait_for_timeout(700)
+        first = kate.locator(".run").first
+        check(first.locator(".who li", has_text="Ale").get_attribute("class") == "no", "picking Ale as lead doesn't mark her as coming")
+        check(first.locator(".leadwarn").count() == 1 and "Ale isn’t marked as coming" in first.locator(".leadwarn").inner_text(), f"warning shown: {first.locator('.leadwarn').inner_text() if first.locator('.leadwarn').count() else None!r}")
+        check("not coming" in first.locator(".leadlist label", has_text="Ale").inner_text(), "dropdown shows each captain's own answer")
+        first.locator(".leadlist label", has_text="Ale").locator("input").uncheck(); kate.wait_for_timeout(700)
+        first = kate.locator(".run").first
+        check(first.locator(".leadwarn").count() == 0, "warning gone once Ale isn't lead")
+        first.locator("[data-leaddone]").click(); kate.wait_for_timeout(300)
+        first = kate.locator(".run").first
         first.locator(".leadpick summary").click(); first.locator(".leadlist label", has_text="Fabio").locator("input").uncheck(); kate.wait_for_timeout(700)
         check(kate.locator(".run").first.locator(".leadval").inner_text() == "Kate", "unticking removes a lead")
         kate.locator(".run").first.locator(".leadlist label", has_text="Fabio").locator("input").check(); kate.wait_for_timeout(700)

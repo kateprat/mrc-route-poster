@@ -416,6 +416,7 @@ function niceDate(iso){ const d=new Date(iso+"T12:00:00"); return `${DAYS[d.getD
 function nextRun(){ return SCH.data ? SCH.data.runs.find(r=>r.date>=SCH.today && !r.cancelled) : null; }
 function runOn(date){ return SCH.data ? SCH.data.runs.find(r=>r.date===date) : null; }
 function captain(id){ return SCH.data ? SCH.data.captains.find(c=>c.id===id) : null; }
+const statusText = st => st==="yes" ? "coming" : st==="tbd" ? "doesn’t know yet" : "not coming";
 /* "Kate", "Kate & Felix", "Kate, Felix & Ale" */
 function names(ids){ const n=(ids||[]).map(captain).filter(Boolean).map(c=>c.name); return n.length<2 ? (n[0]||"") : n.slice(0,-1).join(", ")+" & "+n[n.length-1]; }
 
@@ -483,9 +484,11 @@ function renderSchedule(){
       ${me&&!past ? `<details class="leadpick">
         <summary><span class="leadlabel">Lead${r.leads.length>1?"s":""}</span><span class="leadval">${leadNames?esc(leadNames):"No lead yet"}</span></summary>
         <div class="leadlist" role="group" aria-label="Leads on ${niceDate(r.date)}">${[...D.captains].sort((a,b)=>(r.avail[b.id]==="yes")-(r.avail[a.id]==="yes")).map(c=>
-          `<label class="check"><input type="checkbox" data-lead-id="${c.id}" ${r.leads.includes(c.id)?"checked":""}> ${esc(c.name)}${r.avail[c.id]==="yes"?' <span class="run-meta">coming</span>':""}</label>`).join("")}
+          `<label class="check"><input type="checkbox" data-lead-id="${c.id}" ${r.leads.includes(c.id)?"checked":""}> ${esc(c.name)} <span class="run-meta">${statusText(r.avail[c.id])}</span></label>`).join("")}
           <button type="button" class="btn ghost" data-leaddone>Done</button></div>
       </details>` : `<p class="leadstatic"><span class="leadlabel">Lead${r.leads.length>1?"s":""}</span> ${leadNames?esc(leadNames):"No lead yet"}</p>`}
+      ${(()=>{ const unsure=r.leads.filter(id=>r.avail[id]!=="yes"); return unsure.length && !past && !r.cancelled
+        ? `<p class="leadwarn">Lead ${esc(names(unsure))} ${unsure.length>1?"aren’t":"isn’t"} marked as coming.</p>` : ""; })()}
       ${r.leads.length&&r.leadBy?`<p class="run-meta" style="margin:6px 0 0">Set by ${esc(r.leadBy)}</p>`:""}
       ${me && !past ? `<details style="margin-top:8px"><summary>Edit run</summary>
         <div class="grid" style="margin-top:10px">

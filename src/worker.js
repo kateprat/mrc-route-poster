@@ -115,11 +115,8 @@ export class Schedule extends DurableObject {
     const ids = [...new Set((Array.isArray(leads) ? leads : []).map(Number))];
     for (const id of ids) if (!this.sql.exec("SELECT 1 FROM captains WHERE id = ?", id).toArray().length) throw new HttpError(404, "Unknown captain.");
     this.sql.exec("DELETE FROM leads WHERE date = ?", date);
-    for (const id of ids) {
-      this.sql.exec("INSERT INTO leads (date, captain) VALUES (?, ?)", date, id);
-      // Whoever leads is obviously coming.
-      this.sql.exec("INSERT OR REPLACE INTO avail (date, captain, status) VALUES (?, ?, 'yes')", date, id);
-    }
+    // Picking a lead doesn't answer for them: their own Coming / Not coming stays as they set it.
+    for (const id of ids) this.sql.exec("INSERT INTO leads (date, captain) VALUES (?, ?)", date, id);
     this.sql.exec("UPDATE runs SET lead_by = ?, lead_at = ? WHERE date = ?", ids.length ? me.name : null, new Date().toISOString(), date);
   }
 
