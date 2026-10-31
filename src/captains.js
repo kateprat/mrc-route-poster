@@ -5,7 +5,7 @@
 // Every email here must also be in the Cloudflare Access policy "MRC-captains",
 // otherwise that person can't log in at all.
 export default [
-  { name: "Felix",  emails: [],                            handle: "" },
+  { name: "Felix",  emails: ["captain@example.com"],              handle: "" },
   { name: "Kate",   emails: ["captain@example.com"],  handle: "@kates.turn" },
   { name: "Ale",    emails: [],                            handle: "" },
   { name: "Andrea", emails: [],                            handle: "" },
