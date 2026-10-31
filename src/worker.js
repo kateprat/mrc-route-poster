@@ -1,4 +1,4 @@
-// MRC Route Poster: serves the app (./site) and the captains' schedule API (/api/*).
+// MRC ZH: serves the app (./site) and the captains' schedule API (/api/*).
 //
 // Who is calling: Cloudflare Access sits in front of the whole app and adds the
 // signed-in email as the `cf-access-authenticated-user-email` header. Requests

@@ -1,6 +1,6 @@
 {
-  "name": "MRC Route Poster",
-  "short_name": "Route Poster",
+  "name": "MRC ZH",
+  "short_name": "MRC ZH",
   "description": "Turn a GPX file into a Mikkeller Run Club route post.",
   "start_url": "./",
   "display": "standalone",

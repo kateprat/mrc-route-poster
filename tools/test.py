@@ -72,6 +72,20 @@ try:
         pg.click("#beerreset"); pg.wait_for_timeout(300)
         check(pg.evaluate("S.beer.feed") is None and not pg.is_visible("#beerreset") and pg.input_value("#beersize") == "100" and pg.input_value("#beerrot") == "0", "FREE BEER! back in place, size and angle reset")
 
+        # drag the title and the distance, then put them back
+        for key, ddx, ddy in (("dist", -90, 380), ("title", 60, 200)):
+            pg.evaluate("document.getElementById('cv').scrollIntoView({block:'start'})"); pg.wait_for_timeout(200)
+            h = pg.evaluate(f"S.textHits.{key}"); box = pg.locator("#cv").bounding_box(); k = box["width"] / 1080
+            sx, sy = box["x"] + (h["x0"] + h["x1"]) / 2 * k, box["y"] + (h["y0"] + h["y1"]) / 2 * k
+            pg.mouse.move(sx, sy); pg.mouse.down(); pg.mouse.move(sx + ddx * k, sy + ddy * k, steps=6); pg.mouse.up(); pg.wait_for_timeout(300)
+            m = pg.evaluate(f"moveOf('{key}')")
+            check(abs(m["dx"] - ddx) < 3 and abs(m["dy"] - ddy) < 3, f"{key} dragged by {m}")
+        check(pg.evaluate("S.pan.x === 0 && S.pan.y === 0") and pg.evaluate("S.beer.feed") is None, "map and FREE BEER! stay put while dragging text")
+        check(pg.is_visible("#beerreset"), "'Put text back in place' appears")
+        save(pg, "feed-text-moved.png")
+        pg.click("#beerreset"); pg.wait_for_timeout(300)
+        check(pg.evaluate("moveOf('title').dx===0 && moveOf('dist').dy===0") and not pg.is_visible("#beerreset"), "title and distance back in place")
+
         # dragging elsewhere still moves the map
         pg.locator("#cv").scroll_into_view_if_needed(); box = pg.locator("#cv").bounding_box()
         pg.mouse.move(box["x"] + 60, box["y"] + 260); pg.mouse.down(); pg.mouse.move(box["x"] + 100, box["y"] + 230, steps=5); pg.mouse.up()

@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>MRC Route Poster</title>
+<title>MRC ZH</title>
 <meta name="description" content="Turn a GPX file into a Mikkeller Run Club route post.">
 <meta name="theme-color" content="#0f0f54">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Route Poster">
+<meta name="apple-mobile-web-app-title" content="MRC ZH">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -154,7 +154,7 @@ footer a{color:inherit}
 <body>
 <div class="wrap">
   <header>
-    <h1>Route <span>Poster</span></h1>
+    <h1>MRC <span>ZH</span></h1>
     <p>Mikkeller Run Club Zürich</p>
   </header>
 
@@ -181,7 +181,7 @@ footer a{color:inherit}
         <button type="button" data-v="route" aria-pressed="false">Route only</button>
       </div>
       <div class="preview"><canvas id="cv" width="1080" height="1350" aria-label="Post preview"></canvas></div>
-      <p class="hint">Drag the map to move it. Drag “FREE BEER!” to put it somewhere else; with two fingers on it you can also turn and resize it.</p>
+      <p class="hint">Drag the map to move it. Drag the title, the distance or “FREE BEER!” to put them somewhere else; with two fingers on “FREE BEER!” you can also turn and resize it.</p>
       <p class="status" id="status" role="status"></p>
       <div class="grid" id="beerctl" style="margin:6px 0 4px">
         <div class="full"><label style="margin:0">“FREE BEER!”</label></div>
@@ -190,7 +190,7 @@ footer a{color:inherit}
         <div><div class="row" style="margin:0"><label for="beerrot">Angle</label><span class="val" id="beerrotv">0°</span></div>
           <input id="beerrot" type="range" min="-45" max="45" step="1" value="0"></div>
       </div>
-      <div style="text-align:center"><button type="button" class="btn ghost hidden" id="beerreset">Put “FREE BEER!” back</button></div>
+      <div style="text-align:center"><button type="button" class="btn ghost hidden" id="beerreset">Put text back in place</button></div>
       <div class="row" style="margin-top:4px">
         <label for="zoom">Zoom</label><span class="val" id="zoomv">100%</span>
       </div>

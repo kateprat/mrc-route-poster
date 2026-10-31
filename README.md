@@ -1,4 +1,4 @@
-# MRC Route Poster
+# MRC ZH (mrc-route-poster)
 
 A phone app for the Mikkeller Run Club Zürich captains: choose a GPX file, type the title, and get a route post in the MRC style, ready to share to Instagram.
 
@@ -12,7 +12,7 @@ Everything here stays on your own phone; nobody else sees your edits.
 
 - Reads the GPX on the phone (nothing is uploaded): the **distance** comes straight from the GPX, the **title** from its name (`261014_MRC_LITTLE-DIPPER` becomes LITTLE DIPPER, editable), the **date** from the next run in the schedule.
 - Draws the MRC grey street map with the route on top in **burgundy `#882c29`** or **blue `#3584ba`**.
-- Title, distance, **FREE BEER!** and date in **MikkelWind**, like the earlier route posts. FREE BEER! is always there; drag it to move it, turn and resize it with two fingers or the Size and Angle sliders, and “Put FREE BEER! back” returns it to its usual spot.
+- Title, distance, **FREE BEER!** and date in **MikkelWind**, like the earlier route posts. Drag the title or the distance to move them; “Put text back in place” resets title, distance and FREE BEER!. FREE BEER! is always there; drag it to move it, turn and resize it with two fingers or the Size and Angle sliders, and “Put FREE BEER! back” returns it to its usual spot.
 - **Two route options:** add a second GPX; it's drawn in the other colour and both distances are shown, each in its route's colour.
 - Formats: **Post 4:5** (1080×1350), **Story 9:16** (1080×1920), **Square** (1080×1080), and **Route only**: a transparent PNG of just the line(s), to put on a group photo.
 - Drag the map to move it, pinch or use the slider to zoom.

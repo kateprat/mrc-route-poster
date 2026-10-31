@@ -1,5 +1,5 @@
 "use strict";
-/* MRC Route Poster: GPX -> branded route post, plus the captains' schedule.
+/* MRC ZH: GPX -> branded route post, plus the captains' schedule.
    Layout per format: FORMATS. Map look: PALETTE / mapStyle(). Schedule: renderSchedule(). */
 
 /* ---------- constants ---------- */
@@ -23,6 +23,7 @@ const S = {
   fmt: "feed", color: COLORS[0], mapstyle: "grey",   // always the MRC grey map
   zoom: 1, ...ADV_DEFAULTS,
   pan: {x:0, y:0},   // mercator units
+  moved: {},         // per format: {title:{dx,dy}, dist:{dx,dy}} once someone drags the title or the distance
   beer: {},          // per format: {x,y,scale,rot} once someone moves/turns/resizes FREE BEER!, else default
 };
 const $ = id => document.getElementById(id);
@@ -289,19 +290,37 @@ function syncBeerControls(){
   $("beerrot").value=Math.round(b.rot); $("beerrotv").textContent=Math.round(b.rot)+"°";
 }
 
+/* Title and distance can be dragged; the offsets are per format, and "Put text back" clears them. */
+function moveOf(key){ return ((S.moved[S.fmt]||{})[key]) || {dx:0, dy:0}; }
+function moveText(key, ddx, ddy){
+  const F=FORMATS[S.fmt], m=moveOf(key), h=(S.textHits||{})[key];
+  let dx=m.dx+ddx, dy=m.dy+ddy;
+  if(h){ // keep the text's centre on the image
+    const cx=(h.x0+h.x1)/2-m.dx, cy=(h.y0+h.y1)/2-m.dy;
+    dx=Math.max(40-cx, Math.min(F.w-40-cx, dx)); dy=Math.max(40-cy, Math.min(F.h-40-cy, dy));
+  }
+  (S.moved[S.fmt] ||= {})[key]={dx, dy}; scheduleDraw();
+}
+function textMoved(){ return !!S.beer[S.fmt] || !!S.moved[S.fmt]; }
+
 function drawText(F, W, H){
   ctx.save(); ctx.fillStyle=TEXT; ctx.textAlign="center"; ctx.textBaseline="top";
   const title=($("title").value||"").toUpperCase().trim();
+  S.textHits={};
+  const mt=moveOf("title"), md=moveOf("dist");
   let y=F.title;
-  if(title){ const s=fitText(title,'"MikkelWind"',W*0.86,160,60); drawMW(title,W/2,y,s); y+=s*1.02; }
-  const dy=title?y+8:F.dist;
+  if(title){ const s=fitText(title,'"MikkelWind"',W*0.86,160,60); drawMW(title,W/2+mt.dx,y+mt.dy,s);
+    ctx.font=`${s}px "MikkelWind"`; const tw=ctx.measureText(mwSplit(title).base).width;
+    S.textHits.title={x0:W/2+mt.dx-tw/2, x1:W/2+mt.dx+tw/2, y0:y+mt.dy, y1:y+mt.dy+s}; y+=s*1.02; }
+  const dy=(title?y+8:F.dist)+md.dy, dxc=W/2+md.dx;
   // distance(s): one route in black, two routes each in their route colour
   ctx.font=`100px "MikkelWind"`;
-  if(S.routes.length===1){ drawMW(`${kmText(S.routes[0])} KM`, W/2, dy, 100); }
+  if(S.routes.length===1){ const t=`${kmText(S.routes[0])} KM`; drawMW(t, dxc, dy, 100);
+    ctx.font=`100px "MikkelWind"`; const w=ctx.measureText(t).width; S.textHits.dist={x0:dxc-w/2, x1:dxc+w/2, y0:dy, y1:dy+100}; }
   else if(S.routes.length===2){
     const parts=[[`${kmText(S.routes[0])} KM`,routeColor(0)],["  /  ",TEXT],[`${kmText(S.routes[1])} KM`,routeColor(1)]];
     let size=100, total; do{ ctx.font=`${size}px "MikkelWind"`; total=parts.reduce((t,[s])=>t+ctx.measureText(s).width,0); size-=6; }while(total>W*0.9 && size>50);
-    let x=W/2-total/2; ctx.textAlign="left";
+    let x=dxc-total/2; ctx.textAlign="left"; S.textHits.dist={x0:x, x1:x+total, y0:dy, y1:dy+size};
     for(const [s,c] of parts){ ctx.fillStyle=c; ctx.fillText(s,x,dy); x+=ctx.measureText(s).width; }
     ctx.textAlign="center"; ctx.fillStyle=TEXT;
   }
@@ -337,7 +356,7 @@ function draw(){
   // second route first, so the main route sits on top where they share streets
   for(let i=S.rpts.length-1;i>=0;i--){ let px=S.rpts[i].map(V.toPx); if(S.round) px=chaikin(px,3); strokeRoute(px, S.width, routeColor(i)); }
   if(S.fmt!=="route") drawText(F,W,H);
-  $("beerreset").classList.toggle("hidden", !S.beer[S.fmt] || S.fmt==="route");
+  $("beerreset").classList.toggle("hidden", !textMoved() || S.fmt==="route");
   $("beerctl").classList.toggle("hidden", S.fmt==="route");
   const st=$("status");
   if(S.fmt!=="route" && M.error && !M.ready){ st.textContent="Map couldn’t load. Check your connection and reload."; st.classList.add("warn"); }
@@ -392,7 +411,7 @@ function routesChanged(){
 async function loadFile(file){
   try{
     const r=await readRoute(file);
-    S.routes=[r]; S.zoom=1; $("zoom").value=100; $("zoomv").textContent="100%"; S.beer={}; syncBeerControls();
+    S.routes=[r]; S.zoom=1; $("zoom").value=100; $("zoomv").textContent="100%"; S.beer={}; S.moved={}; syncBeerControls();
     $("title").value=cleanTitle(r.name);
     fillFromSchedule(true);
     if(!$("date").value) $("date").value=nextWednesday();
@@ -622,7 +641,7 @@ function init(){
   range("trimE","trimE",v=>v+" m",Number,prepareRoute);
   $("round").addEventListener("change",e=>{S.round=e.target.checked; scheduleDraw();});
   $("advreset").addEventListener("click",resetAdvanced);
-  $("beerreset").addEventListener("click",()=>{ delete S.beer[S.fmt]; syncBeerControls(); scheduleDraw(); });
+  $("beerreset").addEventListener("click",()=>{ delete S.beer[S.fmt]; delete S.moved[S.fmt]; syncBeerControls(); scheduleDraw(); });
   $("beersize").addEventListener("input",e=>setBeer({scale:e.target.value/100}));
   $("beerrot").addEventListener("input",e=>setBeer({rot:Number(e.target.value)}));
   $("fmt").addEventListener("click",()=>setTimeout(syncBeerControls,0));
@@ -637,14 +656,18 @@ function init(){
   $("save").addEventListener("click",download);
   $("share").addEventListener("click",share);
 
-  // One finger: drag the map, or FREE BEER! when the finger starts on it.
+  // One finger: drag the map, or FREE BEER! / the title / the distance when the finger starts on it.
   // Two fingers: pinch the map to zoom, or turn + resize FREE BEER! when the gesture started on it.
-  const ptrs=new Map(); let last=null, g0=null, beerMode=false;
+  const ptrs=new Map(); let last=null, g0=null, beerMode=false, textKey=null;
   const toCanvas=(x,y)=>{ const r=cv.getBoundingClientRect(), k=cv.width/r.width; return {x:(x-r.left)*k, y:(y-r.top)*k}; };
   const onBeer=(x,y)=>{ const h=S.beerHit; if(!h) return false; const c=toCanvas(x,y); return Math.hypot(c.x-h.cx,c.y-h.cy) < h.r+40; };
+  const onText=(x,y)=>{ const c=toCanvas(x,y), pad=24;
+    for(const [k,h] of Object.entries(S.textHits||{})) if(c.x>h.x0-pad && c.x<h.x1+pad && c.y>h.y0-pad && c.y<h.y1+pad) return k;
+    return null; };
   const twoFinger=()=>{ const [a,b]=[...ptrs.values()]; return {d:Math.hypot(a.x-b.x,a.y-b.y), ang:Math.atan2(b.y-a.y,b.x-a.x)}; };
   cv.addEventListener("pointerdown",e=>{ try{ cv.setPointerCapture(e.pointerId); }catch(err){} ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); cv.classList.add("dragging");
-    if(ptrs.size===1) beerMode=onBeer(e.clientX,e.clientY);
+    if(ptrs.size===1){ beerMode=S.fmt!=="route" && onBeer(e.clientX,e.clientY); textKey=(!beerMode && S.fmt!=="route") ? onText(e.clientX,e.clientY) : null; }
+    if(ptrs.size===2) textKey=null;
     if(ptrs.size===2){ const t=twoFinger(); const bs=beerState(); g0={d:t.d, ang:t.ang, zoom:S.zoom, scale:bs.scale, rot:bs.rot}; }
     last={x:e.clientX,y:e.clientY}; });
   cv.addEventListener("pointermove",e=>{ if(!ptrs.has(e.pointerId)||!S.view) return; ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -656,9 +679,10 @@ function init(){
     if(ptrs.size===1 && last){
       const dx=(e.clientX-last.x)*k, dy=(e.clientY-last.y)*k; last={x:e.clientX,y:e.clientY};
       if(beerMode){ const b=beerState(); setBeer({x:b.x+dx, y:b.y+dy}); }
+      else if(textKey) moveText(textKey, dx, dy);
       else { S.pan.x+=dx/S.view.scale; S.pan.y+=dy/S.view.scale; scheduleDraw(); }
     } });
-  const up=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) g0=null; if(!ptrs.size){ last=null; beerMode=false; cv.classList.remove("dragging"); } else { const v=[...ptrs.values()][0]; last={x:v.x,y:v.y}; } };
+  const up=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) g0=null; if(!ptrs.size){ last=null; beerMode=false; textKey=null; cv.classList.remove("dragging"); } else { const v=[...ptrs.values()][0]; last={x:v.x,y:v.y}; } };
   cv.addEventListener("pointerup",up); cv.addEventListener("pointercancel",up);
   document.fonts.load('60px "MikkelWind"');
 }
