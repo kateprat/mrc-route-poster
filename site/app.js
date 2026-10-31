@@ -455,7 +455,7 @@ document.addEventListener("visibilitychange", refreshSchedule);
 
 /* Each captain's state on a run: no -> tbd -> yes -> lead -> no (tap their name to move on). */
 const CYCLE=["no","tbd","yes","lead"];
-const STATE_TEXT={no:"not coming", tbd:"doesn’t know yet", yes:"coming", lead:"leading"};
+const STATE_TEXT={no:"not coming", tbd:"tbd", yes:"coming", lead:"leading"};
 const stateOf=(r,id)=> r.leads.includes(id) ? "lead" : (r.avail[id]||"no");
 
 function renderSchedule(){

@@ -117,8 +117,8 @@ details[open] summary::after{content:" –"}
 .who button.lead{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .who button:disabled{cursor:default}
 .leadmark{font:900 10px/1 var(--sub);letter-spacing:.1em;text-transform:uppercase;border:1px solid currentColor;border-radius:999px;padding:3px 5px}
-.legend{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--muted);margin:8px 0 0}
-.legend span.k{border-radius:999px;padding:4px 9px;border:1.5px solid var(--line);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:6px 4px;align-items:center;font-size:12px;color:var(--muted);margin:8px 0 0;white-space:nowrap}
+.legend span.k{border-radius:999px;padding:4px 8px;border:1.5px solid var(--line);font-weight:600}
 .leadpick{border:1.5px solid var(--line);border-radius:10px;margin:4px 0 0}
 .leadpick summary{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;cursor:pointer;list-style:none;font:inherit;text-transform:none;letter-spacing:0;color:var(--ink)}
 .leadpick summary::-webkit-details-marker{display:none}
@@ -244,7 +244,7 @@ footer a{color:inherit}
     </div>
     <div class="card hidden" id="schedhelp" style="padding:12px 16px">
       <p style="margin:0;font-size:14px">Tap a name to change it. Anyone can change anyone; each run shows who changed it last.</p>
-      <div class="legend" aria-hidden="true"><span class="k" style="text-decoration:line-through">not coming</span>→<span class="k" style="background:#fbf3b8;border-color:#e2cc2a;color:#1a1714">don’t know</span>→<span class="k" style="background:#357c4f;border-color:#357c4f;color:#fff">coming</span>→<span class="k" style="background:var(--accent);border-color:var(--accent);color:var(--accent-ink)">lead</span></div>
+      <div class="legend" aria-hidden="true"><span class="k" style="text-decoration:line-through">not coming</span>→<span class="k" style="background:#fbf3b8;border-color:#e2cc2a;color:#1a1714">tbd</span>→<span class="k" style="background:#357c4f;border-color:#357c4f;color:#fff">coming</span>→<span class="k" style="background:var(--accent);border-color:var(--accent);color:var(--accent-ink)">lead</span></div>
     </div>
     <p class="status" id="schedstatus" role="status"></p>
     <div id="runs"></div>
