@@ -25,7 +25,7 @@ Replaces the old `MRC-leads.xlsx` availability sheet (its rows up to January 202
 
 - Captains are recognised from their login email (`src/captains.js`); nobody has to pick who they are. A login that isn't in that list can look but not change anything.
 - For every run: **Coming / Not coming / Don't know**, everyone's answers at a glance, and how many are coming.
-- Any captain can pick the **lead**; the app shows who set it, and the lead is marked as coming.
+- Any captain can pick the **leads**: one or several per run (tap names on and off); the app shows who set them, and leads are marked as coming.
 - Every Wednesday 18:30 and first Sunday 15:00 appear automatically about three months ahead. Special runs can be added; runs can be retimed, noted or cancelled.
 - **Live:** while the Schedule is open it picks up other captains’ changes every 15 seconds and when the app comes back to the foreground (paused while you’re editing a run).
 - A **cancelled** run shows a to-do for the captain who was going to lead: post a story, edit the run post, update the board in the bar, tell the other captains.

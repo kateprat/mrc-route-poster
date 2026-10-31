@@ -46,16 +46,24 @@ try:
         check(first.locator(".tag", has_text="Next run").count() == 1, f"next run highlighted: {date}")
         first.locator('.mine button[data-s="yes"]').click(); kate.wait_for_timeout(600)
         check(kate.locator(".run").first.locator('.mine button[data-s="yes"]').get_attribute("aria-pressed") == "true", "Kate marks herself Coming")
-        kate.locator(".run").first.locator("select[data-lead]").select_option(label="Kate ✓"); kate.wait_for_timeout(600)
+        kate.locator(".run").first.locator(".leadchips button", has_text="Kate").click(); kate.wait_for_timeout(600)
         check("Set by Kate" in kate.locator(".run").first.inner_text(), "lead set, shows who set it")
+        kate.locator(".run").first.locator(".leadchips button", has_text="Fabio").click(); kate.wait_for_timeout(600)
+        pressed = kate.locator(".run").first.locator('.leadchips button[aria-pressed="true"]').all_inner_texts()
+        check(pressed == ["Kate", "Fabio"], f"two leads on one run: {pressed}")
+        check(kate.locator(".run").first.locator(".who li", has_text="Fabio").get_attribute("class") == "yes", "second lead marked as coming")
+        kate.locator(".run").first.locator(".leadchips button", has_text="Fabio").click(); kate.wait_for_timeout(600)
+        kate.locator(".run").first.locator(".leadchips button", has_text="Fabio").click(); kate.wait_for_timeout(600)
+        check(kate.locator(".run").first.locator('.leadchips button[aria-pressed="true"]').count() == 2, "tapping a lead again removes it, and adds it back")
 
         # Cancel the second upcoming run after giving it a lead: action item for that lead
         second = kate.locator(".run").nth(1); d2 = second.get_attribute("data-date")
-        second.locator("select[data-lead]").select_option(label="Kate ✓" if "Kate ✓" in second.locator("select[data-lead]").inner_text() else "Kate"); kate.wait_for_timeout(600)
+        second.locator(".leadchips button", has_text="Kate").click(); kate.wait_for_timeout(600)
+        kate.locator(f'.run[data-date="{d2}"] .leadchips button', has_text="Felix").click(); kate.wait_for_timeout(600)
         run2 = kate.locator(f'.run[data-date="{d2}"]')
         run2.locator("details summary").click(); run2.locator('[data-f="cancelled"]').check(); run2.locator("[data-saverun]").click(); kate.wait_for_timeout(700)
         todo = kate.locator(f'.run[data-date="{d2}"] .todo')
-        check(todo.count() == 1 and "To do for Kate" in todo.inner_text() and "Instagram" in todo.inner_text(), f"cancelled run shows action item: {todo.inner_text()[:90] if todo.count() else None!r}")
+        check(todo.count() == 1 and "To do for Felix & Kate" in todo.inner_text() and "Instagram" in todo.inner_text(), f"cancelled run shows action item: {todo.inner_text()[:90] if todo.count() else None!r}")
         kate.screenshot(path=os.path.join(OUT, "schedule-kate.png"), full_page=True)
 
         # Live updates: a second captain has the schedule open while Kate changes her answer
@@ -85,13 +93,13 @@ try:
         kate.click("#tabbtn-poster")
         kate.set_input_files("#gpx", os.path.join(ROOT, "test", "sample.gpx")); kate.wait_for_timeout(2500)
         check(kate.input_value("#date") == date, f"poster date = next run ({kate.input_value('#date')})")
-        check("led by Kate" in kate.inner_text("#nextrun-hint"), f"hint: {kate.inner_text('#nextrun-hint')}")
+        check("led by Kate & Fabio" in kate.inner_text("#nextrun-hint"), f"hint: {kate.inner_text('#nextrun-hint')}")
 
         # An email that isn't in src/captains.js can look but not change anything
         guest = page_for(b, "someone@example.com")
         guest.click("#tabbtn-schedule"); guest.wait_for_timeout(1500)
         check(guest.is_visible("#unlinked") and "someone@example.com" in guest.inner_text("#unlinked"), "unlinked email gets the 'not linked yet' note")
-        check(guest.locator(".mine").count() == 0 and guest.locator("select[data-lead]").first.is_disabled(), "unlinked email can't change anything")
+        check(guest.locator(".mine").count() == 0 and guest.locator(".leadchips button").first.is_disabled(), "unlinked email can't change anything")
         r = guest.evaluate("fetch('/api/status',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({date:'%s',status:'yes'})}).then(r=>r.status)" % date)
         check(r == 403, f"API refuses changes from an unlinked email ({r})")
         guest.close()

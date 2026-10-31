@@ -114,9 +114,13 @@ details[open] summary::after{content:" –"}
 .who li.yes{background:#357c4f;border-color:#357c4f;color:#fff}
 .who li.tbd{background:#fbf3b8;border-color:#e2cc2a;color:#1a1714}
 .who li.no{color:var(--muted);text-decoration:line-through}
-.leadrow{display:flex;align-items:center;gap:10px}
-.leadrow label{margin:0;white-space:nowrap}
-.leadrow select{flex:1}
+.leadrow{display:flex;align-items:flex-start;gap:10px}
+.leadlabel{font-size:13px;font-weight:600;color:var(--muted);padding-top:12px;white-space:nowrap;min-width:44px}
+.leadchips{display:flex;flex-wrap:wrap;gap:6px}
+.leadchips button{appearance:none;border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:8px 12px;min-height:40px;font:600 14px/1 var(--body);cursor:pointer}
+.leadchips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.leadchips button:disabled{cursor:default;opacity:.7}
+.leadchips button:disabled[aria-pressed="false"]{display:none}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .todo{background:#fbf3b8;border:1px solid #e2cc2a;color:#1a1714;border-radius:10px;padding:10px 12px;margin:10px 0 4px;font-size:14px}
 .todo strong{display:block;margin-bottom:2px}

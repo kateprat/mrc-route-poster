@@ -416,6 +416,8 @@ function niceDate(iso){ const d=new Date(iso+"T12:00:00"); return `${DAYS[d.getD
 function nextRun(){ return SCH.data ? SCH.data.runs.find(r=>r.date>=SCH.today && !r.cancelled) : null; }
 function runOn(date){ return SCH.data ? SCH.data.runs.find(r=>r.date===date) : null; }
 function captain(id){ return SCH.data ? SCH.data.captains.find(c=>c.id===id) : null; }
+/* "Kate", "Kate & Felix", "Kate, Felix & Ale" */
+function names(ids){ const n=(ids||[]).map(captain).filter(Boolean).map(c=>c.name); return n.length<2 ? (n[0]||"") : n.slice(0,-1).join(", ")+" & "+n[n.length-1]; }
 
 async function schedCall(path, body){
   const st=$("schedstatus"); st.classList.remove("warn");
@@ -462,10 +464,7 @@ function renderSchedule(){
   $("runs").innerHTML = shown.length ? shown.map(r=>{
     const coming=D.captains.filter(c=>r.avail[c.id]==="yes");
     const mine=me ? (r.avail[me.id]||"") : "";
-    const lead=captain(r.lead);
-    const opts=['<option value="">No lead yet</option>'].concat(
-      [...D.captains].sort((a,b)=>(r.avail[b.id]==="yes")-(r.avail[a.id]==="yes"))
-        .map(c=>`<option value="${c.id}" ${c.id===r.lead?"selected":""}>${esc(c.name)}${r.avail[c.id]==="yes"?" ✓":""}</option>`)).join("");
+    const leadNames=names(r.leads);
     const past=r.date<SCH.today;
     return `<article class="run ${r===nxt?"next":""} ${r.cancelled?"cancelled":""}" data-date="${r.date}">
       <div class="run-head">
@@ -473,7 +472,7 @@ function renderSchedule(){
         <div>${r===nxt?'<span class="tag">Next run</span> ':""}${r.cancelled?'<span class="tag muted">Cancelled</span>':`<span class="run-meta">${coming.length} coming</span>`}</div>
       </div>
       ${r.note?`<p class="run-note">${esc(r.note)}</p>`:""}
-      ${r.cancelled && !past ? `<div class="todo"><strong>To do for ${lead?esc(lead.name):"the captain who was going to lead"}:</strong>
+      ${r.cancelled && !past ? `<div class="todo"><strong>To do for ${leadNames?esc(leadNames):"the captain who was going to lead"}:</strong>
         Post an Instagram story (and edit the run post) saying the run is off and why, update the “next run” board in the bar, and tell the other captains. A cancelled run should stay the exception.</div>` : ""}
       ${me && !past ? `<div class="mine" role="group" aria-label="Your availability on ${niceDate(r.date)}">
         <button type="button" data-s="yes" aria-pressed="${mine==="yes"}">Coming</button>
@@ -481,9 +480,10 @@ function renderSchedule(){
         <button type="button" data-s="tbd" aria-pressed="${mine==="tbd"}">Don’t know</button></div>` : ""}
       <ul class="who" aria-label="Captains">${D.captains.map(c=>{ const st=r.avail[c.id]||"no";
         return `<li class="${st}">${esc(c.name)}<span class="sr"> — ${st==="yes"?"coming":st==="tbd"?"don’t know yet":"not coming"}</span></li>`; }).join("")}</ul>
-      <div class="leadrow"><label for="lead-${r.date}">Lead</label>
-        <select id="lead-${r.date}" data-lead ${me&&!past?"":"disabled"}>${opts}</select></div>
-      ${r.lead&&r.leadBy?`<p class="run-meta" style="margin:6px 0 0">Set by ${esc(r.leadBy)}</p>`:""}
+      <div class="leadrow"><span class="leadlabel">Lead${r.leads.length>1?"s":""}</span>
+        <div class="leadchips" role="group" aria-label="Leads on ${niceDate(r.date)}">${D.captains.map(c=>
+          `<button type="button" data-lead-id="${c.id}" aria-pressed="${r.leads.includes(c.id)}" ${me&&!past?"":"disabled"}>${esc(c.name)}</button>`).join("")}</div></div>
+      ${r.leads.length&&r.leadBy?`<p class="run-meta" style="margin:6px 0 0">Set by ${esc(r.leadBy)}</p>`:""}
       ${me && !past ? `<details style="margin-top:8px"><summary>Edit run</summary>
         <div class="grid" style="margin-top:10px">
           <div><label for="t-${r.date}">Time</label><input id="t-${r.date}" type="time" value="${esc(r.time)}" data-f="time"></div>
@@ -497,6 +497,10 @@ function renderSchedule(){
 function initSchedule(){
   $("runs").addEventListener("click",e=>{
     const art=e.target.closest(".run"); if(!art) return;
+    const lb=e.target.closest(".leadchips button");
+    if(lb){ const r=runOn(art.dataset.date), id=Number(lb.dataset.leadId);
+      const leads=r.leads.includes(id) ? r.leads.filter(x=>x!==id) : [...r.leads, id];
+      schedCall("/api/leads",{date:art.dataset.date, leads}); return; }
     const b=e.target.closest(".mine button");
     if(b){ schedCall("/api/status",{date:art.dataset.date, status:b.dataset.s}); return; }
     if(e.target.closest("[data-saverun]")){
@@ -504,10 +508,7 @@ function initSchedule(){
       schedCall("/api/run",{date:art.dataset.date, time:f("time").value, note:f("note").value, cancelled:f("cancelled").checked});
     }
   });
-  $("runs").addEventListener("change",e=>{
-    const sel=e.target.closest("select[data-lead]"); if(!sel) return;
-    schedCall("/api/lead",{date:sel.closest(".run").dataset.date, lead:sel.value||null});
-  });
+
   $("showpast").addEventListener("click",()=>{ SCH.showPast=!SCH.showPast; renderSchedule(); });
   $("newsave").addEventListener("click",async()=>{ if(await schedCall("/api/run",{date:$("newdate").value, time:$("newtime").value, note:$("newnote").value, cancelled:false})){ $("newnote").value=""; $("addrun").open=false; } });
   const tabs={poster:$("tabbtn-poster"), schedule:$("tabbtn-schedule")};
@@ -619,7 +620,7 @@ function init(){
 function fillFromSchedule(onLoad){
   const n=nextRun();
   const hint=$("nextrun-hint");
-  if(n){ const l=captain(n.lead); hint.textContent=`Next run: ${niceDate(n.date)}, ${n.time}${l?` · led by ${l.name}`:" · no lead picked yet"}`; } else hint.textContent="";
+  if(n){ const l=names(n.leads); hint.textContent=`Next run: ${niceDate(n.date)}, ${n.time}${l?` · led by ${l}`:" · no lead picked yet"}`; } else hint.textContent="";
   if(onLoad && n) $("date").value=n.date;
 }
 

@@ -36,7 +36,11 @@ export class Schedule extends DurableObject {
                                        lead INTEGER, lead_by TEXT, lead_at TEXT);
       CREATE TABLE IF NOT EXISTS avail (date TEXT NOT NULL, captain INTEGER NOT NULL, status TEXT NOT NULL, PRIMARY KEY (date, captain));
       CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT);
+      CREATE TABLE IF NOT EXISTS leads (date TEXT NOT NULL, captain INTEGER NOT NULL, PRIMARY KEY (date, captain));
     `);
+    // A run can have several leads. Move any single lead from the earlier version into the leads table.
+    this.sql.exec("INSERT OR IGNORE INTO leads (date, captain) SELECT date, lead FROM runs WHERE lead IS NOT NULL");
+    this.sql.exec("UPDATE runs SET lead = NULL WHERE lead IS NOT NULL");
     const seeded = this.sql.exec("SELECT v FROM meta WHERE k='seeded'").toArray().length;
     if (seeded) return;
     // First start: import the old spreadsheet (MRC-leads.xlsx), converted to src/seed.json.
@@ -87,8 +91,10 @@ export class Schedule extends DurableObject {
       .map((c) => ({ id: c.id, name: c.name, handle: c.handle || "" }));
     const avail = {};
     for (const a of this.sql.exec("SELECT date, captain, status FROM avail").toArray()) (avail[a.date] ||= {})[a.captain] = a.status;
-    const runs = this.sql.exec("SELECT date, time, note, cancelled, lead, lead_by, lead_at FROM runs ORDER BY date").toArray()
-      .map((r) => ({ date: r.date, time: r.time, note: r.note, cancelled: !!r.cancelled, lead: r.lead ?? null, leadBy: r.lead_by || "", avail: avail[r.date] || {} }));
+    const leads = {};
+    for (const l of this.sql.exec("SELECT date, captain FROM leads ORDER BY captain").toArray()) (leads[l.date] ||= []).push(l.captain);
+    const runs = this.sql.exec("SELECT date, time, note, cancelled, lead_by FROM runs ORDER BY date").toArray()
+      .map((r) => ({ date: r.date, time: r.time, note: r.note, cancelled: !!r.cancelled, leads: leads[r.date] || [], leadBy: r.lead_by || "", avail: avail[r.date] || {} }));
     const me = this.me(viewer.name);
     return { me: { email: viewer.email, captain: me ? { id: me.id, name: me.name, handle: me.handle || "" } : null }, captains, runs };
   }
@@ -100,15 +106,21 @@ export class Schedule extends DurableObject {
     this.sql.exec("INSERT OR REPLACE INTO avail (date, captain, status) VALUES (?, ?, ?)", date, me.id, status);
   }
 
-  setLead(viewer, { date, lead }) {
+  // The leads of a run: any number of captains (none, one, or several).
+  setLeads(viewer, { date, leads, lead }) {
     const me = this.requireMe(viewer);
     if (!isDate(date)) throw new HttpError(400, "Bad date.");
-    const leadId = lead ? Number(lead) : null;
-    if (leadId && !this.sql.exec("SELECT 1 FROM captains WHERE id = ?", leadId).toArray().length) throw new HttpError(404, "Unknown captain.");
-    const changed = this.sql.exec("UPDATE runs SET lead = ?, lead_by = ?, lead_at = ? WHERE date = ?", leadId, leadId ? me.name : null, new Date().toISOString(), date);
-    if (!changed.rowsWritten) throw new HttpError(404, "No run on that date.");
-    // Whoever leads is obviously coming.
-    if (leadId) this.sql.exec("INSERT OR REPLACE INTO avail (date, captain, status) VALUES (?, ?, 'yes')", date, leadId);
+    if (!this.sql.exec("SELECT 1 FROM runs WHERE date = ?", date).toArray().length) throw new HttpError(404, "No run on that date.");
+    if (leads === undefined) leads = lead ? [lead] : [];          // older app version sent a single lead
+    const ids = [...new Set((Array.isArray(leads) ? leads : []).map(Number))];
+    for (const id of ids) if (!this.sql.exec("SELECT 1 FROM captains WHERE id = ?", id).toArray().length) throw new HttpError(404, "Unknown captain.");
+    this.sql.exec("DELETE FROM leads WHERE date = ?", date);
+    for (const id of ids) {
+      this.sql.exec("INSERT INTO leads (date, captain) VALUES (?, ?)", date, id);
+      // Whoever leads is obviously coming.
+      this.sql.exec("INSERT OR REPLACE INTO avail (date, captain, status) VALUES (?, ?, 'yes')", date, id);
+    }
+    this.sql.exec("UPDATE runs SET lead_by = ?, lead_at = ? WHERE date = ?", ids.length ? me.name : null, new Date().toISOString(), date);
   }
 
   saveRun(viewer, { date, time, note, cancelled }) {
@@ -137,7 +149,7 @@ async function api(request, env, url) {
     if (request.method === "GET" && url.pathname === "/api/state") return json(await stub.state(viewer, zurichToday()));
     if (request.method !== "POST") return json({ error: "Not found." }, 404);
     const body = await request.json().catch(() => ({}));
-    const actions = { "/api/status": "setStatus", "/api/lead": "setLead", "/api/run": "saveRun" };
+    const actions = { "/api/status": "setStatus", "/api/leads": "setLeads", "/api/lead": "setLeads", "/api/run": "saveRun" };
     const action = actions[url.pathname];
     if (!action) return json({ error: "Not found." }, 404);
     await stub[action](viewer, body);
