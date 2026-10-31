@@ -31,7 +31,7 @@ The free plan covers 50 users in total across your Access apps, so the crew hand
 ## 4. Share it with the captains
 
 - Send them the link. On first visit they enter their email and the code they receive.
-- iPhone: open in **Safari** → Share → **Add to Home Screen**. Android: Chrome menu → **Add to Home screen** / **Install app**. It shows the Little Dipper icon.
+- iPhone: open in **Safari** → Share → **Add to Home Screen**. Android: Chrome menu → **Add to Home screen** / **Install app**. It shows the MRC Zürich logo.
 - Add or remove someone: see “Adding a captain” below.
 
 ## Adding a captain
