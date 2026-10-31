@@ -35,7 +35,7 @@ It costs nothing to run: a static page plus a small Cloudflare Worker (`src/work
 
 ## Colours
 
-The app uses the Mikkeller brand book: **Blue `#3584ba`** (the blue of the Mikkeller Zürich logo at the bar) on **Paper `#eee5d2`**: plain for tbd (no answer yet), **Moss Green `#357c4f`** for coming, Blue for lead, faded and crossed out for not coming. Dark mode is a warm near-black with the same Blue. Fonts: Windsor for headings, Gotham Black for labels, Gotham Book for text, MikkelWind on the posts. The colours are the variables at the top of `site/index.html`. Route lines on the posts stay Burgundy / Blue. The **⋯ menu** (top right) sets the theme: Auto (follows the phone), Light or Dark, remembered per phone.
+The app uses the Mikkeller brand book: **Blue `#3584ba`** (the blue of the Mikkeller Zürich logo at the bar) on **Paper `#eee5d2`**: plain for tbd (no answer yet), **Moss Green `#357c4f`** for coming, Blue for lead, faded and crossed out for not coming. Dark mode is **Evening Blue `#0f0f54`** with the same Blue. Fonts: Windsor for headings, Gotham Black for labels, Gotham Book for text, MikkelWind on the posts. The colours are the variables at the top of `site/index.html`. Route lines on the posts stay Burgundy / Blue. The **⋯ menu** (top right) sets the theme: Auto (follows the phone), Light or Dark, remembered per phone.
 
 ## Adding a captain or an email
 
