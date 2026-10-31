@@ -473,9 +473,9 @@ setInterval(refreshSchedule, POLL_MS);
 document.addEventListener("visibilitychange", refreshSchedule);
 
 /* Each captain's state on a run: no -> tbd -> yes -> lead -> no (tap their name to move on). */
-const CYCLE=["no","tbd","yes","lead"];
+const CYCLE=["tbd","yes","lead","no"];   // no answer counts as tbd
 const STATE_TEXT={no:"not coming", tbd:"tbd", yes:"coming", lead:"leading"};
-const stateOf=(r,id)=> r.leads.includes(id) ? "lead" : (r.avail[id]||"no");
+const stateOf=(r,id)=> r.leads.includes(id) ? "lead" : (r.avail[id]||"tbd");
 
 function renderSchedule(){
   const D=SCH.data; if(!D) return;

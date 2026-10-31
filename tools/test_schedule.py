@@ -47,19 +47,19 @@ try:
         check(first.locator(".mine, .leadpick").count() == 0, "no separate availability buttons or lead dropdown")
         state = lambda who, d=date: kate.locator(f'.run[data-date="{d}"] .who button', has_text=who).get_attribute("class")
         tap = lambda who, d=date: kate.locator(f'.run[data-date="{d}"] .who button', has_text=who).click()
-        # Ale is 'not coming' in the sheet: tap through the whole cycle
+        # Ale had the sheet's default 0 (no answer) for this run: she starts as tbd; tap through the whole cycle
         seen = [state("Ale")]
         for _ in range(4): tap("Ale"); kate.wait_for_timeout(500); seen.append(state("Ale"))
-        check(seen == ["no", "tbd", "yes", "lead", "no"], f"tapping Ale cycles not coming -> don't know -> coming -> lead -> not coming: {seen}")
+        check(seen == ["tbd", "yes", "lead", "no", "tbd"], f"tapping Ale cycles tbd -> coming -> lead -> not coming -> tbd: {seen}")
         # quick taps are kept in order
-        for _ in range(3): tap("Ale")
+        for _ in range(2): tap("Ale")
         kate.wait_for_timeout(1500)
-        check(state("Ale") == "lead", f"three quick taps land on lead: {state('Ale')}")
+        check(state("Ale") == "lead", f"two quick taps land on lead: {state('Ale')}")
         kate.reload(); kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1200)
         check(state("Ale") == "lead", "saved: still lead after reloading")
         meta = kate.locator(".run").first.locator(".run-meta").last.inner_text()
         check("Lead" in meta and "Ale" in meta and "last change by Kate" in meta, f"run shows lead and who changed it: {meta!r}")
-        tap("Kate"); tap("Kate"); tap("Kate"); kate.wait_for_timeout(1500)   # Kate: no -> tbd -> yes -> lead
+        tap("Kate"); tap("Kate"); kate.wait_for_timeout(1500)   # Kate: tbd -> yes -> lead
         meta = kate.locator(".run").first.locator(".run-meta").last.inner_text()
         check(meta.startswith("Leads:") and "Kate" in meta and "Ale" in meta, f"several leads: {meta!r}")
         coming = kate.locator(".run").first.locator(".run-head").inner_text()

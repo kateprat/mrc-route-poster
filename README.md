@@ -24,7 +24,7 @@ Everything here stays on your own phone; nobody else sees your edits.
 Replaces the old `MRC-leads.xlsx` availability sheet (its rows up to January 2027 were imported).
 
 - Captains are recognised from their login email (`src/captains.js`); nobody has to pick who they are. A login that isn't in that list can look but not change anything.
-- For every run, one row of captain names. **Tap a name** to move that captain on: not coming → tbd → coming → lead → not coming. Any number of leads; leads count as coming.
+- For every run, one row of captain names. **Tap a name** to move that captain on: tbd → coming → lead → not coming → tbd. Everyone starts as tbd (plain, no colour) until they answer. Any number of leads; leads count as coming.
 - **Anyone can change anyone** (e.g. fill in for someone who texted); each run shows who made the last change.
 - Every Wednesday 18:30 and first Sunday 15:00 appear automatically about three months ahead. Special runs can be added; runs can be retimed, noted or cancelled.
 - **Live:** while the Schedule is open it picks up other captains’ changes every 15 seconds and when the app comes back to the foreground (paused while you’re editing a run).
@@ -35,7 +35,7 @@ It costs nothing to run: a static page plus a small Cloudflare Worker (`src/work
 
 ## Colours
 
-The app uses the Mikkeller brand book: **Evening Blue `#0f0f54`** on **Paper `#eee5d2`** for the interface, **Moss Green `#357c4f`** for coming, **Yellow `#f5e14b`** for tbd, Evening Blue for lead. In dark mode the background is Evening Blue with **Peach `#f0b7ad`** highlights. Fonts: Windsor for headings, Gotham Black for labels, Gotham Book for text, MikkelWind on the posts. The colours are the variables at the top of `site/index.html`. Route lines on the posts stay Burgundy / Blue.
+The app uses the Mikkeller brand book: **Evening Blue `#0f0f54`** on **Paper `#eee5d2`** for the interface, plain for tbd (no answer yet), **Moss Green `#357c4f`** for coming, Evening Blue for lead, faded and crossed out for not coming. In dark mode the background is Evening Blue with **Peach `#f0b7ad`** highlights. Fonts: Windsor for headings, Gotham Black for labels, Gotham Book for text, MikkelWind on the posts. The colours are the variables at the top of `site/index.html`. Route lines on the posts stay Burgundy / Blue.
 
 ## Adding a captain or an email
 

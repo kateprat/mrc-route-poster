@@ -53,6 +53,13 @@ export class Schedule extends DurableObject {
       this.sql.exec("INSERT INTO leads (date, captain) VALUES ('2026-09-16', ?)", fabio.id);
       this.sql.exec("INSERT OR REPLACE INTO avail (date, captain, status) VALUES ('2026-09-16', ?, 'yes')", fabio.id);
     });
+    // In the old sheet 0 ("not attending") was the default for anyone who hadn't answered. For runs
+    // still to come that nobody has touched in the app, treat those as "no answer yet" (tbd).
+    this.fixOnce("sheet-default-0-to-tbd", () => {
+      this.sql.exec(`DELETE FROM avail WHERE status = 'no' AND date >= '2026-10-31'
+                     AND date IN (SELECT date FROM runs WHERE changed_by IS NULL)
+                     AND NOT EXISTS (SELECT 1 FROM leads l WHERE l.date = avail.date AND l.captain = avail.captain)`);
+    });
   }
 
   // One-off data corrections: each runs once, recorded in meta.

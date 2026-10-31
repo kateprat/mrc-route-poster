@@ -23,7 +23,7 @@
   --paper:#eee5d2; --panel:#fbf7ef; --ink:#1a1714; --muted:#6b6358; --line:#ddd2bd;
   /* Mikkeller brand book: Paper ground, Evening Blue as the main colour, Moss Green / Yellow for states */
   --burgundy:#882c29; --blue:#3584ba; --accent:#0f0f54; --accent-ink:#eee5d2;
-  --ok:#357c4f; --ok-ink:#ffffff; --maybe:#f5e14b; --maybe-ink:#141414; --lead:#0f0f54; --lead-ink:#eee5d2; --note:#f6efc0; --note-line:#e0cf5a;
+  --ok:#357c4f; --ok-ink:#ffffff; --lead:#0f0f54; --lead-ink:#eee5d2; --note:#f6efc0; --note-line:#e0cf5a;
   --display:"Windsor",Georgia,serif; --sub:"Gotham","Helvetica Neue",Arial,sans-serif; --body:"Gotham","Helvetica Neue",Arial,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
@@ -113,9 +113,9 @@ details[open] summary::after{content:" –"}
 .mine button[aria-pressed="true"][data-s="no"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
 .mine button[aria-pressed="true"][data-s="tbd"]{background:#f5e14b;border-color:#e2cc2a;color:#1a1714}
 .who{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 8px}
-.who button{appearance:none;font:600 14px/1 var(--body);border-radius:999px;padding:0 14px;min-height:44px;border:1.5px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
-.who button.no{text-decoration:line-through}
-.who button.tbd{background:var(--maybe);border-color:var(--maybe);color:var(--maybe-ink)}
+.who button{appearance:none;font:600 14px/1 var(--body);border-radius:999px;padding:0 14px;min-height:44px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.who button.no{text-decoration:line-through;background:transparent;border-style:dashed;color:var(--muted);opacity:.7}
+.who button.tbd{}
 .who button.yes{background:var(--ok);border-color:var(--ok);color:var(--ok-ink)}
 .who button.lead{background:var(--lead);border-color:var(--lead);color:var(--lead-ink)}
 .who button:disabled{cursor:default}
@@ -256,7 +256,7 @@ footer a{color:inherit}
     </div>
     <div class="card hidden" id="schedhelp" style="padding:12px 16px">
       <p style="margin:0;font-size:14px">Tap a name to change it. Anyone can change anyone; each run shows who changed it last.</p>
-      <div class="legend" aria-hidden="true"><span class="k" style="text-decoration:line-through">not coming</span>→<span class="k" style="background:var(--maybe);border-color:var(--maybe);color:var(--maybe-ink)">tbd</span>→<span class="k" style="background:var(--ok);border-color:var(--ok);color:var(--ok-ink)">coming</span>→<span class="k" style="background:var(--lead);border-color:var(--lead);color:var(--lead-ink)">lead</span></div>
+      <div class="legend" aria-hidden="true"><span class="k" style="background:var(--panel);color:var(--ink)">tbd</span>→<span class="k" style="background:var(--ok);border-color:var(--ok);color:var(--ok-ink)">coming</span>→<span class="k" style="background:var(--lead);border-color:var(--lead);color:var(--lead-ink)">lead</span>→<span class="k" style="text-decoration:line-through;border-style:dashed;opacity:.7">not coming</span></div>
     </div>
     <div class="seg" id="schedview" role="group" aria-label="Schedule view" style="margin:12px 0 0">
       <button type="button" data-v="upcoming" aria-pressed="true">Upcoming</button>
