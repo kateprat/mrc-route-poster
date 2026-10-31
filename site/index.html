@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MRC Route Poster</title>
 <meta name="description" content="Turn a GPX file into a Mikkeller Run Club route post.">
-<meta name="theme-color" content="#882c29">
+<meta name="theme-color" content="#0f0f54">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Route Poster">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -21,12 +21,14 @@
 /* Layout: phone-first single column — preview on top, controls in cards below, sticky share bar */
 :root{
   --paper:#eee5d2; --panel:#fbf7ef; --ink:#1a1714; --muted:#6b6358; --line:#ddd2bd;
-  --burgundy:#882c29; --blue:#3584ba; --accent:#882c29; --accent-ink:#fbf7ef;
+  /* Mikkeller brand book: Paper ground, Evening Blue as the main colour, Moss Green / Yellow for states */
+  --burgundy:#882c29; --blue:#3584ba; --accent:#0f0f54; --accent-ink:#eee5d2;
+  --ok:#357c4f; --ok-ink:#ffffff; --maybe:#f5e14b; --maybe-ink:#141414; --lead:#0f0f54; --lead-ink:#eee5d2; --note:#f6efc0; --note-line:#e0cf5a;
   --display:"Windsor",Georgia,serif; --sub:"Gotham","Helvetica Neue",Arial,sans-serif; --body:"Gotham","Helvetica Neue",Arial,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --paper:#1b1715; --panel:#262120; --ink:#f3ecdf; --muted:#b3a897; --line:#3b3431; --accent:#c2524d; --accent-ink:#1b1715; color-scheme:dark}}
-:root[data-theme="dark"]{--paper:#1b1715; --panel:#262120; --ink:#f3ecdf; --muted:#b3a897; --line:#3b3431; --accent:#c2524d; --accent-ink:#1b1715; color-scheme:dark}
+  --paper:#0f0f54; --panel:#18186a; --ink:#eee5d2; --muted:#c7bfd6; --line:#2e2e86; --accent:#f0b7ad; --accent-ink:#0f0f54; --lead:#f0b7ad; --lead-ink:#0f0f54; --note:#2a2a7a; --note-line:#f5e14b; color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#0f0f54; --panel:#18186a; --ink:#eee5d2; --muted:#c7bfd6; --line:#2e2e86; --accent:#f0b7ad; --accent-ink:#0f0f54; --lead:#f0b7ad; --lead-ink:#0f0f54; --note:#2a2a7a; --note-line:#f5e14b; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;
@@ -56,12 +58,13 @@ h2{font-family:var(--sub);font-weight:900;font-size:13px;letter-spacing:.12em;te
 .preview canvas.dragging{cursor:grabbing}
 .hint{color:var(--muted);font-size:13px;margin:8px 2px 0;text-align:center}
 .status{font-size:13px;color:var(--muted);min-height:1.2em;margin:6px 2px 0;text-align:center}
-.status.warn{color:var(--accent)}
+.status.warn{color:var(--burgundy)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .status.warn{color:var(--accent)}}
 
 .seg{display:flex;flex-wrap:wrap;gap:6px}
 .seg button{appearance:none;border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;
   padding:9px 14px;min-height:40px;font:600 14px/1 var(--body);cursor:pointer}
-.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .swatch{width:40px;height:40px;padding:0!important;border-radius:50%!important;display:inline-flex;align-items:center;justify-content:center}
 .swatch span{width:26px;height:26px;border-radius:50%;display:block}
 .swatch[aria-pressed="true"]{background:transparent!important;border:3px solid var(--ink)!important}
@@ -112,9 +115,9 @@ details[open] summary::after{content:" –"}
 .who{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 8px}
 .who button{appearance:none;font:600 14px/1 var(--body);border-radius:999px;padding:0 14px;min-height:44px;border:1.5px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .who button.no{text-decoration:line-through}
-.who button.tbd{background:#fbf3b8;border-color:#e2cc2a;color:#1a1714}
-.who button.yes{background:#357c4f;border-color:#357c4f;color:#fff}
-.who button.lead{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.who button.tbd{background:var(--maybe);border-color:var(--maybe);color:var(--maybe-ink)}
+.who button.yes{background:var(--ok);border-color:var(--ok);color:var(--ok-ink)}
+.who button.lead{background:var(--lead);border-color:var(--lead);color:var(--lead-ink)}
 .who button:disabled{cursor:default}
 .leadmark{font:900 10px/1 var(--sub);letter-spacing:.1em;text-transform:uppercase;border:1px solid currentColor;border-radius:999px;padding:3px 5px}
 .legend{display:flex;flex-wrap:wrap;gap:6px 4px;align-items:center;font-size:12px;color:var(--muted);margin:8px 0 0;white-space:nowrap}
@@ -131,8 +134,17 @@ details[open] summary::after{content:" –"}
 .leadstatic{margin:4px 0 0;font-weight:600}
 .leadwarn{margin:6px 0 0;font-size:13px;color:#1a1714;background:#fbf3b8;border:1px solid #e2cc2a;border-radius:8px;padding:6px 10px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.todo{background:#fbf3b8;border:1px solid #e2cc2a;color:#1a1714;border-radius:10px;padding:10px 12px;margin:10px 0 4px;font-size:14px}
+.todo{background:var(--note);border:1px solid var(--note-line);color:var(--ink);border-radius:10px;padding:10px 12px;margin:10px 0 4px;font-size:14px}
 .todo strong{display:block;margin-bottom:2px}
+.hist-table{width:100%;border-collapse:collapse;font-size:14px}
+.hist-table th,.hist-table td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line)}
+.hist-table th{font:900 11px/1.2 var(--sub);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.hist-table td.n,.hist-table th.n{text-align:right;font-variant-numeric:tabular-nums}
+.hist-month{font:900 12px/1 var(--sub);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:22px 2px 8px}
+.hist-run{display:flex;justify-content:space-between;gap:10px;padding:10px 12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;margin:6px 0;font-size:14px}
+.hist-run .d{font-weight:600;white-space:nowrap}
+.hist-run .x{color:var(--muted);text-align:right}
+.hist-run.cancelled .d{text-decoration:line-through;color:var(--muted)}
 .empty{color:var(--muted);text-align:center;padding:24px 8px}
 footer{color:var(--muted);font-size:12px;text-align:center;margin:24px 0 0}
 footer a{color:inherit}
@@ -244,11 +256,16 @@ footer a{color:inherit}
     </div>
     <div class="card hidden" id="schedhelp" style="padding:12px 16px">
       <p style="margin:0;font-size:14px">Tap a name to change it. Anyone can change anyone; each run shows who changed it last.</p>
-      <div class="legend" aria-hidden="true"><span class="k" style="text-decoration:line-through">not coming</span>→<span class="k" style="background:#fbf3b8;border-color:#e2cc2a;color:#1a1714">tbd</span>→<span class="k" style="background:#357c4f;border-color:#357c4f;color:#fff">coming</span>→<span class="k" style="background:var(--accent);border-color:var(--accent);color:var(--accent-ink)">lead</span></div>
+      <div class="legend" aria-hidden="true"><span class="k" style="text-decoration:line-through">not coming</span>→<span class="k" style="background:var(--maybe);border-color:var(--maybe);color:var(--maybe-ink)">tbd</span>→<span class="k" style="background:var(--ok);border-color:var(--ok);color:var(--ok-ink)">coming</span>→<span class="k" style="background:var(--lead);border-color:var(--lead);color:var(--lead-ink)">lead</span></div>
+    </div>
+    <div class="seg" id="schedview" role="group" aria-label="Schedule view" style="margin:12px 0 0">
+      <button type="button" data-v="upcoming" aria-pressed="true">Upcoming</button>
+      <button type="button" data-v="history" aria-pressed="false">History (12 months)</button>
     </div>
     <p class="status" id="schedstatus" role="status"></p>
+    <div id="history" class="hidden"></div>
     <div id="runs"></div>
-    <div style="text-align:center;margin:8px 0"><button type="button" class="btn ghost" id="showpast">Show past runs</button></div>
+
     <details class="card" id="addrun">
       <summary>Add a special run</summary>
       <div class="grid" style="margin-top:12px">

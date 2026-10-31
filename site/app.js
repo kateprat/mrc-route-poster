@@ -408,7 +408,7 @@ async function loadSecond(file){
 }
 
 /* ---------- schedule (captains' availability + lead) ---------- */
-const SCH={data:null, showPast:false, today:""};
+const SCH={data:null, view:"upcoming", today:""};
 const DAYS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const esc=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function localISO(d=new Date()){ const z=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; }
@@ -463,11 +463,10 @@ function renderSchedule(){
   const me=D.me.captain;
   $("unlinked").classList.toggle("hidden", !!me);
   $("unlinkedemail").textContent=D.me.email;
-  $("schedhelp").classList.toggle("hidden", !me);
-  const runs=D.runs.filter(r=>SCH.showPast ? true : r.date>=SCH.today);
-  const shown=SCH.showPast ? runs.slice(-60) : runs.slice(0,16);
+  $("schedhelp").classList.toggle("hidden", !me || SCH.view==="history");
+  const shown=D.runs.filter(r=>r.date>=SCH.today).slice(0,16);
+  renderHistory();
   const nxt=nextRun();
-  $("showpast").textContent=SCH.showPast ? "Hide past runs" : "Show past runs";
   $("runs").innerHTML = shown.length ? shown.map(r=>{
     const coming=D.captains.filter(c=>["yes","lead"].includes(stateOf(r,c.id)));
     const leadNames=names(r.leads);
@@ -491,6 +490,36 @@ function renderSchedule(){
         </div>
         <div style="margin-top:10px"><button type="button" class="btn ghost" data-saverun>Save</button></div></details>` : ""}
     </article>`; }).join("") : `<p class="empty">No runs to show.</p>`;
+}
+
+/* History: the last 12 months, newest first, grouped by month, plus a tally per captain.
+   "Said coming" is what was in the schedule, not a head count. Leads were not recorded
+   in the old spreadsheet, so "Led" counts from when the app was introduced. */
+function renderHistory(){
+  const D=SCH.data; if(!D) return;
+  const from=new Date(SCH.today+"T12:00:00"); from.setFullYear(from.getFullYear()-1);
+  const fromISO=localISO(from);
+  const past=D.runs.filter(r=>r.date<SCH.today && r.date>=fromISO).reverse();
+  if(!past.length){ $("history").innerHTML='<p class="empty">No past runs yet.</p>'; return; }
+  const held=past.filter(r=>!r.cancelled);
+  const rows=D.captains.map(c=>({name:c.name,
+    led:held.filter(r=>r.leads.includes(c.id)).length,
+    came:held.filter(r=>["yes","lead"].includes(stateOf(r,c.id))).length}));
+  const MONTHS_LONG=["January","February","March","April","May","June","July","August","September","October","November","December"];
+  let html=`<div class="card"><h2>Last 12 months</h2>
+    <p class="run-meta" style="margin:-4px 0 10px">${held.length} runs, ${past.length-held.length} cancelled</p>
+    <table class="hist-table"><thead><tr><th>Captain</th><th class="n">Led</th><th class="n">Said coming</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td>${esc(r.name)}</td><td class="n">${r.led}</td><td class="n">${r.came}</td></tr>`).join("")}</tbody></table>
+    <p class="run-meta" style="margin:10px 0 0">“Led” counts from when leads were first set in this app; the old spreadsheet didn’t record them.</p></div>`;
+  let month="";
+  for(const r of past){
+    const d=new Date(r.date+"T12:00:00"), m=`${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
+    if(m!==month){ month=m; html+=`<h3 class="hist-month">${m}</h3>`; }
+    const n=D.captains.filter(c=>["yes","lead"].includes(stateOf(r,c.id))).length;
+    html+=`<div class="hist-run ${r.cancelled?"cancelled":""}"><span class="d">${niceDate(r.date)} · ${esc(r.time)}</span>
+      <span class="x">${r.cancelled?"Cancelled":`${r.leads.length?`Led by ${esc(names(r.leads))} · `:""}${n} captain${n===1?"":"s"}`}${r.note?`<br>${esc(r.note)}`:""}</span></div>`;
+  }
+  $("history").innerHTML=html;
 }
 
 /* Taps update the screen at once and are sent in order; the server's answer is shown once all are saved. */
@@ -524,7 +553,11 @@ function initSchedule(){
     }
   });
 
-  $("showpast").addEventListener("click",()=>{ SCH.showPast=!SCH.showPast; renderSchedule(); });
+  $("schedview").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return;
+    SCH.view=b.dataset.v; $("schedview").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+    const hist=SCH.view==="history";
+    $("history").classList.toggle("hidden",!hist); ["runs","addrun","schedhelp"].forEach(id=>$(id).classList.toggle("hidden",hist || (id==="schedhelp" && !(SCH.data&&SCH.data.me.captain))));
+    renderSchedule(); });
   $("newsave").addEventListener("click",async()=>{ if(await schedCall("/api/run",{date:$("newdate").value, time:$("newtime").value, note:$("newnote").value, cancelled:false})){ $("newnote").value=""; $("addrun").open=false; } });
   const tabs={poster:$("tabbtn-poster"), schedule:$("tabbtn-schedule")};
   const show=k=>{ for(const [n,b] of Object.entries(tabs)){ b.setAttribute("aria-selected", String(n===k)); $("tab-"+n).classList.toggle("hidden", n!==k); }

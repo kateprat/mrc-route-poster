@@ -95,6 +95,18 @@ try:
         check(kate2.locator(f'.run[data-date="{d3}"] details:not(.leadpick)[open]').count() == 1, "open 'Edit run' isn't wiped by a refresh")
         kate2.close()
 
+        # History: last 12 months, per-captain tally, grouped by month
+        kate.click('#schedview button[data-v="history"]'); kate.wait_for_timeout(400)
+        check(kate.is_visible("#history") and not kate.is_visible("#runs"), "History view replaces the upcoming list")
+        rows = kate.locator("#history .hist-table tbody tr").all_inner_texts()
+        check(len(rows) == 5, f"tally per captain: {rows}")
+        months = kate.locator("#history .hist-month").all_inner_texts()
+        check(len(months) >= 4 and months[0].upper().startswith("OCTOBER"), f"months newest first: {months[:3]}")
+        check(kate.locator("#history .hist-run.cancelled").count() >= 1, "cancelled runs shown as cancelled (4 Oct half marathon)")
+        kate.locator("#history").screenshot(path=os.path.join(OUT, "history.png"))
+        kate.click('#schedview button[data-v="upcoming"]'); kate.wait_for_timeout(300)
+        check(kate.is_visible("#runs") and not kate.is_visible("#history"), "back to Upcoming")
+
         # Add a special run
         kate.click("#addrun summary"); kate.fill("#newdate", "2026-12-24"); kate.fill("#newtime", "10:00"); kate.fill("#newnote", "Christmas Eve jog"); kate.click("#newsave"); kate.wait_for_timeout(800)
         check(kate.locator('.run[data-date="2026-12-24"]').count() == 1, "special run added")
