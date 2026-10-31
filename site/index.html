@@ -109,11 +109,16 @@ details[open] summary::after{content:" –"}
 .mine button[aria-pressed="true"][data-s="yes"]{background:#357c4f;border-color:#357c4f;color:#fff}
 .mine button[aria-pressed="true"][data-s="no"]{background:var(--ink);border-color:var(--ink);color:var(--paper)}
 .mine button[aria-pressed="true"][data-s="tbd"]{background:#f5e14b;border-color:#e2cc2a;color:#1a1714}
-.who{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px;padding:0;list-style:none}
-.who li{font-size:13px;border-radius:999px;padding:5px 10px;border:1px solid var(--line)}
-.who li.yes{background:#357c4f;border-color:#357c4f;color:#fff}
-.who li.tbd{background:#fbf3b8;border-color:#e2cc2a;color:#1a1714}
-.who li.no{color:var(--muted);text-decoration:line-through}
+.who{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 8px}
+.who button{appearance:none;font:600 14px/1 var(--body);border-radius:999px;padding:0 14px;min-height:44px;border:1.5px solid var(--line);background:transparent;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.who button.no{text-decoration:line-through}
+.who button.tbd{background:#fbf3b8;border-color:#e2cc2a;color:#1a1714}
+.who button.yes{background:#357c4f;border-color:#357c4f;color:#fff}
+.who button.lead{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.who button:disabled{cursor:default}
+.leadmark{font:900 10px/1 var(--sub);letter-spacing:.1em;text-transform:uppercase;border:1px solid currentColor;border-radius:999px;padding:3px 5px}
+.legend{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--muted);margin:8px 0 0}
+.legend span.k{border-radius:999px;padding:4px 9px;border:1.5px solid var(--line);font-weight:600}
 .leadpick{border:1.5px solid var(--line);border-radius:10px;margin:4px 0 0}
 .leadpick summary{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;cursor:pointer;list-style:none;font:inherit;text-transform:none;letter-spacing:0;color:var(--ink)}
 .leadpick summary::-webkit-details-marker{display:none}
@@ -236,6 +241,10 @@ footer a{color:inherit}
     <div class="card hidden" id="unlinked">
       <h2>Not linked yet</h2>
       <p style="margin:0">Your login <strong id="unlinkedemail"></strong> isn’t linked to a captain yet, so you can look but not change anything. Ask Kate to add it.</p>
+    </div>
+    <div class="card hidden" id="schedhelp" style="padding:12px 16px">
+      <p style="margin:0;font-size:14px">Tap a name to change it. Anyone can change anyone; each run shows who changed it last.</p>
+      <div class="legend" aria-hidden="true"><span class="k" style="text-decoration:line-through">not coming</span>→<span class="k" style="background:#fbf3b8;border-color:#e2cc2a;color:#1a1714">don’t know</span>→<span class="k" style="background:#357c4f;border-color:#357c4f;color:#fff">coming</span>→<span class="k" style="background:var(--accent);border-color:var(--accent);color:var(--accent-ink)">lead</span></div>
     </div>
     <p class="status" id="schedstatus" role="status"></p>
     <div id="runs"></div>

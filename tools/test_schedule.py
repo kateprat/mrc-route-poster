@@ -38,72 +38,60 @@ try:
         b = p.chromium.launch(args=["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
         kate = page_for(b, "captain@example.com")
         kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1500)
-        check(not kate.is_visible("#unlinked") and kate.locator("#claimcard").count() == 0, "Kate is recognised from her email, nothing to pick")
-        chips = kate.locator(".run").first.locator(".who li").all_inner_texts()
-        check([c.split()[0] for c in chips] == ["Felix", "Kate", "Ale", "Andrea", "Fabio"], f"captains from the roster: {chips}")
+        check(not kate.is_visible("#unlinked") and kate.is_visible("#schedhelp"), "Kate is recognised from her email; tap help shown")
         first = kate.locator(".run").first
         date = first.get_attribute("data-date")
+        names = [n.split()[0] for n in first.locator(".who button").all_inner_texts()]
+        check(names == ["Felix", "Kate", "Ale", "Andrea", "Fabio"], f"each captain listed once: {names}")
         check(first.locator(".tag", has_text="Next run").count() == 1, f"next run highlighted: {date}")
-        first.locator('.mine button[data-s="yes"]').click(); kate.wait_for_timeout(600)
-        check(kate.locator(".run").first.locator('.mine button[data-s="yes"]').get_attribute("aria-pressed") == "true", "Kate marks herself Coming")
-        first = kate.locator(".run").first
-        check(first.locator(".leadval").inner_text() == "No lead yet", "dropdown shows 'No lead yet'")
-        check(first.locator(".leadchips").count() == 0 and first.locator(".leadlist").is_hidden(), "names listed once (dropdown closed)")
-        first.locator(".leadpick summary").click()
-        first.locator(".leadlist label", has_text="Kate").locator("input").check(); kate.wait_for_timeout(700)
-        first = kate.locator(".run").first
-        check(first.locator(".leadpick").get_attribute("open") is not None, "dropdown stays open for more ticks")
-        first.locator(".leadlist label", has_text="Fabio").locator("input").check(); kate.wait_for_timeout(700)
-        first = kate.locator(".run").first
-        first.locator("[data-leaddone]").click(); kate.wait_for_timeout(500)
-        first = kate.locator(".run").first
-        check(first.locator(".leadval").inner_text() == "Kate & Fabio", f"two leads on one run: {first.locator('.leadval').inner_text()}")
-        check("Set by Kate" in first.inner_text(), "shows who set it")
-        check(first.locator(".who li", has_text="Fabio").get_attribute("class") == "yes", "Fabio (coming in the sheet) stays coming")
-        # Ale isn't coming: picking her as lead must not change her answer, but the run should flag it
-        first.locator(".leadpick summary").click(); first.locator(".leadlist label", has_text="Ale").locator("input").check(); kate.wait_for_timeout(700)
-        first = kate.locator(".run").first
-        check(first.locator(".who li", has_text="Ale").get_attribute("class") == "no", "picking Ale as lead doesn't mark her as coming")
-        check(first.locator(".leadwarn").count() == 1 and "Ale isn’t marked as coming" in first.locator(".leadwarn").inner_text(), f"warning shown: {first.locator('.leadwarn').inner_text() if first.locator('.leadwarn').count() else None!r}")
-        check("not coming" in first.locator(".leadlist label", has_text="Ale").inner_text(), "dropdown shows each captain's own answer")
-        first.locator(".leadlist label", has_text="Ale").locator("input").uncheck(); kate.wait_for_timeout(700)
-        first = kate.locator(".run").first
-        check(first.locator(".leadwarn").count() == 0, "warning gone once Ale isn't lead")
-        first.locator("[data-leaddone]").click(); kate.wait_for_timeout(300)
-        first = kate.locator(".run").first
-        first.locator(".leadpick summary").click(); first.locator(".leadlist label", has_text="Fabio").locator("input").uncheck(); kate.wait_for_timeout(700)
-        check(kate.locator(".run").first.locator(".leadval").inner_text() == "Kate", "unticking removes a lead")
-        kate.locator(".run").first.locator(".leadlist label", has_text="Fabio").locator("input").check(); kate.wait_for_timeout(700)
-        kate.locator(".run").first.locator("[data-leaddone]").click(); kate.wait_for_timeout(300)
+        check(first.locator(".mine, .leadpick").count() == 0, "no separate availability buttons or lead dropdown")
+        state = lambda who, d=date: kate.locator(f'.run[data-date="{d}"] .who button', has_text=who).get_attribute("class")
+        tap = lambda who, d=date: kate.locator(f'.run[data-date="{d}"] .who button', has_text=who).click()
+        # Ale is 'not coming' in the sheet: tap through the whole cycle
+        seen = [state("Ale")]
+        for _ in range(4): tap("Ale"); kate.wait_for_timeout(500); seen.append(state("Ale"))
+        check(seen == ["no", "tbd", "yes", "lead", "no"], f"tapping Ale cycles not coming -> don't know -> coming -> lead -> not coming: {seen}")
+        # quick taps are kept in order
+        for _ in range(3): tap("Ale")
+        kate.wait_for_timeout(1500)
+        check(state("Ale") == "lead", f"three quick taps land on lead: {state('Ale')}")
+        kate.reload(); kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1200)
+        check(state("Ale") == "lead", "saved: still lead after reloading")
+        meta = kate.locator(".run").first.locator(".run-meta").last.inner_text()
+        check("Lead: Ale" in meta and "last change by Kate" in meta, f"run shows lead and who changed it: {meta!r}")
+        tap("Kate"); tap("Kate"); tap("Kate"); kate.wait_for_timeout(1500)   # Kate: no -> tbd -> yes -> lead
+        meta = kate.locator(".run").first.locator(".run-meta").last.inner_text()
+        check("Leads: Kate & Ale" in meta or "Leads: Ale & Kate" in meta, f"two leads: {meta!r}")
+        coming = kate.locator(".run").first.locator(".run-head").inner_text()
+        check("4 coming" in coming, f"leads count as coming: {coming!r}")
 
-        # Cancel the second upcoming run after giving it a lead: action item for that lead
-        second = kate.locator(".run").nth(1); d2 = second.get_attribute("data-date")
-        second.locator(".leadpick summary").click()
-        second.locator(".leadlist label", has_text="Kate").locator("input").check(); kate.wait_for_timeout(700)
-        kate.locator(f'.run[data-date="{d2}"] .leadlist label', has_text="Felix").locator("input").check(); kate.wait_for_timeout(700)
-        kate.locator(f'.run[data-date="{d2}"] [data-leaddone]').click(); kate.wait_for_timeout(300)
+        # Cancel the second run that has leads: to-do names them
+        d2 = kate.locator(".run").nth(1).get_attribute("data-date")
+        for who in ("Felix", "Kate"):
+            while state(who, d2) != "lead": tap(who, d2); kate.wait_for_timeout(400)
+        kate.wait_for_timeout(800)
         run2 = kate.locator(f'.run[data-date="{d2}"]')
         run2.locator("details:not(.leadpick) summary").click(); run2.locator('[data-f="cancelled"]').check(); run2.locator("[data-saverun]").click(); kate.wait_for_timeout(700)
         todo = kate.locator(f'.run[data-date="{d2}"] .todo')
-        check(todo.count() == 1 and "To do for Felix & Kate" in todo.inner_text() and "Instagram" in todo.inner_text(), f"cancelled run shows action item: {todo.inner_text()[:90] if todo.count() else None!r}")
+        check(todo.count() == 1 and "To do for Felix & Kate" in todo.inner_text(), f"cancelled run shows action item: {todo.inner_text()[:60] if todo.count() else None!r}")
         kate.screenshot(path=os.path.join(OUT, "schedule-kate.png"), full_page=True)
 
         # Live updates: a second captain has the schedule open while Kate changes her answer
         other = page_for(b, "someone@example.com", "&poll=1000")
         other.click("#tabbtn-schedule"); other.wait_for_timeout(1200)
         d3 = kate.locator(".run").nth(2).get_attribute("data-date")
-        before = other.locator(f'.run[data-date="{d3}"] .who li', has_text="Kate").get_attribute("class")
-        new = "tbd" if before != "tbd" else "no"
-        kate.locator(f'.run[data-date="{d3}"] .mine button[data-s="{new}"]').click(); kate.wait_for_timeout(500)
+        before = other.locator(f'.run[data-date="{d3}"] .who button', has_text="Andrea").get_attribute("class")
+        kate.locator(f'.run[data-date="{d3}"] .who button', has_text="Andrea").click(); kate.wait_for_timeout(800)
+        expected = state("Andrea", d3)
         other.wait_for_timeout(2500)   # no reload, just waiting
-        after = other.locator(f'.run[data-date="{d3}"] .who li', has_text="Kate").get_attribute("class")
-        check(before != after == new, f"other captain sees Kate's change without reloading ({before} -> {after})")
+        after = other.locator(f'.run[data-date="{d3}"] .who button', has_text="Andrea").get_attribute("class")
+        check(before != after == expected, f"other captain sees Kate's change to Andrea without reloading ({before} -> {after})")
         # ...but not while they're in the middle of editing a run
         other.close()
         kate2 = page_for(b, "captain@example.com", "&poll=1000")
         kate2.click("#tabbtn-schedule"); kate2.wait_for_timeout(1200)
         kate2.locator(f'.run[data-date="{d3}"] details:not(.leadpick) summary').click()
-        kate.locator(f'.run[data-date="{d3}"] .mine button[data-s="yes"]').click(); kate.wait_for_timeout(2500)
+        tap("Fabio", d3); kate.wait_for_timeout(2500)
         check(kate2.locator(f'.run[data-date="{d3}"] details:not(.leadpick)[open]').count() == 1, "open 'Edit run' isn't wiped by a refresh")
         kate2.close()
 
@@ -115,14 +103,14 @@ try:
         kate.click("#tabbtn-poster")
         kate.set_input_files("#gpx", os.path.join(ROOT, "test", "sample.gpx")); kate.wait_for_timeout(2500)
         check(kate.input_value("#date") == date, f"poster date = next run ({kate.input_value('#date')})")
-        check("led by Kate & Fabio" in kate.inner_text("#nextrun-hint"), f"hint: {kate.inner_text('#nextrun-hint')}")
+        check("led by" in kate.inner_text("#nextrun-hint") and "Ale" in kate.inner_text("#nextrun-hint") and "Kate" in kate.inner_text("#nextrun-hint"), f"hint: {kate.inner_text('#nextrun-hint')}")
 
         # An email that isn't in src/captains.js can look but not change anything
         guest = page_for(b, "someone@example.com")
         guest.click("#tabbtn-schedule"); guest.wait_for_timeout(1500)
         check(guest.is_visible("#unlinked") and "someone@example.com" in guest.inner_text("#unlinked"), "unlinked email gets the 'not linked yet' note")
-        check(guest.locator(".mine").count() == 0 and guest.locator(".leadpick").count() == 0 and guest.locator(".leadstatic").count() > 0, "unlinked email can't change anything")
-        r = guest.evaluate("fetch('/api/status',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({date:'%s',status:'yes'})}).then(r=>r.status)" % date)
+        check(guest.locator(".who button").first.is_disabled() and not guest.is_visible("#schedhelp"), "unlinked email can't change anything")
+        r = guest.evaluate("fetch('/api/captain',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({date:'%s',captain:1,state:'yes'})}).then(r=>r.status)" % date)
         check(r == 403, f"API refuses changes from an unlinked email ({r})")
         guest.close()
 
