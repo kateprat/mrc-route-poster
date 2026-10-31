@@ -46,6 +46,20 @@ export class Schedule extends DurableObject {
     const seeded = this.sql.exec("SELECT v FROM meta WHERE k='seeded'").toArray().length;
     if (!seeded) this.seed();
     this.importSheetLeads();
+    this.fixOnce("fix-2026-09-16", () => {   // the sheet was wrong: Fabio led on 16 Sep, not Andrea
+      const fabio = this.sql.exec("SELECT id FROM captains WHERE name = 'Fabio'").toArray()[0];
+      if (!fabio) return;
+      this.sql.exec("DELETE FROM leads WHERE date = '2026-09-16'");
+      this.sql.exec("INSERT INTO leads (date, captain) VALUES ('2026-09-16', ?)", fabio.id);
+      this.sql.exec("INSERT OR REPLACE INTO avail (date, captain, status) VALUES ('2026-09-16', ?, 'yes')", fabio.id);
+    });
+  }
+
+  // One-off data corrections: each runs once, recorded in meta.
+  fixOnce(key, fn) {
+    if (this.sql.exec("SELECT 1 FROM meta WHERE k = ?", key).toArray().length) return;
+    fn();
+    this.sql.exec("INSERT INTO meta (k, v) VALUES (?, ?)", key, new Date().toISOString());
   }
 
   // The old spreadsheet marked each run's lead with a green cell; those are in src/seed.json as "leads".

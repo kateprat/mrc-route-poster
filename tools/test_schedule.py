@@ -101,7 +101,8 @@ try:
         rows = kate.locator("#history .hist-table tbody tr").all_inner_texts()
         check(len(rows) == 5, f"tally per captain: {rows}")
         led = {r.split("\t")[0]: int(r.split("\t")[1]) for r in rows}
-        check(led == {"Felix": 4, "Kate": 8, "Ale": 2, "Andrea": 6, "Fabio": 5}, f"leads from the spreadsheet's green cells: {led}")
+        check(led == {"Felix": 4, "Kate": 8, "Ale": 2, "Andrea": 5, "Fabio": 6}, f"leads from the spreadsheet's green cells: {led}")
+        check("Led by Fabio" in kate.locator('#history .hist-run', has_text="Wed 16 Sep").inner_text(), "16 Sep led by Fabio")
         check("Led by Felix" in kate.locator('#history .hist-run', has_text="Wed 28 Oct").inner_text(), "28 Oct led by Felix")
         months = kate.locator("#history .hist-month").all_inner_texts()
         check(len(months) >= 4 and months[0].upper().startswith("OCTOBER"), f"months newest first: {months[:3]}")
