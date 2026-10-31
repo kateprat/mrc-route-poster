@@ -189,8 +189,66 @@ function strokeRoute(px, w, color){
   ctx.save(); ctx.lineJoin="round"; ctx.lineCap="round"; ctx.lineWidth=w; ctx.strokeStyle=color;
   ctx.beginPath(); px.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke(); ctx.restore();
 }
+/* MikkelWind has no Ä Ö Ü (and no accented capitals), and its ä ö ü have no dots. So letters
+   with marks are drawn as the plain letter, plus dots made from the font's own full stop
+   (or a small accent stroke) placed above it. ß is written SS. */
+const MW_KEEP = "ÅåÆæØø";                                      // these exist in the font as they are
+const MARK = {"\u0308":"dots", "\u0301":"acute", "\u0300":"grave", "\u0302":"circ", "\u030A":"ring", "\u0303":"tilde"};
+function mwSplit(text){
+  let base="", marks=[];
+  for(const ch of text.replace(/ß/g,"SS").replace(/ẞ/g,"SS")){
+    if(MW_KEEP.includes(ch)){ base+=ch; continue; }
+    const parts=[...ch.normalize("NFD")];
+    if(parts.length>1){ marks.push({i:base.length, kind:MARK[parts[1]]||null}); base+=parts[0]; }
+    else base+=ch;
+  }
+  return {base, marks:marks.filter(m=>m.kind)};
+}
+/* Draw MikkelWind text; y is the top of the text (like textBaseline "top"). */
+function drawMW(text, x, y, size, align="center"){
+  const {base, marks}=mwSplit(text);
+  ctx.save(); ctx.font=`${size}px "MikkelWind"`; ctx.textBaseline="alphabetic"; ctx.textAlign="left";
+  const full=ctx.measureText(base);
+  const top=full.fontBoundingBoxAscent;                          // same top as textBaseline "top"
+  const x0= align==="center" ? x-full.width/2 : align==="right" ? x-full.width : x;
+  const by=y+top;
+  ctx.fillText(base, x0, by);
+  for(const m of marks){
+    const before=ctx.measureText(base.slice(0,m.i)).width, ch=base[m.i];
+    const cm=ctx.measureText(ch), w=ctx.measureText(base.slice(0,m.i+1)).width-before;
+    const cx=x0+before+w/2, capTop=by-cm.actualBoundingBoxAscent;
+    drawMark(m.kind, cx, capTop, size, w);
+  }
+  ctx.restore();
+  return full.width;
+}
+function drawMark(kind, cx, capTop, size, w){
+  const dotFont=Math.round(size*0.8);
+  if(kind==="dots"){
+    ctx.font=`${dotFont}px "MikkelWind"`;
+    const pm=ctx.measureText("."), dh=pm.actualBoundingBoxAscent+pm.actualBoundingBoxDescent;
+    const cy=capTop-size*0.06-dh/2;
+    for(const dx of [-w*0.2, w*0.2]){
+      const px=cx+dx-(pm.actualBoundingBoxRight-pm.actualBoundingBoxLeft)/2;
+      const py=cy-(pm.actualBoundingBoxDescent-pm.actualBoundingBoxAscent)/2;
+      ctx.fillText(".", px, py);
+    }
+    ctx.font=`${size}px "MikkelWind"`;
+    return;
+  }
+  ctx.save(); ctx.strokeStyle=ctx.fillStyle; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.lineWidth=size*0.075;
+  const h=size*0.13, g=size*0.07, yb=capTop-g;
+  ctx.beginPath();
+  if(kind==="acute"){ ctx.moveTo(cx-w*0.08,yb); ctx.lineTo(cx+w*0.12,yb-h); }
+  else if(kind==="grave"){ ctx.moveTo(cx+w*0.08,yb); ctx.lineTo(cx-w*0.12,yb-h); }
+  else if(kind==="circ"){ ctx.moveTo(cx-w*0.2,yb); ctx.lineTo(cx,yb-h); ctx.lineTo(cx+w*0.2,yb); }
+  else if(kind==="tilde"){ ctx.moveTo(cx-w*0.22,yb-h*0.3); ctx.quadraticCurveTo(cx-w*0.1,yb-h*1.1,cx,yb-h*0.5); ctx.quadraticCurveTo(cx+w*0.1,yb+h*0.1,cx+w*0.22,yb-h*0.7); }
+  else if(kind==="ring"){ ctx.arc(cx, yb-h*0.55, h*0.5, 0, 7); }
+  ctx.stroke(); ctx.restore();
+}
 function fitText(text, font, maxW, size, min){
-  let s=size; while(s>min){ ctx.font=`${s}px ${font}`; if(ctx.measureText(text).width<=maxW) break; s-=4; } return s;
+  const t=mwSplit(text).base;
+  let s=size; while(s>min){ ctx.font=`${s}px ${font}`; if(ctx.measureText(t).width<=maxW) break; s-=4; } return s;
 }
 function fmtDate(v){ if(!v) return ""; const [y,m,d]=v.split("-").map(Number); return `${d}/${m}/${y}`; }
 const kmText = r => (r.total/1000).toFixed(1);
@@ -199,11 +257,11 @@ function drawText(F, W, H){
   ctx.save(); ctx.fillStyle=TEXT; ctx.textAlign="center"; ctx.textBaseline="top";
   const title=($("title").value||"").toUpperCase().trim();
   let y=F.title;
-  if(title){ const s=fitText(title,'"MikkelWind"',W*0.86,160,60); ctx.font=`${s}px "MikkelWind"`; ctx.fillText(title,W/2,y); y+=s*1.02; }
+  if(title){ const s=fitText(title,'"MikkelWind"',W*0.86,160,60); drawMW(title,W/2,y,s); y+=s*1.02; }
   const dy=title?y+8:F.dist;
   // distance(s): one route in black, two routes each in their route colour
   ctx.font=`100px "MikkelWind"`;
-  if(S.routes.length===1){ ctx.fillText(`${kmText(S.routes[0])} KM`, W/2, dy); }
+  if(S.routes.length===1){ drawMW(`${kmText(S.routes[0])} KM`, W/2, dy, 100); }
   else if(S.routes.length===2){
     const parts=[[`${kmText(S.routes[0])} KM`,routeColor(0)],["  /  ",TEXT],[`${kmText(S.routes[1])} KM`,routeColor(1)]];
     let size=100, total; do{ ctx.font=`${size}px "MikkelWind"`; total=parts.reduce((t,[s])=>t+ctx.measureText(s).width,0); size-=6; }while(total>W*0.9 && size>50);
@@ -218,7 +276,7 @@ function drawText(F, W, H){
   const bw=ctx.measureText("FREE BEER!").width;
   S.beerBox={x:pos.x-bw/2, y:pos.y, w:bw, h:76};
   const date=fmtDate($("date").value);
-  if(date){ ctx.textAlign="right"; ctx.textBaseline="bottom"; ctx.font=`58px "MikkelWind"`; ctx.fillText(date, W-40, H-F.dateY); }
+  if(date){ ctx.textAlign="right"; ctx.textBaseline="bottom"; ctx.font=`58px "MikkelWind"`; ctx.fillText(date, W-40, H-F.dateY); }   // digits and slashes are all in the font
   ctx.restore();
 }
 
@@ -434,8 +492,17 @@ async function showWhoAmI(){
   }catch(e){}
 }
 
+/* Sign out of this app and of the Cloudflare Access team, so the next visit asks for email + code again. */
+async function signOut(e){
+  e.preventDefault();
+  try{ await fetch("/cdn-cgi/access/logout",{credentials:"include",redirect:"manual",cache:"no-store"}); }catch(err){}
+  const team=SCH.data && SCH.data.me && SCH.data.me.team;
+  location.href = team ? `${team}/cdn-cgi/access/logout` : "/cdn-cgi/access/logout";
+}
+
 function init(){
   loadPrefs();
+  $("signout").addEventListener("click",signOut);
   showWhoAmI();
   initSchedule();
   loadSchedule();
