@@ -164,7 +164,7 @@ footer a{color:inherit}
 .more-menu .menu-seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .more-menu .menu{min-width:270px}
 .more-menu .menu-seg[aria-label="Mikkeller colours"]{flex-wrap:wrap}
-.more-menu .menu-seg[aria-label="Mikkeller colours"] button{flex:1 1 40%}
+.more-menu .menu-seg[aria-label="Mikkeller colours"] button{flex:0 0 calc(50% - 2px)}
 .more-menu .menu-seg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
 .more-menu .menu-seg button{font-size:13px;padding:8px 6px;white-space:nowrap}
 
@@ -172,6 +172,9 @@ footer a{color:inherit}
 :root[data-theme="moss"]{--paper:#dfe6d6; --panel:#f6f8f1; --ink:#1a1714; --muted:#5a6352; --line:#c5d0b9; --accent:#357c4f; --accent-ink:#ffffff; --ok:#357c4f; --ok-ink:#ffffff; --lead:#8f5c35; --lead-ink:#ffffff; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
 :root[data-theme="burgundy"]{--paper:#4a1a18; --panel:#5e2421; --ink:#eee5d2; --muted:#d9bdb5; --line:#7a3a35; --accent:#f0b7ad; --accent-ink:#4a1a18; --ok:#357c4f; --ok-ink:#ffffff; --lead:#f0b7ad; --lead-ink:#4a1a18; --note:#5e2421; --note-line:#f5e14b; color-scheme:dark}
 :root[data-theme="blue"]{--paper:#d3e4f0; --panel:#f4f8fb; --ink:#1a1714; --muted:#4f5d68; --line:#b3cde0; --accent:#3584ba; --accent-ink:#ffffff; --ok:#357c4f; --ok-ink:#ffffff; --lead:#f5e14b; --lead-ink:#1a1714; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
+:root[data-theme="mauve"]{--paper:#cfb5bc; --panel:#f3ebed; --ink:#0f0f54; --muted:#4f4766; --line:#b99ca5; --accent:#0f0f54; --accent-ink:#eee5d2; --ok:#357c4f; --ok-ink:#ffffff; --lead:#0f0f54; --lead-ink:#eee5d2; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
+:root[data-theme="brown"]{--paper:#8f5c35; --panel:#6f4527; --ink:#eee5d2; --muted:#e3d3bd; --line:#a77750; --accent:#eee5d2; --accent-ink:#8f5c35; --ok:#357c4f; --ok-ink:#ffffff; --lead:#eee5d2; --lead-ink:#8f5c35; --note:#6f4527; --note-line:#f5e14b; color-scheme:dark}
+:root[data-theme="night"]{--paper:#0f0f54; --panel:#18186a; --ink:#eee5d2; --muted:#c7bfd6; --line:#2e2e86; --accent:#3584ba; --accent-ink:#ffffff; --ok:#357c4f; --ok-ink:#ffffff; --lead:#3584ba; --lead-ink:#ffffff; --note:#2a2a7a; --note-line:#f5e14b; color-scheme:dark}
 :root[data-theme="peach"]{--paper:#f0b7ad; --panel:#fbeee9; --ink:#0f0f54; --muted:#5c4a66; --line:#e39d92; --accent:#0f0f54; --accent-ink:#f0b7ad; --ok:#357c4f; --ok-ink:#ffffff; --lead:#0f0f54; --lead-ink:#f0b7ad; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
 </style>
 </head>
@@ -184,7 +187,7 @@ footer a{color:inherit}
   <div id="moremenu" class="menu" hidden><p class="menu-h">Theme</p>
     <div class="menu-seg" role="group" aria-label="Theme"><button type="button" data-theme-v="auto">Auto</button><button type="button" data-theme-v="light">Light</button><button type="button" data-theme-v="dark">Dark</button></div>
     <p class="menu-h">Mikkeller colours</p>
-    <div class="menu-seg" role="group" aria-label="Mikkeller colours"><button type="button" data-theme-v="moss"><i style="background:#357c4f"></i>Moss</button><button type="button" data-theme-v="burgundy"><i style="background:#882c29"></i>Burgundy</button><button type="button" data-theme-v="blue"><i style="background:#3584ba"></i>Blue</button><button type="button" data-theme-v="peach"><i style="background:#f0b7ad"></i>Peach</button></div></div></div>
+    <div class="menu-seg" role="group" aria-label="Mikkeller colours"><button type="button" data-theme-v="moss"><i style="background:#357c4f"></i>Moss</button><button type="button" data-theme-v="burgundy"><i style="background:#882c29"></i>Burgundy</button><button type="button" data-theme-v="blue"><i style="background:#3584ba"></i>Blue</button><button type="button" data-theme-v="peach"><i style="background:#f0b7ad"></i>Peach</button><button type="button" data-theme-v="mauve"><i style="background:#cfb5bc"></i>Mauve</button><button type="button" data-theme-v="brown"><i style="background:#8f5c35"></i>Brown</button><button type="button" data-theme-v="night"><i style="background:#0f0f54"></i>Night</button></div></div></div>
   </header>
 
   <nav class="tabs" role="tablist" aria-label="Sections">
