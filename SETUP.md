@@ -32,11 +32,12 @@ The free plan covers 50 users in total across your Access apps, so the crew hand
 
 - Send them the link. On first visit they enter their email and the code they receive.
 - iPhone: open in **Safari** → Share → **Add to Home Screen**. Android: Chrome menu → **Add to Home screen** / **Install app**. It shows the Little Dipper icon.
-- Add or remove someone: **Zero Trust → Access → Applications → mrc-route-poster → Policies → Captains**.
+- Add or remove someone: see “Adding a captain” below.
 
-## Captains' first visit to the Schedule tab
+## Adding a captain
 
-Each captain picks their name once ("I am Felix") and adds their Instagram handle. If someone picks the wrong name, it can be fixed in the Cloudflare dashboard: **Workers & Pages → mrc-route-poster → Durable Objects → Schedule** (data browser, table `captains`: clear the `email` of the wrong row). Or ask Claude.
+1. **Zero Trust → Access → Policies → MRC-captains → Edit** → add their email under **Emails** → Save. Now they can log in.
+2. Add the same email and their Instagram handle to `src/captains.js` and push (or ask Claude). Now the Schedule knows who they are; until then they can look but not change anything.
 
 ## Updating
 

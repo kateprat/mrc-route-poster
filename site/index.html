@@ -114,6 +114,8 @@ details[open] summary::after{content:" –"}
 .leadrow label{margin:0;white-space:nowrap}
 .leadrow select{flex:1}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.todo{background:#fbf3b8;border:1px solid #e2cc2a;color:#1a1714;border-radius:10px;padding:10px 12px;margin:10px 0 4px;font-size:14px}
+.todo strong{display:block;margin-bottom:2px}
 .empty{color:var(--muted);text-align:center;padding:24px 8px}
 footer{color:var(--muted);font-size:12px;text-align:center;margin:24px 0 0}
 footer a{color:inherit}
@@ -150,23 +152,21 @@ footer a{color:inherit}
         <button type="button" data-v="route" aria-pressed="false">Route only</button>
       </div>
       <div class="preview"><canvas id="cv" width="1080" height="1350" aria-label="Post preview"></canvas></div>
-      <p class="hint">Drag the picture to move the map. Use Zoom to resize.</p>
+      <p class="hint">Drag the map to move it. Drag “FREE BEER!” to put it somewhere else.</p>
       <p class="status" id="status" role="status"></p>
+      <div style="text-align:center"><button type="button" class="btn ghost hidden" id="beerreset">Put “FREE BEER!” back</button></div>
       <div class="row" style="margin-top:4px">
         <label for="zoom">Zoom</label><span class="val" id="zoomv">100%</span>
       </div>
       <input id="zoom" type="range" min="50" max="200" step="1" value="100">
-      <div class="row"><label for="cropB">Crop from bottom</label><span class="val" id="cropBv">0 px</span></div>
-      <input id="cropB" type="range" min="0" max="300" step="10" value="0">
     </div>
 
     <div class="card">
       <h2>Text</h2>
       <div class="grid">
         <div class="full"><label for="title">Title</label><input id="title" type="text" autocomplete="off" placeholder="THE LITTLE DIPPER"></div>
-        <div><label for="dist">Distance (km)</label><input id="dist" type="text" inputmode="decimal" autocomplete="off"></div>
         <div><label for="date">Run date</label><input id="date" type="date"></div>
-        <div class="full"><label class="check"><input id="beer" type="checkbox" checked> Show “FREE BEER!”</label></div>
+        <div><label>Distance (from the GPX)</label><p class="val" id="distinfo" style="margin:10px 0 0"></p></div>
       </div>
     </div>
 
@@ -178,43 +178,31 @@ footer a{color:inherit}
           <button type="button" class="swatch" data-v="#3584ba" aria-pressed="false" aria-label="Blue"><span style="background:#3584ba"></span></button>
         </div>
       </div>
-      <div class="row"><label for="width">Line width</label><span class="val" id="widthv">10</span></div>
-      <input id="width" type="range" min="4" max="24" step="1" value="10">
-      <div class="row"><label for="simplify">Smooth out GPS wobble</label><span class="val" id="simplifyv">6 m</span></div>
-      <input id="simplify" type="range" min="0" max="30" step="1" value="8">
-      <label class="check"><input id="round" type="checkbox"> Round off corners</label>
+      <div id="route2none">
+        <label class="btn ghost" for="gpx2" style="margin-top:6px">Add a second route</label>
+        <p class="hint" style="text-align:left">For the odd day with two route options. It’s drawn in the other colour.</p>
+      </div>
+      <div id="route2some" class="row hidden">
+        <span id="route2info"></span>
+        <button type="button" class="btn ghost" id="route2remove">Remove</button>
+      </div>
+      <input id="gpx2" type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" class="hidden">
 
-      <details style="margin-top:12px">
-        <summary>Trim the ends</summary>
-        <p class="hint" style="text-align:left">Cut a few metres off the start or finish, e.g. when the line doesn’t quite meet at the bar. The distance text is not changed.</p>
+      <details id="advanced" style="margin-top:14px">
+        <summary>Advanced settings</summary>
+        <p class="hint" style="text-align:left">Usually best left as they are.</p>
+        <div class="row"><label for="width">Line width</label><span class="val" id="widthv">10</span></div>
+        <input id="width" type="range" min="4" max="24" step="1" value="10">
+        <div class="row"><label for="simplify">Smooth out GPS wobble</label><span class="val" id="simplifyv">8 m</span></div>
+        <input id="simplify" type="range" min="0" max="30" step="1" value="8">
+        <label class="check"><input id="round" type="checkbox"> Round off corners</label>
         <div class="row"><label for="trimS">Trim start</label><span class="val" id="trimSv">0 m</span></div>
         <input id="trimS" type="range" min="0" max="1000" step="10" value="0">
         <div class="row"><label for="trimE">Trim finish</label><span class="val" id="trimEv">0 m</span></div>
         <input id="trimE" type="range" min="0" max="1000" step="10" value="0">
+        <p class="hint" style="text-align:left">Trimming cuts a few metres off the line’s ends, e.g. when start and finish don’t quite meet at the bar. The distance isn’t changed.</p>
+        <button type="button" class="btn ghost" id="advreset">Reset to standard</button>
       </details>
-
-    </div>
-
-    <div class="card hidden" id="capcard">
-      <h2>Caption</h2>
-      <div class="grid">
-        <div><label for="time">Start time</label><input id="time" type="time" value="18:30"></div>
-        <div><label for="lead">Led by (optional)</label><input id="lead" type="text" autocomplete="off" placeholder="@yourhandle"></div>
-        <div class="full"><label>Caption style</label>
-          <div class="seg" id="capstyle" role="group" aria-label="Caption style">
-            <button type="button" data-v="classic" aria-pressed="true">Classic</button>
-            <button type="button" data-v="short" aria-pressed="false">Short</button>
-            <button type="button" data-v="playful" aria-pressed="false">Playful</button>
-            <button type="button" data-v="invite" aria-pressed="false">Newcomers</button>
-            <button type="button" data-v="whosin" aria-pressed="false">Who’s in?</button>
-            <button type="button" data-v="rain" aria-pressed="false">Rain or shine</button>
-          </div>
-        </div>
-        <div class="full"><label for="cap">Caption <span style="font-weight:400">(edit freely)</span></label><textarea id="cap"></textarea></div>
-      </div>
-      <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
-        <button type="button" class="btn ghost" id="copy">Copy caption</button>
-      </div>
     </div>
 
     <p class="hint" id="creditnote">When you post, add this line to the caption: <strong>Map: © OpenStreetMap contributors, OpenMapTiles</strong></p>
@@ -226,15 +214,9 @@ footer a{color:inherit}
   </div>
 
   <section id="tab-schedule" class="hidden" role="tabpanel" aria-labelledby="tabbtn-schedule">
-    <div class="card hidden" id="claimcard">
-      <h2>Which captain are you?</h2>
-      <p class="hint" style="text-align:left;margin-top:0">Once, so the app can put your answers in the right column.</p>
-      <div class="grid">
-        <div class="full"><label for="claimwho">I am</label><select id="claimwho"></select></div>
-        <div class="full hidden" id="claimnamewrap"><label for="claimname">Your name</label><input id="claimname" type="text" autocomplete="given-name"></div>
-        <div class="full"><label for="claimhandle">Instagram handle (for “Led by”)</label><input id="claimhandle" type="text" autocomplete="off" placeholder="@yourhandle"></div>
-      </div>
-      <div style="margin-top:12px"><button type="button" class="btn" id="claimsave">Save</button></div>
+    <div class="card hidden" id="unlinked">
+      <h2>Not linked yet</h2>
+      <p style="margin:0">Your login <strong id="unlinkedemail"></strong> isn’t linked to a captain yet, so you can look but not change anything. Ask Kate to add it.</p>
     </div>
     <p class="status" id="schedstatus" role="status"></p>
     <div id="runs"></div>
@@ -261,522 +243,6 @@ footer a{color:inherit}
 
 <div id="mapbox" aria-hidden="true" style="position:fixed;left:-20000px;top:0;width:1080px;height:1350px;pointer-events:none"></div>
 <script src="vendor/maplibre-gl.js"></script>
-<script>
-"use strict";
-/* ---------- constants ---------- */
-const FORMATS = {
-  feed:   {w:1080, h:1350, box:[0.10,0.36,0.90,0.80], title:150, dist:300, beer:0.865, dateY:40},
-  story:  {w:1080, h:1920, box:[0.10,0.33,0.90,0.72], title:270, dist:420, beer:0.78,  dateY:290},
-  square: {w:1080, h:1080, box:[0.12,0.40,0.88,0.80], title:100, dist:240, beer:0.87,  dateY:36},
-  route:  {w:1080, h:1920, box:[0.12,0.15,0.88,0.85], title:null}
-};
-const TEXT = "#141414";
-/* Map data: OpenFreeMap vector tiles (OpenStreetMap, OpenMapTiles schema). No API key, no limits.
-   ?source=<tilejson url> lets the offline test point at local data. */
-const params = new URLSearchParams(location.search);
-const MAP_SOURCE = params.get("source") || "https://tiles.openfreemap.org/planet";
-/* Who sees the Caption card: the email they signed in with at Cloudflare Access (lower case). */
-const CAPTION_EMAILS = [
-  "captain@example.com",
-];
-const MAP_CREDIT = "Map: © OpenStreetMap contributors, OpenMapTiles";   // credit goes in the caption, not on the image
-
-/* ---------- state ---------- */
-const S = {
-  pts: [],          // [{lat,lon}]
-  cum: [],          // cumulative metres
-  total: 0,
-  name: "",
-  fmt: "feed", color: "#882c29", mapstyle: "grey",   // always the MRC grey map
-  zoom: 1, cropB: 0, width: 10, simplify: 8, round: false, trimS: 0, trimE: 0,
-  pan: {x:0, y:0},  // in mercator units
-};
-const $ = id => document.getElementById(id);
-const cv = $("cv"), ctx = cv.getContext("2d");
-
-/* ---------- saved preferences ---------- */
-function loadPrefs(){
-  try{
-    const p = JSON.parse(localStorage.getItem("mrc-poster") || "{}");
-    if (p.color) S.color = p.color;
-    if (p.width) S.width = p.width;
-    if (p.lead) $("lead").value = p.lead;
-    if (p.time) $("time").value = p.time;
-  }catch(e){}
-}
-function savePrefs(){
-  try{ localStorage.setItem("mrc-poster", JSON.stringify({v:2, color:S.color, width:S.width, lead:$("lead").value, time:$("time").value})); }catch(e){}
-}
-
-/* ---------- GPX ---------- */
-function parseGPX(text){
-  const doc = new DOMParser().parseFromString(text, "application/xml");
-  if (doc.getElementsByTagName("parsererror").length) throw new Error("That file doesn’t look like a GPX file.");
-  let nodes = [...doc.getElementsByTagName("trkpt")];
-  if (!nodes.length) nodes = [...doc.getElementsByTagName("rtept")];
-  if (!nodes.length) nodes = [...doc.getElementsByTagName("wpt")];
-  const pts = nodes.map(n => ({lat:parseFloat(n.getAttribute("lat")), lon:parseFloat(n.getAttribute("lon"))}))
-                   .filter(p => isFinite(p.lat) && isFinite(p.lon));
-  if (pts.length < 2) throw new Error("No route points found in this GPX file.");
-  const nm = doc.querySelector("metadata > name, trk > name, rte > name");
-  return {pts, name: nm ? nm.textContent.trim() : ""};
-}
-function hav(a,b){
-  const R=6371008.8, r=Math.PI/180;
-  const dLat=(b.lat-a.lat)*r, dLon=(b.lon-a.lon)*r;
-  const h=Math.sin(dLat/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin(dLon/2)**2;
-  return 2*R*Math.asin(Math.sqrt(h));
-}
-function cumulative(pts){
-  const c=[0]; for(let i=1;i<pts.length;i++) c.push(c[i-1]+hav(pts[i-1],pts[i])); return c;
-}
-
-/* ---------- projection (Web Mercator, 0..1 units) ---------- */
-function merc(p){
-  const x=(p.lon+180)/360;
-  const s=Math.sin(p.lat*Math.PI/180);
-  const y=0.5-Math.log((1+s)/(1-s))/(4*Math.PI);
-  return {x,y};
-}
-const metresPerUnit = lat => 40075016.686*Math.cos(lat*Math.PI/180);
-
-/* ---------- geometry helpers ---------- */
-function trimPoints(pts, cum, a, b){
-  const total=cum[cum.length-1]; const lo=Math.min(a,total), hi=Math.max(lo, total-b);
-  const out=[];
-  const at=(d)=>{ let i=cum.findIndex(v=>v>=d); if(i<0) return pts[pts.length-1]; if(i===0) return pts[0];
-    const t=(d-cum[i-1])/((cum[i]-cum[i-1])||1); return {lat:pts[i-1].lat+(pts[i].lat-pts[i-1].lat)*t, lon:pts[i-1].lon+(pts[i].lon-pts[i-1].lon)*t}; };
-  out.push(at(lo));
-  for(let i=0;i<pts.length;i++) if(cum[i]>lo && cum[i]<hi) out.push(pts[i]);
-  out.push(at(hi));
-  return out;
-}
-function douglasPeucker(p, eps){
-  if (p.length<3 || eps<=0) return p.slice();
-  const keep=new Uint8Array(p.length); keep[0]=keep[p.length-1]=1;
-  const stack=[[0,p.length-1]];
-  while(stack.length){
-    const [a,b]=stack.pop(); let md=0, mi=-1;
-    const ax=p[a].x, ay=p[a].y, dx=p[b].x-ax, dy=p[b].y-ay, L=dx*dx+dy*dy;
-    for(let i=a+1;i<b;i++){
-      let t=L?((p[i].x-ax)*dx+(p[i].y-ay)*dy)/L:0; t=Math.max(0,Math.min(1,t));
-      const ex=ax+t*dx-p[i].x, ey=ay+t*dy-p[i].y, d=ex*ex+ey*ey;
-      if(d>md){md=d;mi=i;}
-    }
-    if(mi>0 && md>eps*eps){keep[mi]=1; stack.push([a,mi],[mi,b]);}
-  }
-  return p.filter((_,i)=>keep[i]);
-}
-function chaikin(p, n){
-  let q=p; for(let k=0;k<n;k++){ if(q.length<3) break; const r=[q[0]];
-    for(let i=0;i<q.length-1;i++){const a=q[i],b=q[i+1]; r.push({x:.75*a.x+.25*b.x,y:.75*a.y+.25*b.y},{x:.25*a.x+.75*b.x,y:.25*a.y+.75*b.y});}
-    r.push(q[q.length-1]); q=r;} return q;
-}
-
-/* ---------- view ---------- */
-function computeView(F, W, H){
-  const m=S.mpts; let minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9;
-  for(const p of m){minx=Math.min(minx,p.x);maxx=Math.max(maxx,p.x);miny=Math.min(miny,p.y);maxy=Math.max(maxy,p.y);}
-  const [bx0,by0,bx1,by1]=F.box; const bw=(bx1-bx0)*W, bh=(by1-by0)*H;
-  const rw=Math.max(maxx-minx,1e-9), rh=Math.max(maxy-miny,1e-9);
-  const scale=Math.min(bw/rw, bh/rh)*S.zoom;            // px per mercator unit
-  const cx=(minx+maxx)/2 - S.pan.x, cy=(miny+maxy)/2 - S.pan.y;
-  const ox=(bx0+bx1)/2*W, oy=(by0+by1)/2*H;
-  return {scale, cx, cy, ox, oy, toPx:(p)=>({x:ox+(p.x-cx)*scale, y:oy+(p.y-cy)*scale})};
-}
-
-/* ---------- map (MapLibre, drawn off-screen, copied into the post) ---------- */
-const PALETTE = {
-  grey:  {bg:"#e6e6e6", park:"#dedede", water:"#cfd3d4", building:"#dadada", road:"#ffffff", minor:"#fbfbfb", rail:"#d2d2d2"}
-};
-function mapStyle(name){
-  const c=PALETTE[name]||PALETTE.grey;
-  const w=(base)=>["interpolate",["exponential",1.6],["zoom"],10,base*0.25,14,base,18,base*9];
-  const roads=[
-    ["path",   ["path","track"],                          0.9, c.minor],
-    ["minor",  ["minor","service"],                       1.6, c.minor],
-    ["street", ["tertiary","secondary"],                  2.6, c.road],
-    ["major",  ["primary","trunk","motorway"],            3.4, c.road],
-  ];
-  return {
-    version:8,
-    sources:{omt:{type:"vector", url:MAP_SOURCE}},
-    layers:[
-      {id:"bg", type:"background", paint:{"background-color":c.bg}},
-      {id:"park", type:"fill", source:"omt", "source-layer":"park", paint:{"fill-color":c.park}},
-      {id:"landcover", type:"fill", source:"omt", "source-layer":"landcover", filter:["in",["get","class"],["literal",["grass","wood","farmland"]]], paint:{"fill-color":c.park}},
-      {id:"water", type:"fill", source:"omt", "source-layer":"water", paint:{"fill-color":c.water}},
-      {id:"waterway", type:"line", source:"omt", "source-layer":"waterway", paint:{"line-color":c.water, "line-width":w(1.5)}},
-      {id:"building", type:"fill", source:"omt", "source-layer":"building", minzoom:14, paint:{"fill-color":c.building}},
-      {id:"rail", type:"line", source:"omt", "source-layer":"transportation", filter:["==",["get","class"],"rail"], paint:{"line-color":c.rail, "line-width":w(1)}},
-      ...roads.map(([id,cls,width,color])=>({id:"road-"+id, type:"line", source:"omt", "source-layer":"transportation",
-        filter:["all",["in",["get","class"],["literal",cls]],["!=",["get","brunnel"],"tunnel"]],
-        layout:{"line-cap":"round","line-join":"round"}, paint:{"line-color":color, "line-width":w(width)}})),
-    ]
-  };
-}
-const M = {map:null, style:null, w:0, h:0, ready:false, error:false, idle:true};
-function ensureMap(W,H){
-  if(typeof maplibregl==="undefined"){ M.error=true; return null; }
-  const box=$("mapbox");
-  if(!M.map){
-    box.style.width=W+"px"; box.style.height=H+"px"; M.w=W; M.h=H;
-    M.style=S.mapstyle;
-    M.map=new maplibregl.Map({container:box, style:mapStyle(S.mapstyle), interactive:false, attributionControl:false,
-      pixelRatio:1, preserveDrawingBuffer:true, fadeDuration:0, center:[8.53,47.37], zoom:13});
-    M.map.on("load",()=>{M.ready=true; scheduleDraw();});
-    M.map.on("render",()=>scheduleDraw());
-    M.map.on("idle",()=>{M.idle=true; scheduleDraw();});
-    M.map.on("error",(e)=>{ console.warn("map", e && e.error && e.error.message); M.error=true; scheduleDraw(); });
-  }
-  if(M.w!==W||M.h!==H){ box.style.width=W+"px"; box.style.height=H+"px"; M.w=W; M.h=H; M.map.resize(); }
-  if(M.style!==S.mapstyle){ M.style=S.mapstyle; M.map.setStyle(mapStyle(S.mapstyle)); }
-  return M.map;
-}
-function unitToLngLat(ux,uy){
-  return [ux*360-180, Math.atan(Math.sinh(Math.PI*(1-2*uy)))*180/Math.PI];
-}
-function syncMap(V,W,H){
-  const map=ensureMap(W,H); if(!map) return null;
-  const ux=V.cx+(W/2-V.ox)/V.scale, uy=V.cy+(H/2-V.oy)/V.scale;
-  const zoom=Math.log2(V.scale/512);
-  const c=map.getCenter(), key=[ux,uy,zoom].map(v=>v.toFixed(9)).join();
-  if(M.key!==key){ M.key=key; M.idle=false; map.jumpTo({center:unitToLngLat(ux,uy), zoom}); }
-  return map;
-}
-function drawMap(V, W, H){
-  const bg=(PALETTE[S.mapstyle]||PALETTE.grey).bg;
-  ctx.fillStyle=S.mapstyle==="none"?"#e6e6e6":bg; ctx.fillRect(0,0,W,H);
-  if(S.mapstyle==="none") return true;
-  const map=syncMap(V,W,H);
-  if(map && M.ready){ try{ ctx.drawImage(map.getCanvas(),0,0,W,H); }catch(e){ M.error=true; } }
-  return !!(map && M.ready && M.idle);
-}
-function mapSettled(timeout=8000){
-  if(S.fmt==="route"||S.mapstyle==="none"||!M.map) return Promise.resolve();
-  return new Promise(res=>{ const t0=Date.now(); (function wait(){ if((M.ready&&M.idle&&M.map.areTilesLoaded())||M.error||Date.now()-t0>timeout) return res(); setTimeout(wait,120); })(); });
-}
-
-function routePixels(V){
-  const r=S.rpts.map(V.toPx);
-  return S.round ? chaikin(r,3) : r;
-}
-function strokeRoute(px, w){
-  ctx.save(); ctx.lineJoin="round"; ctx.lineCap="round"; ctx.lineWidth=w; ctx.strokeStyle=S.color;
-  ctx.beginPath(); px.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke(); ctx.restore();
-}
-function fitText(text, font, maxW, size, min){
-  let s=size; while(s>min){ ctx.font=`${s}px ${font}`; if(ctx.measureText(text).width<=maxW) break; s-=4; } return s;
-}
-function fmtDate(v){
-  if(!v) return ""; const [y,m,d]=v.split("-").map(Number); return `${d}/${m}/${y}`;
-}
-function drawText(F, W, H, Hc){
-  ctx.save(); ctx.fillStyle=TEXT; ctx.textAlign="center"; ctx.textBaseline="top";
-  const title=($("title").value||"").toUpperCase().trim();
-  let y=F.title;
-  if(title){ const s=fitText(title,'"MikkelWind"',W*0.86,160,60); ctx.font=`${s}px "MikkelWind"`; ctx.fillText(title,W/2,y); y+=s*1.02; }
-  const dist=distLabel();
-  if(dist){ ctx.font=`100px "MikkelWind"`; ctx.fillText(dist,W/2, title?y+8:F.dist); }
-  if($("beer").checked){ ctx.font=`68px "MikkelWind"`; ctx.fillText("FREE BEER!", W/2, Math.min(H*F.beer, Hc-F.dateY-150)); }
-  const date=fmtDate($("date").value);
-  if(date){ ctx.textAlign="right"; ctx.textBaseline="bottom"; ctx.font=`58px "MikkelWind"`; ctx.fillText(date, W-40, Hc-F.dateY); }
-  ctx.restore();
-}
-function distLabel(){
-  const v=($("dist").value||"").trim().replace(",", "."); if(!v) return "";
-  return /km/i.test(v) ? v.toUpperCase() : `${v} KM`;
-}
-
-/* ---------- render ---------- */
-let raf=0;
-function scheduleDraw(){ if(!raf) raf=requestAnimationFrame(()=>{raf=0; draw();}); }
-function prepareRoute(){
-  if(!S.pts.length) return;
-  const tp=trimPoints(S.pts,S.cum,S.trimS,S.trimE);
-  const lat=S.pts[0].lat, mpu=metresPerUnit(lat);
-  const m=tp.map(merc);
-  S.mpts=m;
-  S.rpts=douglasPeucker(m, S.simplify/mpu);
-}
-function draw(target){
-  if(!S.mpts) return;
-  const F=FORMATS[S.fmt]; const W=F.w, H=F.h;
-  const Hc=H-(S.cropB||0);                                  // cropped height of the exported image
-  if(cv.width!==W||cv.height!==Hc){cv.width=W;cv.height=Hc;}
-  const V=computeView(F,W,H); S.view=V;
-  let mapOk=true;
-  if(S.fmt==="route"){ ctx.clearRect(0,0,W,H); }
-  else mapOk=drawMap(V,W,H);
-  const px=routePixels(V);
-  strokeRoute(px, S.width);
-  if(S.fmt!=="route") drawText(F,W,H,Hc);
-  const st=$("status");
-  if(S.fmt!=="route" && S.mapstyle!=="none" && M.error && !M.ready){ st.textContent="Map couldn’t load. Check your connection and reload."; st.classList.add("warn"); }
-  else if(S.fmt!=="route" && S.mapstyle!=="none" && !mapOk){ st.textContent="Loading map…"; st.classList.remove("warn"); }
-  else { st.textContent = S.fmt==="route" ? "Transparent PNG of just the route, for stickers on photos." : ""; st.classList.remove("warn"); }
-  cv.style.background = S.fmt==="route" ? "repeating-conic-gradient(#ddd 0 25%, #fff 0 50%) 0 0/24px 24px" : "#e6e6e6";
-}
-
-/* "261014_MRC_LITTLE-DIPPER" -> "LITTLE DIPPER" */
-function cleanTitle(n){
-  return n.replace(/\.gpx$/i,"").replace(/[_\-]+/g," ").replace(/^[\d\s.]+/,"")
-          .replace(/\b(MRC|MIKKELLER( RUN(NING)? CLUB)?)\b/ig,"").replace(/\s+/g," ").trim().toUpperCase();
-}
-
-/* ---------- caption ---------- */
-function nextWednesday(){
-  const d=new Date(); const add=(3-d.getDay()+7)%7; d.setDate(d.getDate()+add);
-  const z=n=>String(n).padStart(2,"0");
-  return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`;
-}
-function captionParts(){
-  const t=($("title").value||"").trim();
-  const title=t ? t.replace(/\w\S*/g, w=>w[0].toUpperCase()+w.slice(1).toLowerCase()) : "This week’s route";
-  const dv=$("date").value; let when="This Wednesday";
-  if(dv){ const d=new Date(dv+"T12:00:00"); const days=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-    when=`This ${days[d.getDay()]} ${d.getDate()}.${d.getMonth()+1}`; }
-  const l=($("lead").value||"").trim(); const lead=l ? (l.startsWith("@")?l:"@"+l) : "";
-  const km=($("dist").value||"").trim().replace(",", ".").replace(/\s*km/i,"");
-  const time=$("time").value||"18:30";
-  return {title, when, whenLc: when[0].toLowerCase()+when.slice(1), lead, km, time};
-}
-const PACE="The slowest runner sets the pace 🍻";
-const CAPTIONS={
-  classic: c=>`${c.title} ✨ ${c.when}${c.lead?` ${c.lead} leads us on`:" we run"} ${c.km?`a ${c.km} km loop`:"a loop"} starting and finishing at @mikkellerzurich at ${c.time}.\nFree beer when we’re back. ${PACE}`,
-  short:   c=>`${c.title} ✨ ${c.when}, ${c.time} at @mikkellerzurich${c.km?` · ${c.km} km`:""}${c.lead?` · led by ${c.lead}`:""}.\nFree beer after. ${PACE}`,
-  playful: c=>`${c.when} we’re taking on ${c.title} 🏃${c.km?` ${c.km} km`:""} out of @mikkellerzurich at ${c.time}${c.lead?`, with ${c.lead} leading the way`:""}.\nFree beer at the finish line. ${PACE}`,
-  invite:  c=>`New faces welcome 👋 ${c.when} we run ${c.title}${c.km?`, ${c.km} km`:""}, starting at @mikkellerzurich at ${c.time}${c.lead?` with ${c.lead}`:""}. No one gets left behind.\nFree beer when we’re back. ${PACE}`,
-  whosin:  c=>`Who’s in? 👟 ${c.title}${c.km?`, ${c.km} km`:""} from @mikkellerzurich, ${c.whenLc} at ${c.time}${c.lead?`, led by ${c.lead}`:""}.\nFree beer after. ${PACE}`,
-  rain:    c=>`Rain or shine ☔️ ${c.when} we run ${c.title}${c.km?`: ${c.km} km`:""}, starting and finishing at @mikkellerzurich at ${c.time}${c.lead?`. ${c.lead} leads`:""}.\nFree beer when we’re back. ${PACE}`,
-};
-let capStyle="classic";
-function captionText(){ return (CAPTIONS[capStyle]||CAPTIONS.classic)(captionParts()) + (S.mapstyle!=="none" ? `\n\n${MAP_CREDIT}` : ""); }
-let capTouched=false;
-function refreshCaption(force){ if(force||!capTouched){ $("cap").value=captionText(); capTouched=false; } }
-
-/* ---------- export ---------- */
-function exportBlob(){
-  return mapSettled().then(()=>new Promise(res=>{ draw(); cv.toBlob(b=>res(b),"image/png"); }));
-}
-function fileName(){
-  const t=($("title").value||"route").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"route";
-  return `mrc-${t}-${S.fmt}.png`;
-}
-async function download(){
-  const b=await exportBlob(); if(!b) return alert("Couldn’t create the image. Check your connection, reload and try again.");
-  const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=fileName(); document.body.appendChild(a); a.click();
-  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},2000);
-}
-async function share(){
-  const b=await exportBlob(); if(!b) return download();
-  const f=new File([b], fileName(), {type:"image/png"});
-  if(navigator.canShare && navigator.canShare({files:[f]})){
-    try{ await navigator.share({files:[f]}); }catch(e){ if(e.name!=="AbortError") download(); }
-  } else download();
-}
-
-/* ---------- UI wiring ---------- */
-function seg(id, key, after){
-  const el=$(id);
-  const set=v=>{ S[key]=v; el.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.v===v))); };
-  set(S[key]);
-  el.addEventListener("click", e=>{ const b=e.target.closest("button"); if(!b) return; set(b.dataset.v); after&&after(); savePrefs(); scheduleDraw(); });
-}
-function range(id, key, fmt, conv, after){
-  const el=$(id), out=$(id+"v");
-  const upd=()=>{ S[key]=conv(el.value); out.textContent=fmt(el.value); };
-  el.addEventListener("input", ()=>{ upd(); after&&after(); scheduleDraw(); }); upd();
-}
-
-async function loadFile(file){
-  try{
-    const txt=await file.text(); const g=parseGPX(txt);
-    S.pts=g.pts; S.cum=cumulative(g.pts); S.total=S.cum[S.cum.length-1]; S.name=g.name;
-    S.pan={x:0,y:0}; S.zoom=1; $("zoom").value=100; $("zoomv").textContent="100%";
-    S.trimS=S.trimE=0; ["trimS","trimE"].forEach(i=>{ $(i).value=0; $(i+"v").textContent="0 m"; $(i).max=String(Math.max(50,Math.round(S.total/2/10)*10)); });
-    $("dist").value=(S.total/1000).toFixed(1);
-    if(g.name) $("title").value=cleanTitle(g.name);
-    fillFromSchedule(true);
-    if(!$("date").value) $("date").value=nextWednesday();
-    $("editor").classList.remove("hidden"); $("actions").classList.remove("hidden");
-    $("drop").classList.add("hidden");
-    prepareRoute(); refreshCaption(true);
-    await document.fonts.load('100px "MikkelWind"'); draw();
-    cv.scrollIntoView({behavior:"smooth", block:"start"});
-  }catch(e){ alert(e.message||String(e)); }
-}
-
-/* ---------- schedule (captains' availability + lead) ---------- */
-const SCH={data:null, showPast:false, today:""};
-const DAYS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const esc=t=>String(t??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-function localISO(d=new Date()){ const z=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; }
-function niceDate(iso){ const d=new Date(iso+"T12:00:00"); return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`; }
-function nextRun(){ return SCH.data ? SCH.data.runs.find(r=>r.date>=SCH.today && !r.cancelled) : null; }
-function runOn(date){ return SCH.data ? SCH.data.runs.find(r=>r.date===date) : null; }
-function captain(id){ return SCH.data ? SCH.data.captains.find(c=>c.id===id) : null; }
-
-async function schedCall(path, body){
-  const st=$("schedstatus"); st.classList.remove("warn");
-  try{
-    const r=await fetch(path, body ? {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(body), credentials:"include"} : {credentials:"include", cache:"no-store"});
-    const j=await r.json().catch(()=>({error:"The schedule isn’t available here."}));
-    if(!r.ok) throw new Error(j.error||"Something went wrong.");
-    SCH.data=j; st.textContent=""; renderSchedule(); fillFromSchedule(false);
-    return true;
-  }catch(e){ st.textContent=e.message||String(e); st.classList.add("warn"); return false; }
-}
-function loadSchedule(){ SCH.today=localISO(); return schedCall("/api/state"); }
-
-function renderSchedule(){
-  const D=SCH.data; if(!D) return;
-  const me=D.me.captain;
-  // claim card
-  $("claimcard").classList.toggle("hidden", !!me);
-  if(!me){
-    const free=D.captains.filter(c=>!c.linked);
-    $("claimwho").innerHTML=free.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("")+`<option value="new">Someone else (new captain)</option>`;
-    $("claimnamewrap").classList.toggle("hidden", $("claimwho").value!=="new");
-  }
-  const runs=D.runs.filter(r=>SCH.showPast ? true : r.date>=SCH.today);
-  const shown=SCH.showPast ? runs.slice(-60) : runs.slice(0,16);
-  const nxt=nextRun();
-  $("showpast").textContent=SCH.showPast ? "Hide past runs" : "Show past runs";
-  $("runs").innerHTML = shown.length ? shown.map(r=>{
-    const coming=D.captains.filter(c=>r.avail[c.id]==="yes");
-    const mine=me ? (r.avail[me.id]||"") : "";
-    const lead=captain(r.lead);
-    const opts=['<option value="">No lead yet</option>'].concat(
-      [...D.captains].sort((a,b)=>(r.avail[b.id]==="yes")-(r.avail[a.id]==="yes"))
-        .map(c=>`<option value="${c.id}" ${c.id===r.lead?"selected":""}>${esc(c.name)}${r.avail[c.id]==="yes"?" ✓":""}</option>`)).join("");
-    const past=r.date<SCH.today;
-    return `<article class="run ${r===nxt?"next":""} ${r.cancelled?"cancelled":""}" data-date="${r.date}">
-      <div class="run-head">
-        <div><span class="run-date">${niceDate(r.date)}</span> <span class="run-meta">${esc(r.time)}</span></div>
-        <div>${r===nxt?'<span class="tag">Next run</span> ':""}${r.cancelled?'<span class="tag muted">Cancelled</span>':`<span class="run-meta">${coming.length} coming</span>`}</div>
-      </div>
-      ${r.note?`<p class="run-note">${esc(r.note)}</p>`:""}
-      ${me && !past ? `<div class="mine" role="group" aria-label="Your availability on ${niceDate(r.date)}">
-        <button type="button" data-s="yes" aria-pressed="${mine==="yes"}">Coming</button>
-        <button type="button" data-s="no" aria-pressed="${mine==="no"}">Not coming</button>
-        <button type="button" data-s="tbd" aria-pressed="${mine==="tbd"}">Don’t know</button></div>` : ""}
-      <ul class="who" aria-label="Captains">${D.captains.map(c=>{ const st=r.avail[c.id]||"no";
-        return `<li class="${st}">${esc(c.name)}<span class="sr"> — ${st==="yes"?"coming":st==="tbd"?"don’t know yet":"not coming"}</span></li>`; }).join("")}</ul>
-      <div class="leadrow"><label for="lead-${r.date}">Lead</label>
-        <select id="lead-${r.date}" data-lead ${me&&!past?"":"disabled"}>${opts}</select></div>
-      ${r.lead&&r.leadBy?`<p class="run-meta" style="margin:6px 0 0">Set by ${esc(r.leadBy)}</p>`:""}
-      ${me && !past ? `<details style="margin-top:8px"><summary>Edit run</summary>
-        <div class="grid" style="margin-top:10px">
-          <div><label for="t-${r.date}">Time</label><input id="t-${r.date}" type="time" value="${esc(r.time)}" data-f="time"></div>
-          <div style="align-self:end"><label class="check"><input type="checkbox" data-f="cancelled" ${r.cancelled?"checked":""}> Cancelled</label></div>
-          <div class="full"><label for="n-${r.date}">Note</label><input id="n-${r.date}" type="text" value="${esc(r.note)}" data-f="note"></div>
-        </div>
-        <div style="margin-top:10px"><button type="button" class="btn ghost" data-saverun>Save</button></div></details>` : ""}
-    </article>`; }).join("") : `<p class="empty">No runs to show.</p>`;
-}
-
-function initSchedule(){
-  $("runs").addEventListener("click",e=>{
-    const art=e.target.closest(".run"); if(!art) return;
-    const b=e.target.closest(".mine button");
-    if(b){ schedCall("/api/status",{date:art.dataset.date, status:b.dataset.s}); return; }
-    if(e.target.closest("[data-saverun]")){
-      const f=k=>art.querySelector(`[data-f="${k}"]`);
-      schedCall("/api/run",{date:art.dataset.date, time:f("time").value, note:f("note").value, cancelled:f("cancelled").checked});
-    }
-  });
-  $("runs").addEventListener("change",e=>{
-    const sel=e.target.closest("select[data-lead]"); if(!sel) return;
-    schedCall("/api/lead",{date:sel.closest(".run").dataset.date, lead:sel.value||null});
-  });
-  $("claimwho").addEventListener("change",()=>$("claimnamewrap").classList.toggle("hidden", $("claimwho").value!=="new"));
-  $("claimsave").addEventListener("click",()=>{ const v=$("claimwho").value;
-    schedCall("/api/claim", v==="new" ? {name:$("claimname").value, handle:$("claimhandle").value} : {id:Number(v), handle:$("claimhandle").value}); });
-  $("showpast").addEventListener("click",()=>{ SCH.showPast=!SCH.showPast; renderSchedule(); });
-  $("newsave").addEventListener("click",async()=>{ if(await schedCall("/api/run",{date:$("newdate").value, time:$("newtime").value, note:$("newnote").value, cancelled:false})){ $("newnote").value=""; $("addrun").open=false; } });
-  const tabs={poster:$("tabbtn-poster"), schedule:$("tabbtn-schedule")};
-  const show=k=>{ for(const [n,b] of Object.entries(tabs)){ b.setAttribute("aria-selected", String(n===k)); $("tab-"+n).classList.toggle("hidden", n!==k); }
-    $("actions").classList.toggle("hidden", k!=="poster" || $("editor").classList.contains("hidden"));
-    if(k==="schedule") loadSchedule(); };
-  tabs.poster.addEventListener("click",()=>show("poster"));
-  tabs.schedule.addEventListener("click",()=>show("schedule"));
-}
-
-/* The route post takes its date, start time and leader from the schedule. */
-function fillFromSchedule(onLoad){
-  const n=nextRun();
-  const hint=$("nextrun-hint");
-  if(n){ const l=captain(n.lead); hint.textContent=`Next run: ${niceDate(n.date)}, ${n.time}${l?` · led by ${l.name}`:" · no lead picked yet"}`; } else hint.textContent="";
-  if(!onLoad) return;
-  if(n && !$("date").value) $("date").value=n.date;
-  applyRunToFields();
-}
-function applyRunToFields(){
-  const r=runOn($("date").value); if(!r) return;
-  if(r.time) $("time").value=r.time;
-  const l=captain(r.lead); if(l && l.handle) $("lead").value=l.handle;
-  refreshCaption();
-}
-
-/* Cloudflare Access tells a page who is signed in at /cdn-cgi/access/get-identity.
-   This only decides what is shown; it isn't a security boundary (the captions aren't secret). */
-async function applyAccess(){
-  let email="";
-  try{
-    const r=await fetch("/cdn-cgi/access/get-identity",{credentials:"include",cache:"no-store"});
-    if(r.ok){ const j=await r.json(); email=String(j.email||"").toLowerCase(); }
-  }catch(e){}
-  if(email){ $("whoemail").textContent=email; $("whoami").classList.remove("hidden"); }
-  const allowed=CAPTION_EMAILS.map(e=>e.toLowerCase()).includes(email);
-  $("capcard").classList.toggle("hidden",!allowed);
-  $("creditnote").classList.toggle("hidden",allowed);
-}
-
-function init(){
-  loadPrefs();
-  applyAccess();
-  initSchedule();
-  loadSchedule();
-  $("width").value=S.width;
-  seg("fmt","fmt");
-  seg("color","color");
-  range("zoom","zoom",v=>v+"%",v=>v/100);
-  range("cropB","cropB",v=>v+" px",Number);
-  range("width","width",v=>v,Number,savePrefs);
-  range("simplify","simplify",v=>v+" m",Number,prepareRoute);
-  range("trimS","trimS",v=>v+" m",Number,prepareRoute);
-  range("trimE","trimE",v=>v+" m",Number,prepareRoute);
-  $("round").addEventListener("change",e=>{S.round=e.target.checked; scheduleDraw();});
-  ["title","dist","date","beer"].forEach(i=>$(i).addEventListener("input",()=>{scheduleDraw(); refreshCaption();}));
-  $("date").addEventListener("change",applyRunToFields);
-  ["time","lead"].forEach(i=>$(i).addEventListener("input",()=>{refreshCaption(); savePrefs();}));
-  $("cap").addEventListener("input",()=>{capTouched=true;});
-  $("capstyle").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; capStyle=b.dataset.v;
-    $("capstyle").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); refreshCaption(true); });
-  $("copy").addEventListener("click",async()=>{ try{ await navigator.clipboard.writeText($("cap").value); $("copy").textContent="Copied ✓"; }catch(e){ $("cap").select(); document.execCommand("copy"); $("copy").textContent="Copied ✓"; } setTimeout(()=>$("copy").textContent="Copy caption",1800); });
-  $("gpx").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadFile(f); e.target.value=""; });
-  const drop=$("drop");
-  ["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault(); drop.classList.add("over");}));
-  ["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault(); drop.classList.remove("over");}));
-  drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) loadFile(f); });
-  $("save").addEventListener("click",download);
-  $("share").addEventListener("click",share);
-
-  // drag to pan, pinch to zoom
-  const ptrs=new Map(); let last=null, pinch0=null, zoom0=1;
-  cv.addEventListener("pointerdown",e=>{ cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); cv.classList.add("dragging");
-    if(ptrs.size===2){ const [a,b]=[...ptrs.values()]; pinch0=Math.hypot(a.x-b.x,a.y-b.y); zoom0=S.zoom; } last={x:e.clientX,y:e.clientY}; });
-  cv.addEventListener("pointermove",e=>{ if(!ptrs.has(e.pointerId)||!S.view) return; ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    const k=cv.width/cv.getBoundingClientRect().width;
-    if(ptrs.size===2 && pinch0){ const [a,b]=[...ptrs.values()]; const z=Math.max(.5,Math.min(2,zoom0*Math.hypot(a.x-b.x,a.y-b.y)/pinch0));
-      S.zoom=z; $("zoom").value=Math.round(z*100); $("zoomv").textContent=Math.round(z*100)+"%"; scheduleDraw(); return; }
-    if(ptrs.size===1 && last){ S.pan.x+=(e.clientX-last.x)*k/S.view.scale; S.pan.y+=(e.clientY-last.y)*k/S.view.scale; last={x:e.clientX,y:e.clientY}; scheduleDraw(); } });
-  const up=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) pinch0=null; if(!ptrs.size){ last=null; cv.classList.remove("dragging"); } else { const v=[...ptrs.values()][0]; last={x:v.x,y:v.y}; } };
-  cv.addEventListener("pointerup",up); cv.addEventListener("pointercancel",up);
-  document.fonts.load('60px "MikkelWind"');
-}
-init();
-</script>
+<script src="app.js"></script>
 </body>
 </html>

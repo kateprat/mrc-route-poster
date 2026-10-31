@@ -38,11 +38,9 @@ try:
         b = p.chromium.launch(args=["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
         kate = page_for(b, "captain@example.com")
         kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1500)
-        check(kate.is_visible("#claimcard"), "first visit asks which captain you are")
-        names = kate.eval_on_selector_all("#claimwho option", "os => os.map(o => o.textContent)")
-        check(names[:5] == ["Felix", "Kate", "Ale", "Andrea", "Fabio"], f"captains imported from the spreadsheet: {names}")
-        kate.select_option("#claimwho", label="Kate"); kate.fill("#claimhandle", "kates.turn"); kate.click("#claimsave"); kate.wait_for_timeout(800)
-        check(not kate.is_visible("#claimcard"), "claim saved")
+        check(not kate.is_visible("#unlinked") and kate.locator("#claimcard").count() == 0, "Kate is recognised from her email, nothing to pick")
+        chips = kate.locator(".run").first.locator(".who li").all_inner_texts()
+        check([c.split()[0] for c in chips] == ["Felix", "Kate", "Ale", "Andrea", "Fabio"], f"captains from the roster: {chips}")
         first = kate.locator(".run").first
         date = first.get_attribute("data-date")
         check(first.locator(".tag", has_text="Next run").count() == 1, f"next run highlighted: {date}")
@@ -50,30 +48,34 @@ try:
         check(kate.locator(".run").first.locator('.mine button[data-s="yes"]').get_attribute("aria-pressed") == "true", "Kate marks herself Coming")
         kate.locator(".run").first.locator("select[data-lead]").select_option(label="Kate ✓"); kate.wait_for_timeout(600)
         check("Set by Kate" in kate.locator(".run").first.inner_text(), "lead set, shows who set it")
-        kate.screenshot(path=os.path.join(OUT, "schedule-kate.png"), full_page=True)
 
-        # A second captain sees Kate's answers and links as Felix
-        felix = page_for(b, "felix@example.com")
-        felix.click("#tabbtn-schedule"); felix.wait_for_timeout(1500)
-        free = felix.eval_on_selector_all("#claimwho option", "os => os.map(o => o.textContent)")
-        check("Kate" not in free, f"Kate no longer offered to others: {free}")
-        felix.select_option("#claimwho", label="Felix"); felix.click("#claimsave"); felix.wait_for_timeout(800)
-        txt = felix.locator(".run").first.inner_text()
-        check("Kate" in felix.locator(".run").first.locator("select[data-lead]").evaluate("s => s.options[s.selectedIndex].text"), "Felix sees Kate as lead")
-        felix.close()
+        # Cancel the second upcoming run after giving it a lead: action item for that lead
+        second = kate.locator(".run").nth(1); d2 = second.get_attribute("data-date")
+        second.locator("select[data-lead]").select_option(label="Kate ✓" if "Kate ✓" in second.locator("select[data-lead]").inner_text() else "Kate"); kate.wait_for_timeout(600)
+        run2 = kate.locator(f'.run[data-date="{d2}"]')
+        run2.locator("details summary").click(); run2.locator('[data-f="cancelled"]').check(); run2.locator("[data-saverun]").click(); kate.wait_for_timeout(700)
+        todo = kate.locator(f'.run[data-date="{d2}"] .todo')
+        check(todo.count() == 1 and "To do for Kate" in todo.inner_text() and "Instagram" in todo.inner_text(), f"cancelled run shows action item: {todo.inner_text()[:90] if todo.count() else None!r}")
+        kate.screenshot(path=os.path.join(OUT, "schedule-kate.png"), full_page=True)
 
         # Add a special run
         kate.click("#addrun summary"); kate.fill("#newdate", "2026-12-24"); kate.fill("#newtime", "10:00"); kate.fill("#newnote", "Christmas Eve jog"); kate.click("#newsave"); kate.wait_for_timeout(800)
-        check(kate.locator('.run[data-date="2026-12-24"]').count() == 1 and "Christmas Eve jog" in kate.locator('.run[data-date="2026-12-24"]').inner_text(), "special run added")
+        check(kate.locator('.run[data-date="2026-12-24"]').count() == 1, "special run added")
 
-        # Route post picks up the next run's date, time and leader
+        # Route post takes the next run's date; hint names the lead
         kate.click("#tabbtn-poster")
         kate.set_input_files("#gpx", os.path.join(ROOT, "test", "sample.gpx")); kate.wait_for_timeout(2500)
         check(kate.input_value("#date") == date, f"poster date = next run ({kate.input_value('#date')})")
-        check(kate.input_value("#lead") == "@kates.turn", f"poster 'Led by' = lead's handle ({kate.input_value('#lead')})")
-        check("@kates.turn leads us" in kate.input_value("#cap"), "caption names the lead")
-        print("hint:", kate.inner_text("#nextrun-hint"))
-        kate.screenshot(path=os.path.join(OUT, "poster-from-schedule.png"))
+        check("led by Kate" in kate.inner_text("#nextrun-hint"), f"hint: {kate.inner_text('#nextrun-hint')}")
+
+        # An email that isn't in src/captains.js can look but not change anything
+        guest = page_for(b, "someone@example.com")
+        guest.click("#tabbtn-schedule"); guest.wait_for_timeout(1500)
+        check(guest.is_visible("#unlinked") and "someone@example.com" in guest.inner_text("#unlinked"), "unlinked email gets the 'not linked yet' note")
+        check(guest.locator(".mine").count() == 0 and guest.locator("select[data-lead]").first.is_disabled(), "unlinked email can't change anything")
+        r = guest.evaluate("fetch('/api/status',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({date:'%s',status:'yes'})}).then(r=>r.status)" % date)
+        check(r == 403, f"API refuses changes from an unlinked email ({r})")
+        guest.close()
 
         # Without the Access header the API refuses
         anon = b.new_page()

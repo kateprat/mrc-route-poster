@@ -2,13 +2,20 @@
 //
 // Who is calling: Cloudflare Access sits in front of the whole app and adds the
 // signed-in email as the `cf-access-authenticated-user-email` header. Requests
-// without it are refused, so only captains on the Access list can read or write.
+// without it are refused. src/captains.js links each email to a captain; emails
+// that aren't in that list can look at the schedule but not change it.
 //
 // Storage: one SQLite-backed Durable Object ("Schedule"). Cloudflare creates it
 // on deploy (see wrangler.jsonc); no database to set up by hand.
 
 import { DurableObject } from "cloudflare:workers";
 import SEED from "./seed.json";
+import CAPTAINS from "./captains.js";
+
+/** The captain for a login email, from src/captains.js (or null). */
+function captainFor(email) {
+  return CAPTAINS.find((c) => c.emails.map((e) => e.toLowerCase()).includes(email)) || null;
+}
 
 const STATUSES = ["yes", "no", "tbd"];
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || "");
@@ -43,6 +50,14 @@ export class Schedule extends DurableObject {
     this.sql.exec("INSERT INTO meta (k, v) VALUES ('seeded', ?)", new Date().toISOString());
   }
 
+  // src/captains.js is the source of truth for names and handles.
+  syncRoster() {
+    for (const c of CAPTAINS) {
+      this.sql.exec("INSERT OR IGNORE INTO captains (name) VALUES (?)", c.name);
+      this.sql.exec("UPDATE captains SET handle = ? WHERE name = ?", c.handle || "", c.name);
+    }
+  }
+
   // Every Wednesday 18:30 and the first Sunday of each month 15:00, about three months ahead.
   ensureRegularRuns(today) {
     const d = new Date(today + "T12:00:00Z");
@@ -55,57 +70,38 @@ export class Schedule extends DurableObject {
     }
   }
 
-  me(email) {
-    return this.sql.exec("SELECT id, name, email, handle FROM captains WHERE email = ?", email).toArray()[0] || null;
+  me(name) {
+    return name ? this.sql.exec("SELECT id, name, handle FROM captains WHERE name = ?", name).toArray()[0] || null : null;
   }
 
-  requireMe(email) {
-    const me = this.me(email);
-    if (!me) throw new HttpError(409, "Tell the app which captain you are first.");
+  requireMe(viewer) {
+    const me = this.me(viewer.name);
+    if (!me) throw new HttpError(403, "Your login isn't linked to a captain yet. Ask Kate to add it.");
     return me;
   }
 
-  state(email, today) {
+  state(viewer, today) {
+    this.syncRoster();
     this.ensureRegularRuns(today);
-    const captains = this.sql.exec("SELECT id, name, handle, email IS NOT NULL AS linked FROM captains ORDER BY id").toArray()
-      .map((c) => ({ id: c.id, name: c.name, handle: c.handle || "", linked: !!c.linked }));
+    const captains = this.sql.exec("SELECT id, name, handle FROM captains ORDER BY id").toArray()
+      .map((c) => ({ id: c.id, name: c.name, handle: c.handle || "" }));
     const avail = {};
     for (const a of this.sql.exec("SELECT date, captain, status FROM avail").toArray()) (avail[a.date] ||= {})[a.captain] = a.status;
     const runs = this.sql.exec("SELECT date, time, note, cancelled, lead, lead_by, lead_at FROM runs ORDER BY date").toArray()
       .map((r) => ({ date: r.date, time: r.time, note: r.note, cancelled: !!r.cancelled, lead: r.lead ?? null, leadBy: r.lead_by || "", avail: avail[r.date] || {} }));
-    const me = this.me(email);
-    return { me: { email, captain: me ? { id: me.id, name: me.name, handle: me.handle || "" } : null }, captains, runs };
+    const me = this.me(viewer.name);
+    return { me: { email: viewer.email, captain: me ? { id: me.id, name: me.name, handle: me.handle || "" } : null }, captains, runs };
   }
 
-  // "I am Felix" (link this email to an existing captain) or a new captain.
-  claim(email, { id, name, handle }) {
-    if (this.me(email)) {
-      this.sql.exec("UPDATE captains SET handle = ? WHERE email = ?", clean(handle, 40).replace(/^@?/, handle ? "@" : ""), email);
-      return;
-    }
-    handle = clean(handle, 40); if (handle && !handle.startsWith("@")) handle = "@" + handle;
-    if (id) {
-      const c = this.sql.exec("SELECT id, email FROM captains WHERE id = ?", Number(id)).toArray()[0];
-      if (!c) throw new HttpError(404, "Unknown captain.");
-      if (c.email) throw new HttpError(409, "That captain is already linked to another email.");
-      this.sql.exec("UPDATE captains SET email = ?, handle = ? WHERE id = ?", email, handle, c.id);
-    } else {
-      name = clean(name, 40);
-      if (!name) throw new HttpError(400, "Please enter your name.");
-      if (this.sql.exec("SELECT 1 FROM captains WHERE name = ?", name).toArray().length) throw new HttpError(409, "That name is taken. Pick it from the list instead.");
-      this.sql.exec("INSERT INTO captains (name, email, handle) VALUES (?, ?, ?)", name, email, handle);
-    }
-  }
-
-  setStatus(email, { date, status }) {
-    const me = this.requireMe(email);
+  setStatus(viewer, { date, status }) {
+    const me = this.requireMe(viewer);
     if (!isDate(date) || !STATUSES.includes(status)) throw new HttpError(400, "Bad date or status.");
     if (!this.sql.exec("SELECT 1 FROM runs WHERE date = ?", date).toArray().length) throw new HttpError(404, "No run on that date.");
     this.sql.exec("INSERT OR REPLACE INTO avail (date, captain, status) VALUES (?, ?, ?)", date, me.id, status);
   }
 
-  setLead(email, { date, lead }) {
-    const me = this.requireMe(email);
+  setLead(viewer, { date, lead }) {
+    const me = this.requireMe(viewer);
     if (!isDate(date)) throw new HttpError(400, "Bad date.");
     const leadId = lead ? Number(lead) : null;
     if (leadId && !this.sql.exec("SELECT 1 FROM captains WHERE id = ?", leadId).toArray().length) throw new HttpError(404, "Unknown captain.");
@@ -115,8 +111,8 @@ export class Schedule extends DurableObject {
     if (leadId) this.sql.exec("INSERT OR REPLACE INTO avail (date, captain, status) VALUES (?, ?, 'yes')", date, leadId);
   }
 
-  saveRun(email, { date, time, note, cancelled }) {
-    this.requireMe(email);
+  saveRun(viewer, { date, time, note, cancelled }) {
+    this.requireMe(viewer);
     if (!isDate(date) || !isTime(time)) throw new HttpError(400, "Please give a date and a time.");
     this.sql.exec(`INSERT INTO runs (date, time, note, cancelled) VALUES (?, ?, ?, ?)
                    ON CONFLICT(date) DO UPDATE SET time = excluded.time, note = excluded.note, cancelled = excluded.cancelled`,
@@ -135,19 +131,20 @@ function zurichToday() {
 async function api(request, env, url) {
   const email = (request.headers.get("cf-access-authenticated-user-email") || "").trim().toLowerCase();
   if (!email) return json({ error: "Not signed in." }, 401);
+  const viewer = { email, name: captainFor(email)?.name || null };
   const stub = env.SCHEDULE.get(env.SCHEDULE.idFromName("mrc-zurich"));
   try {
-    if (request.method === "GET" && url.pathname === "/api/state") return json(await stub.state(email, zurichToday()));
+    if (request.method === "GET" && url.pathname === "/api/state") return json(await stub.state(viewer, zurichToday()));
     if (request.method !== "POST") return json({ error: "Not found." }, 404);
     const body = await request.json().catch(() => ({}));
-    const actions = { "/api/claim": "claim", "/api/status": "setStatus", "/api/lead": "setLead", "/api/run": "saveRun" };
+    const actions = { "/api/status": "setStatus", "/api/lead": "setLead", "/api/run": "saveRun" };
     const action = actions[url.pathname];
     if (!action) return json({ error: "Not found." }, 404);
-    await stub[action](email, body);
-    return json(await stub.state(email, zurichToday()));
+    await stub[action](viewer, body);
+    return json(await stub.state(viewer, zurichToday()));
   } catch (e) {
     // Errors thrown inside the Durable Object arrive as plain errors; keep their message.
-    const status = e.status || (/first|taken|already/i.test(e.message) ? 409 : /Bad|Please|Unknown|No run/i.test(e.message) ? 400 : 500);
+    const status = e.status || (/linked/i.test(e.message) ? 403 : /Bad|Please|Unknown|No run/i.test(e.message) ? 400 : 500);
     return json({ error: e.message || "Something went wrong." }, status);
   }
 }
