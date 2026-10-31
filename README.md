@@ -28,7 +28,7 @@ Replaces the old `MRC-leads.xlsx` availability sheet (its rows up to January 202
 - **Anyone can change anyone** (e.g. fill in for someone who texted); each run shows who made the last change.
 - Every Wednesday 18:30 and first Sunday 15:00 appear automatically about three months ahead. Special runs can be added; runs can be retimed, noted or cancelled.
 - **Live:** while the Schedule is open it picks up other captains’ changes every 15 seconds and when the app comes back to the foreground (paused while you’re editing a run).
-- **History (12 months)**: a table per captain (runs led, runs they said they’d come to) and the past runs by month, with leads, cancellations and notes. Leads only count from when they were set in this app; the old spreadsheet didn’t record them.
+- **History (12 months)**: a table per captain (runs led, runs they said they’d come to) and the past runs by month, with leads, cancellations and notes. Leads before the app come from the spreadsheet’s green cells.
 - A **cancelled** run shows a to-do for the captain who was going to lead: post a story, edit the run post, update the board in the bar, tell the other captains.
 
 It costs nothing to run: a static page plus a small Cloudflare Worker (`src/worker.js`) that stores the schedule in a SQLite Durable Object, which Cloudflare creates on deploy. Only people let in by Cloudflare Access can use it; the Worker reads their email from the header Access adds.

@@ -44,7 +44,23 @@ export class Schedule extends DurableObject {
     this.sql.exec("INSERT OR IGNORE INTO leads (date, captain) SELECT date, lead FROM runs WHERE lead IS NOT NULL");
     this.sql.exec("UPDATE runs SET lead = NULL WHERE lead IS NOT NULL");
     const seeded = this.sql.exec("SELECT v FROM meta WHERE k='seeded'").toArray().length;
-    if (seeded) return;
+    if (!seeded) this.seed();
+    this.importSheetLeads();
+  }
+
+  // The old spreadsheet marked each run's lead with a green cell; those are in src/seed.json as "leads".
+  // Runs once. A run that already has a lead set in the app keeps it.
+  importSheetLeads() {
+    if (this.sql.exec("SELECT v FROM meta WHERE k='leads_imported'").toArray().length) return;
+    const ids = Object.fromEntries(this.sql.exec("SELECT id, name FROM captains").toArray().map((r) => [r.name, r.id]));
+    for (const r of SEED.runs) {
+      if (!r.leads?.length || this.sql.exec("SELECT 1 FROM leads WHERE date = ?", r.date).toArray().length) continue;
+      for (const name of r.leads) if (ids[name]) this.sql.exec("INSERT OR IGNORE INTO leads (date, captain) VALUES (?, ?)", r.date, ids[name]);
+    }
+    this.sql.exec("INSERT OR REPLACE INTO meta (k, v) VALUES ('leads_imported', ?)", new Date().toISOString());
+  }
+
+  seed() {
     // First start: import the old spreadsheet (MRC-leads.xlsx), converted to src/seed.json.
     for (const name of SEED.captains) this.sql.exec("INSERT OR IGNORE INTO captains (name) VALUES (?)", name);
     const ids = Object.fromEntries(this.sql.exec("SELECT id, name FROM captains").toArray().map((r) => [r.name, r.id]));

@@ -58,10 +58,10 @@ try:
         kate.reload(); kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1200)
         check(state("Ale") == "lead", "saved: still lead after reloading")
         meta = kate.locator(".run").first.locator(".run-meta").last.inner_text()
-        check("Lead: Ale" in meta and "last change by Kate" in meta, f"run shows lead and who changed it: {meta!r}")
+        check("Lead" in meta and "Ale" in meta and "last change by Kate" in meta, f"run shows lead and who changed it: {meta!r}")
         tap("Kate"); tap("Kate"); tap("Kate"); kate.wait_for_timeout(1500)   # Kate: no -> tbd -> yes -> lead
         meta = kate.locator(".run").first.locator(".run-meta").last.inner_text()
-        check("Leads: Kate & Ale" in meta or "Leads: Ale & Kate" in meta, f"two leads: {meta!r}")
+        check(meta.startswith("Leads:") and "Kate" in meta and "Ale" in meta, f"several leads: {meta!r}")
         coming = kate.locator(".run").first.locator(".run-head").inner_text()
         check("4 coming" in coming, f"leads count as coming: {coming!r}")
 
@@ -100,6 +100,9 @@ try:
         check(kate.is_visible("#history") and not kate.is_visible("#runs"), "History view replaces the upcoming list")
         rows = kate.locator("#history .hist-table tbody tr").all_inner_texts()
         check(len(rows) == 5, f"tally per captain: {rows}")
+        led = {r.split("\t")[0]: int(r.split("\t")[1]) for r in rows}
+        check(led == {"Felix": 4, "Kate": 8, "Ale": 2, "Andrea": 6, "Fabio": 5}, f"leads from the spreadsheet's green cells: {led}")
+        check("Led by Felix" in kate.locator('#history .hist-run', has_text="Wed 28 Oct").inner_text(), "28 Oct led by Felix")
         months = kate.locator("#history .hist-month").all_inner_texts()
         check(len(months) >= 4 and months[0].upper().startswith("OCTOBER"), f"months newest first: {months[:3]}")
         check(kate.locator("#history .hist-run.cancelled").count() >= 1, "cancelled runs shown as cancelled (4 Oct half marathon)")

@@ -493,8 +493,8 @@ function renderSchedule(){
 }
 
 /* History: the last 12 months, newest first, grouped by month, plus a tally per captain.
-   "Said coming" is what was in the schedule, not a head count. Leads were not recorded
-   in the old spreadsheet, so "Led" counts from when the app was introduced. */
+   "Said coming" is what was in the schedule, not a head count. Leads before the app come
+   from the old spreadsheet's green cells (imported once, see importSheetLeads in src/worker.js). */
 function renderHistory(){
   const D=SCH.data; if(!D) return;
   const from=new Date(SCH.today+"T12:00:00"); from.setFullYear(from.getFullYear()-1);
@@ -509,15 +509,14 @@ function renderHistory(){
   let html=`<div class="card"><h2>Last 12 months</h2>
     <p class="run-meta" style="margin:-4px 0 10px">${held.length} runs, ${past.length-held.length} cancelled</p>
     <table class="hist-table"><thead><tr><th>Captain</th><th class="n">Led</th><th class="n">Said coming</th></tr></thead><tbody>
-    ${rows.map(r=>`<tr><td>${esc(r.name)}</td><td class="n">${r.led}</td><td class="n">${r.came}</td></tr>`).join("")}</tbody></table>
-    <p class="run-meta" style="margin:10px 0 0">“Led” counts from when leads were first set in this app; the old spreadsheet didn’t record them.</p></div>`;
+    ${rows.map(r=>`<tr><td>${esc(r.name)}</td><td class="n">${r.led}</td><td class="n">${r.came}</td></tr>`).join("")}</tbody></table></div>`;
   let month="";
   for(const r of past){
     const d=new Date(r.date+"T12:00:00"), m=`${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`;
     if(m!==month){ month=m; html+=`<h3 class="hist-month">${m}</h3>`; }
     const n=D.captains.filter(c=>["yes","lead"].includes(stateOf(r,c.id))).length;
     html+=`<div class="hist-run ${r.cancelled?"cancelled":""}"><span class="d">${niceDate(r.date)} · ${esc(r.time)}</span>
-      <span class="x">${r.cancelled?"Cancelled":`${r.leads.length?`Led by ${esc(names(r.leads))} · `:""}${n} captain${n===1?"":"s"}`}${r.note?`<br>${esc(r.note)}`:""}</span></div>`;
+      <span class="x">${r.cancelled?`Cancelled${r.leads.length?` (${esc(names(r.leads))} was to lead)`:""}`:`${r.leads.length?`Led by ${esc(names(r.leads))} · `:""}${n} captain${n===1?"":"s"}`}${r.note?`<br>${esc(r.note)}`:""}</span></div>`;
   }
   $("history").innerHTML=html;
 }

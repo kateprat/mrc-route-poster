@@ -18,7 +18,10 @@
     "Ale": "yes",
     "Andrea": "yes",
     "Fabio": "yes"
-   }
+   },
+   "leads": [
+    "Ale"
+   ]
   },
   {
    "date": "2026-06-07",
@@ -31,7 +34,10 @@
     "Ale": "no",
     "Andrea": "no",
     "Fabio": "yes"
-   }
+   },
+   "leads": [
+    "Kate"
+   ]
   },
   {
    "date": "2026-06-10",
@@ -44,7 +50,10 @@
     "Ale": "no",
     "Andrea": "no",
     "Fabio": "no"
-   }
+   },
+   "leads": [
+    "Felix"
+   ]
   },
   {
    "date": "2026-06-17",
@@ -57,7 +66,10 @@
     "Ale": "no",
     "Andrea": "yes",
     "Fabio": "no"
-   }
+   },
+   "leads": [
+    "Andrea"
+   ]
   },
   {
    "date": "2026-06-24",
@@ -70,7 +82,10 @@
     "Ale": "yes",
     "Andrea": "yes",
     "Fabio": "yes"
-   }
+   },
+   "leads": [
+    "Fabio"
+   ]
   },
   {
    "date": "2026-07-01",
@@ -83,7 +98,10 @@
     "Ale": "yes",
     "Andrea": "no",
     "Fabio": "yes"
-   }
+   },
+   "leads": [
+    "Ale"
+   ]
   },
   {
    "date": "2026-07-05",
@@ -96,7 +114,10 @@
     "Ale": "tbd",
     "Andrea": "no",
     "Fabio": "yes"
-   }
+   },
+   "leads": [
+    "Fabio"
+   ]
   },
   {
    "date": "2026-07-08",
@@ -109,7 +130,10 @@
     "Ale": "tbd",
     "Andrea": "no",
     "Fabio": "yes"
-   }
+   },
+   "leads": [
+    "Felix"
+   ]
   },
   {
    "date": "2026-07-15",
@@ -122,7 +146,10 @@
     "Ale": "tbd",
     "Andrea": "yes",
     "Fabio": "no"
-   }
+   },
+   "leads": [
+    "Andrea"
+   ]
   },
   {
    "date": "2026-07-22",
@@ -135,7 +162,10 @@
     "Ale": "tbd",
     "Andrea": "yes",
     "Fabio": "no"
-   }
+   },
+   "leads": [
+    "Andrea"
+   ]
   },
   {
    "date": "2026-07-29",
@@ -148,7 +178,10 @@
     "Ale": "tbd",
     "Andrea": "yes",
     "Fabio": "no"
-   }
+   },
+   "leads": [
+    "Andrea"
+   ]
   },
   {
    "date": "2026-08-02",
@@ -161,7 +194,10 @@
     "Ale": "tbd",
     "Andrea": "tbd",
     "Fabio": "no"
-   }
+   },
+   "leads": [
+    "Kate"
+   ]
   },
   {
    "date": "2026-08-05",
@@ -174,7 +210,10 @@
     "Ale": "no",
     "Andrea": "no",
     "Fabio": "no"
-   }
+   },
+   "leads": [
+    "Kate"
+   ]
   },
   {
    "date": "2026-08-12",
@@ -187,7 +226,10 @@
     "Ale": "tbd",
     "Andrea": "yes",
     "Fabio": "yes"
-   }
+   },
+   "leads": [
+    "Kate"
+   ]
   },
   {
    "date": "2026-08-19",
@@ -200,7 +242,10 @@
     "Ale": "no",
     "Andrea": "no",
     "Fabio": "yes"
-   }
+   },
+   "leads": [
+    "Kate"
+   ]
   },
   {
    "date": "2026-08-26",
@@ -213,7 +258,10 @@
     "Ale": "no",
     "Andrea": "yes",
     "Fabio": "yes"
-   }
+   },
+   "leads": [
+    "Fabio"
+   ]
   },
   {
    "date": "2026-09-02",
@@ -226,7 +274,10 @@
     "Ale": "tbd",
     "Andrea": "no",
     "Fabio": "yes"
-   }
+   },
+   "leads": [
+    "Fabio"
+   ]
   },
   {
    "date": "2026-09-06",
@@ -239,7 +290,10 @@
     "Ale": "tbd",
     "Andrea": "no",
     "Fabio": "no"
-   }
+   },
+   "leads": [
+    "Kate"
+   ]
   },
   {
    "date": "2026-09-09",
@@ -252,7 +306,10 @@
     "Ale": "tbd",
     "Andrea": "yes",
     "Fabio": "yes"
-   }
+   },
+   "leads": [
+    "Fabio"
+   ]
   },
   {
    "date": "2026-09-16",
@@ -265,7 +322,10 @@
     "Ale": "tbd",
     "Andrea": "yes",
     "Fabio": "no"
-   }
+   },
+   "leads": [
+    "Andrea"
+   ]
   },
   {
    "date": "2026-09-23",
@@ -278,7 +338,10 @@
     "Ale": "tbd",
     "Andrea": "yes",
     "Fabio": "no"
-   }
+   },
+   "leads": [
+    "Felix"
+   ]
   },
   {
    "date": "2026-09-30",
@@ -291,7 +354,10 @@
     "Ale": "no",
     "Andrea": "yes",
     "Fabio": "yes"
-   }
+   },
+   "leads": [
+    "Kate"
+   ]
   },
   {
    "date": "2026-10-04",
@@ -304,7 +370,10 @@
     "Ale": "no",
     "Andrea": "tbd",
     "Fabio": "no"
-   }
+   },
+   "leads": [
+    "Fabio"
+   ]
   },
   {
    "date": "2026-10-07",
@@ -317,7 +386,10 @@
     "Ale": "no",
     "Andrea": "yes",
     "Fabio": "no"
-   }
+   },
+   "leads": [
+    "Andrea"
+   ]
   },
   {
    "date": "2026-10-14",
@@ -330,7 +402,10 @@
     "Ale": "no",
     "Andrea": "yes",
     "Fabio": "yes"
-   }
+   },
+   "leads": [
+    "Kate"
+   ]
   },
   {
    "date": "2026-10-21",
@@ -356,7 +431,10 @@
     "Ale": "no",
     "Andrea": "yes",
     "Fabio": "yes"
-   }
+   },
+   "leads": [
+    "Felix"
+   ]
   },
   {
    "date": "2026-11-01",
@@ -369,7 +447,10 @@
     "Ale": "no",
     "Andrea": "no",
     "Fabio": "yes"
-   }
+   },
+   "leads": [
+    "Fabio"
+   ]
   },
   {
    "date": "2026-11-04",
@@ -382,7 +463,10 @@
     "Ale": "no",
     "Andrea": "yes",
     "Fabio": "no"
-   }
+   },
+   "leads": [
+    "Kate"
+   ]
   },
   {
    "date": "2026-11-11",
@@ -395,7 +479,10 @@
     "Ale": "no",
     "Andrea": "yes",
     "Fabio": "no"
-   }
+   },
+   "leads": [
+    "Andrea"
+   ]
   },
   {
    "date": "2026-11-18",
@@ -408,7 +495,10 @@
     "Ale": "no",
     "Andrea": "yes",
     "Fabio": "no"
-   }
+   },
+   "leads": [
+    "Andrea"
+   ]
   },
   {
    "date": "2026-11-21",
@@ -420,7 +510,12 @@
     "Kate": "no",
     "Andrea": "yes",
     "Fabio": "yes"
-   }
+   },
+   "leads": [
+    "Felix",
+    "Andrea",
+    "Fabio"
+   ]
   },
   {
    "date": "2026-11-25",
