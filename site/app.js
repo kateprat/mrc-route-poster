@@ -551,12 +551,12 @@ async function showWhoAmI(){
   }catch(e){}
 }
 
-/* Sign out of this app and of the Cloudflare Access team, so the next visit asks for email + code again. */
+/* Sign out: end this app's Cloudflare Access login, then open the app again, which shows
+   Cloudflare's login page (email, then code). */
 async function signOut(e){
   e.preventDefault();
   try{ await fetch("/cdn-cgi/access/logout",{credentials:"include",redirect:"manual",cache:"no-store"}); }catch(err){}
-  const team=SCH.data && SCH.data.me && SCH.data.me.team;
-  location.href = team ? `${team}/cdn-cgi/access/logout` : "/cdn-cgi/access/logout";
+  location.replace("/?signedout=" + Date.now());
 }
 
 function init(){

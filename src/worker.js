@@ -90,7 +90,7 @@ export class Schedule extends DurableObject {
     const runs = this.sql.exec("SELECT date, time, note, cancelled, lead, lead_by, lead_at FROM runs ORDER BY date").toArray()
       .map((r) => ({ date: r.date, time: r.time, note: r.note, cancelled: !!r.cancelled, lead: r.lead ?? null, leadBy: r.lead_by || "", avail: avail[r.date] || {} }));
     const me = this.me(viewer.name);
-    return { me: { email: viewer.email, team: viewer.team || "", captain: me ? { id: me.id, name: me.name, handle: me.handle || "" } : null }, captains, runs };
+    return { me: { email: viewer.email, captain: me ? { id: me.id, name: me.name, handle: me.handle || "" } : null }, captains, runs };
   }
 
   setStatus(viewer, { date, status }) {
@@ -124,17 +124,6 @@ class HttpError extends Error { constructor(status, message) { super(message); t
 
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
 
-// The Access team address (https://<team>.cloudflareaccess.com) from the login token, so the
-// app's "Sign out" can also end the team-wide login. Read only for that; Access has already
-// checked the token before the request reaches this Worker.
-function accessTeam(request) {
-  try {
-    const part = (request.headers.get("cf-access-jwt-assertion") || "").split(".")[1];
-    const iss = JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/"))).iss || "";
-    return /^https:\/\/[a-z0-9-]+\.cloudflareaccess\.com$/.test(iss) ? iss : "";
-  } catch { return ""; }
-}
-
 function zurichToday() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Zurich", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 }
@@ -142,7 +131,7 @@ function zurichToday() {
 async function api(request, env, url) {
   const email = (request.headers.get("cf-access-authenticated-user-email") || "").trim().toLowerCase();
   if (!email) return json({ error: "Not signed in." }, 401);
-  const viewer = { email, name: captainFor(email)?.name || null, team: accessTeam(request) };
+  const viewer = { email, name: captainFor(email)?.name || null };
   const stub = env.SCHEDULE.get(env.SCHEDULE.idFromName("mrc-zurich"));
   try {
     if (request.method === "GET" && url.pathname === "/api/state") return json(await stub.state(viewer, zurichToday()));
