@@ -25,12 +25,12 @@ def check(cond, label):
     global ok
     print(("PASS " if cond else "FAIL ") + label); ok &= bool(cond)
 
-def page_for(browser, email):
+def page_for(browser, email, extra=""):
     pg = browser.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=2, timezone_id="Europe/Zurich")
     pg.on("pageerror", lambda e: errors.append(str(e)))
     pg.route("**/cdn-cgi/access/get-identity", lambda r: r.fulfill(status=200, content_type="application/json", body=json.dumps({"email": email})))
     pg.route("**/api/**", lambda r: r.continue_(headers={**r.request.headers, "cf-access-authenticated-user-email": email}))
-    pg.goto(f"http://127.0.0.1:{APP}/index.html?source=http://127.0.0.1:{TILES}/tilejson")
+    pg.goto(f"http://127.0.0.1:{APP}/index.html?source=http://127.0.0.1:{TILES}/tilejson{extra}")
     return pg
 
 try:
@@ -57,6 +57,25 @@ try:
         todo = kate.locator(f'.run[data-date="{d2}"] .todo')
         check(todo.count() == 1 and "To do for Kate" in todo.inner_text() and "Instagram" in todo.inner_text(), f"cancelled run shows action item: {todo.inner_text()[:90] if todo.count() else None!r}")
         kate.screenshot(path=os.path.join(OUT, "schedule-kate.png"), full_page=True)
+
+        # Live updates: a second captain has the schedule open while Kate changes her answer
+        other = page_for(b, "someone@example.com", "&poll=1000")
+        other.click("#tabbtn-schedule"); other.wait_for_timeout(1200)
+        d3 = kate.locator(".run").nth(2).get_attribute("data-date")
+        before = other.locator(f'.run[data-date="{d3}"] .who li', has_text="Kate").get_attribute("class")
+        new = "tbd" if before != "tbd" else "no"
+        kate.locator(f'.run[data-date="{d3}"] .mine button[data-s="{new}"]').click(); kate.wait_for_timeout(500)
+        other.wait_for_timeout(2500)   # no reload, just waiting
+        after = other.locator(f'.run[data-date="{d3}"] .who li', has_text="Kate").get_attribute("class")
+        check(before != after == new, f"other captain sees Kate's change without reloading ({before} -> {after})")
+        # ...but not while they're in the middle of editing a run
+        other.close()
+        kate2 = page_for(b, "captain@example.com", "&poll=1000")
+        kate2.click("#tabbtn-schedule"); kate2.wait_for_timeout(1200)
+        kate2.locator(f'.run[data-date="{d3}"] details summary').click()
+        kate.locator(f'.run[data-date="{d3}"] .mine button[data-s="yes"]').click(); kate.wait_for_timeout(2500)
+        check(kate2.locator(f'.run[data-date="{d3}"] details[open]').count() == 1, "open 'Edit run' isn't wiped by a refresh")
+        kate2.close()
 
         # Add a special run
         kate.click("#addrun summary"); kate.fill("#newdate", "2026-12-24"); kate.fill("#newtime", "10:00"); kate.fill("#newnote", "Christmas Eve jog"); kate.click("#newsave"); kate.wait_for_timeout(800)

@@ -429,6 +429,27 @@ async function schedCall(path, body){
 }
 function loadSchedule(){ SCH.today=localISO(); return schedCall("/api/state"); }
 
+/* Keep the schedule live: while it's on screen, fetch other captains' changes every 15 s and
+   whenever the app comes back to the foreground. Skipped while you're in the middle of
+   editing a run, so nothing jumps under your finger. */
+const POLL_MS = Number(params.get("poll")) || 15000;
+function scheduleVisible(){ return !$("tab-schedule").classList.contains("hidden") && document.visibilityState==="visible"; }
+function busyEditing(){
+  const a=document.activeElement;
+  return !!(a && $("runs").contains(a) && a.matches("input,select,textarea")) || !!$("runs").querySelector("details[open]") || $("addrun").open;
+}
+async function refreshSchedule(){
+  if(!scheduleVisible() || busyEditing() || SCH.loading) return;
+  SCH.loading=true;
+  try{
+    const r=await fetch("/api/state",{credentials:"include",cache:"no-store"});
+    if(r.ok){ const j=await r.json(); if(!busyEditing()){ SCH.today=localISO(); SCH.data=j; renderSchedule(); fillFromSchedule(false); } }
+  }catch(e){}
+  SCH.loading=false;
+}
+setInterval(refreshSchedule, POLL_MS);
+document.addEventListener("visibilitychange", refreshSchedule);
+
 function renderSchedule(){
   const D=SCH.data; if(!D) return;
   const me=D.me.captain;

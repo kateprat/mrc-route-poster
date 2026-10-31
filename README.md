@@ -8,6 +8,8 @@ It replaces the old Inkscape workflow (GPX → SVG converter → Snazzy Maps scr
 
 ### Route post tab
 
+Everything here stays on your own phone; nobody else sees your edits.
+
 - Reads the GPX on the phone (nothing is uploaded): the **distance** comes straight from the GPX, the **title** from its name (`261014_MRC_LITTLE-DIPPER` becomes LITTLE DIPPER, editable), the **date** from the next run in the schedule.
 - Draws the MRC grey street map with the route on top in **burgundy `#882c29`** or **blue `#3584ba`**.
 - Title, distance, **FREE BEER!** and date in **MikkelWind**, like the earlier route posts. FREE BEER! is always there; drag it to move it, turn and resize it with two fingers or the Size and Angle sliders, and “Put FREE BEER! back” returns it to its usual spot.
@@ -25,6 +27,7 @@ Replaces the old `MRC-leads.xlsx` availability sheet (its rows up to January 202
 - For every run: **Coming / Not coming / Don't know**, everyone's answers at a glance, and how many are coming.
 - Any captain can pick the **lead**; the app shows who set it, and the lead is marked as coming.
 - Every Wednesday 18:30 and first Sunday 15:00 appear automatically about three months ahead. Special runs can be added; runs can be retimed, noted or cancelled.
+- **Live:** while the Schedule is open it picks up other captains’ changes every 15 seconds and when the app comes back to the foreground (paused while you’re editing a run).
 - A **cancelled** run shows a to-do for the captain who was going to lead: post a story, edit the run post, update the board in the bar, tell the other captains.
 
 It costs nothing to run: a static page plus a small Cloudflare Worker (`src/worker.js`) that stores the schedule in a SQLite Durable Object, which Cloudflare creates on deploy. Only people let in by Cloudflare Access can use it; the Worker reads their email from the header Access adds.
