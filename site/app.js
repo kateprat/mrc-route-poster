@@ -23,7 +23,7 @@ const S = {
   fmt: "feed", color: COLORS[0], mapstyle: "grey",   // always the MRC grey map
   zoom: 1, ...ADV_DEFAULTS,
   pan: {x:0, y:0},   // mercator units
-  beer: {},          // per format: {x,y} in canvas px once someone drags FREE BEER!, else default spot
+  beer: {},          // per format: {x,y,scale,rot} once someone moves/turns/resizes FREE BEER!, else default
 };
 const $ = id => document.getElementById(id);
 const cv = $("cv"), ctx = cv.getContext("2d");
@@ -253,6 +253,20 @@ function fitText(text, font, maxW, size, min){
 function fmtDate(v){ if(!v) return ""; const [y,m,d]=v.split("-").map(Number); return `${d}/${m}/${y}`; }
 const kmText = r => (r.total/1000).toFixed(1);
 
+const BEER_DEFAULT = () => { const F=FORMATS[S.fmt]; return {x:F.w/2, y:F.h*F.beer, scale:1, rot:0}; };
+function beerState(){ return {...BEER_DEFAULT(), ...(S.beer[S.fmt]||{})}; }
+function setBeer(patch){
+  const F=FORMATS[S.fmt], b={...beerState(), ...patch};
+  b.x=Math.max(60,Math.min(F.w-60,b.x)); b.y=Math.max(10,Math.min(F.h-60,b.y));
+  b.scale=Math.max(.6,Math.min(2.2,b.scale)); b.rot=Math.max(-45,Math.min(45,b.rot));
+  S.beer[S.fmt]=b; syncBeerControls(); scheduleDraw();
+}
+function syncBeerControls(){
+  const b=beerState();
+  $("beersize").value=Math.round(b.scale*100); $("beersizev").textContent=Math.round(b.scale*100)+"%";
+  $("beerrot").value=Math.round(b.rot); $("beerrotv").textContent=Math.round(b.rot)+"°";
+}
+
 function drawText(F, W, H){
   ctx.save(); ctx.fillStyle=TEXT; ctx.textAlign="center"; ctx.textBaseline="top";
   const title=($("title").value||"").toUpperCase().trim();
@@ -269,12 +283,13 @@ function drawText(F, W, H){
     for(const [s,c] of parts){ ctx.fillStyle=c; ctx.fillText(s,x,dy); x+=ctx.measureText(s).width; }
     ctx.textAlign="center"; ctx.fillStyle=TEXT;
   }
-  // FREE BEER! — always there; can be dragged, the reset button puts it back
+  // FREE BEER! — always there; can be moved, turned and resized; the reset button puts it back
+  const b=beerState();
   ctx.font=`68px "MikkelWind"`;
-  const pos=S.beer[S.fmt] || {x:W/2, y:H*F.beer};
-  ctx.fillText("FREE BEER!", pos.x, pos.y);
-  const bw=ctx.measureText("FREE BEER!").width;
-  S.beerBox={x:pos.x-bw/2, y:pos.y, w:bw, h:76};
+  const bw=ctx.measureText("FREE BEER!").width, bh=76;
+  ctx.save(); ctx.translate(b.x, b.y+bh/2); ctx.rotate(b.rot*Math.PI/180); ctx.scale(b.scale,b.scale);
+  ctx.textBaseline="middle"; ctx.fillText("FREE BEER!", 0, 0); ctx.restore();
+  S.beerHit={cx:b.x, cy:b.y+bh/2, r:Math.max(bw,bh)/2*b.scale};
   const date=fmtDate($("date").value);
   if(date){ ctx.textAlign="right"; ctx.textBaseline="bottom"; ctx.font=`58px "MikkelWind"`; ctx.fillText(date, W-40, H-F.dateY); }   // digits and slashes are all in the font
   ctx.restore();
@@ -295,12 +310,13 @@ function draw(){
   if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
   const V=computeView(F,W,H); S.view=V;
   let mapOk=true;
-  if(S.fmt==="route"){ ctx.clearRect(0,0,W,H); S.beerBox=null; }
+  if(S.fmt==="route"){ ctx.clearRect(0,0,W,H); S.beerHit=null; }
   else mapOk=drawMap(V,W,H);
   // second route first, so the main route sits on top where they share streets
   for(let i=S.rpts.length-1;i>=0;i--){ let px=S.rpts[i].map(V.toPx); if(S.round) px=chaikin(px,3); strokeRoute(px, S.width, routeColor(i)); }
   if(S.fmt!=="route") drawText(F,W,H);
   $("beerreset").classList.toggle("hidden", !S.beer[S.fmt] || S.fmt==="route");
+  $("beerctl").classList.toggle("hidden", S.fmt==="route");
   const st=$("status");
   if(S.fmt!=="route" && M.error && !M.ready){ st.textContent="Map couldn’t load. Check your connection and reload."; st.classList.add("warn"); }
   else if(S.fmt!=="route" && !mapOk){ st.textContent="Loading map…"; st.classList.remove("warn"); }
@@ -354,7 +370,7 @@ function routesChanged(){
 async function loadFile(file){
   try{
     const r=await readRoute(file);
-    S.routes=[r]; S.zoom=1; $("zoom").value=100; $("zoomv").textContent="100%"; S.beer={};
+    S.routes=[r]; S.zoom=1; $("zoom").value=100; $("zoomv").textContent="100%"; S.beer={}; syncBeerControls();
     $("title").value=cleanTitle(r.name);
     fillFromSchedule(true);
     if(!$("date").value) $("date").value=nextWednesday();
@@ -515,7 +531,10 @@ function init(){
   range("trimE","trimE",v=>v+" m",Number,prepareRoute);
   $("round").addEventListener("change",e=>{S.round=e.target.checked; scheduleDraw();});
   $("advreset").addEventListener("click",resetAdvanced);
-  $("beerreset").addEventListener("click",()=>{ delete S.beer[S.fmt]; scheduleDraw(); });
+  $("beerreset").addEventListener("click",()=>{ delete S.beer[S.fmt]; syncBeerControls(); scheduleDraw(); });
+  $("beersize").addEventListener("input",e=>setBeer({scale:e.target.value/100}));
+  $("beerrot").addEventListener("input",e=>setBeer({rot:Number(e.target.value)}));
+  $("fmt").addEventListener("click",()=>setTimeout(syncBeerControls,0));
   ["title","date"].forEach(i=>$(i).addEventListener("input",scheduleDraw));
   $("gpx").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadFile(f); e.target.value=""; });
   $("gpx2").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadSecond(f); e.target.value=""; });
@@ -527,25 +546,28 @@ function init(){
   $("save").addEventListener("click",download);
   $("share").addEventListener("click",share);
 
-  // drag the map (or FREE BEER! when the finger starts on it), pinch to zoom
-  const ptrs=new Map(); let last=null, pinch0=null, zoom0=1, dragBeer=false;
-  const toCanvas=(e)=>{ const r=cv.getBoundingClientRect(), k=cv.width/r.width; return {x:(e.clientX-r.left)*k, y:(e.clientY-r.top)*k, k}; };
-  cv.addEventListener("pointerdown",e=>{ cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); cv.classList.add("dragging");
-    const c=toCanvas(e), bb=S.beerBox, pad=30;
-    dragBeer = ptrs.size===1 && !!bb && c.x>bb.x-pad && c.x<bb.x+bb.w+pad && c.y>bb.y-pad && c.y<bb.y+bb.h+pad;
-    if(ptrs.size===2){ const [a,b]=[...ptrs.values()]; pinch0=Math.hypot(a.x-b.x,a.y-b.y); zoom0=S.zoom; dragBeer=false; }
+  // One finger: drag the map, or FREE BEER! when the finger starts on it.
+  // Two fingers: pinch the map to zoom, or turn + resize FREE BEER! when the gesture started on it.
+  const ptrs=new Map(); let last=null, g0=null, beerMode=false;
+  const toCanvas=(x,y)=>{ const r=cv.getBoundingClientRect(), k=cv.width/r.width; return {x:(x-r.left)*k, y:(y-r.top)*k}; };
+  const onBeer=(x,y)=>{ const h=S.beerHit; if(!h) return false; const c=toCanvas(x,y); return Math.hypot(c.x-h.cx,c.y-h.cy) < h.r+40; };
+  const twoFinger=()=>{ const [a,b]=[...ptrs.values()]; return {d:Math.hypot(a.x-b.x,a.y-b.y), ang:Math.atan2(b.y-a.y,b.x-a.x)}; };
+  cv.addEventListener("pointerdown",e=>{ try{ cv.setPointerCapture(e.pointerId); }catch(err){} ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); cv.classList.add("dragging");
+    if(ptrs.size===1) beerMode=onBeer(e.clientX,e.clientY);
+    if(ptrs.size===2){ const t=twoFinger(); const bs=beerState(); g0={d:t.d, ang:t.ang, zoom:S.zoom, scale:bs.scale, rot:bs.rot}; }
     last={x:e.clientX,y:e.clientY}; });
   cv.addEventListener("pointermove",e=>{ if(!ptrs.has(e.pointerId)||!S.view) return; ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
     const k=cv.width/cv.getBoundingClientRect().width;
-    if(ptrs.size===2 && pinch0){ const [a,b]=[...ptrs.values()]; const z=Math.max(.5,Math.min(2,zoom0*Math.hypot(a.x-b.x,a.y-b.y)/pinch0));
+    if(ptrs.size===2 && g0){ const t=twoFinger();
+      if(beerMode){ setBeer({scale:g0.scale*t.d/g0.d, rot:g0.rot+(t.ang-g0.ang)*180/Math.PI}); return; }
+      const z=Math.max(.5,Math.min(2,g0.zoom*t.d/g0.d));
       S.zoom=z; $("zoom").value=Math.round(z*100); $("zoomv").textContent=Math.round(z*100)+"%"; scheduleDraw(); return; }
     if(ptrs.size===1 && last){
       const dx=(e.clientX-last.x)*k, dy=(e.clientY-last.y)*k; last={x:e.clientX,y:e.clientY};
-      if(dragBeer){ const F=FORMATS[S.fmt]; const p=S.beer[S.fmt]||{x:F.w/2, y:F.h*F.beer};
-        S.beer[S.fmt]={x:Math.max(160,Math.min(F.w-160,p.x+dx)), y:Math.max(20,Math.min(F.h-90,p.y+dy))}; }
-      else { S.pan.x+=dx/S.view.scale; S.pan.y+=dy/S.view.scale; }
-      scheduleDraw(); } });
-  const up=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) pinch0=null; if(!ptrs.size){ last=null; dragBeer=false; cv.classList.remove("dragging"); } else { const v=[...ptrs.values()][0]; last={x:v.x,y:v.y}; } };
+      if(beerMode){ const b=beerState(); setBeer({x:b.x+dx, y:b.y+dy}); }
+      else { S.pan.x+=dx/S.view.scale; S.pan.y+=dy/S.view.scale; scheduleDraw(); }
+    } });
+  const up=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) g0=null; if(!ptrs.size){ last=null; beerMode=false; cv.classList.remove("dragging"); } else { const v=[...ptrs.values()][0]; last={x:v.x,y:v.y}; } };
   cv.addEventListener("pointerup",up); cv.addEventListener("pointercancel",up);
   document.fonts.load('60px "MikkelWind"');
 }

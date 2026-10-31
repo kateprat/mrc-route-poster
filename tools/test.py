@@ -45,16 +45,32 @@ try:
         pg.click('#fmt button[data-v="feed"]'); pg.wait_for_timeout(1500)
 
         # drag FREE BEER! up and to the left, then reset it
-        bb = pg.evaluate("S.beerBox"); box = pg.locator("#cv").bounding_box(); k = box["width"] / 1080
-        sx, sy = box["x"] + (bb["x"] + bb["w"] / 2) * k, box["y"] + (bb["y"] + 30) * k
+        bb = pg.evaluate("S.beerHit"); box = pg.locator("#cv").bounding_box(); k = box["width"] / 1080
+        sx, sy = box["x"] + bb["cx"] * k, box["y"] + bb["cy"] * k
         pg.mouse.move(sx, sy); pg.mouse.down(); pg.mouse.move(sx - 80, sy - 120, steps=6); pg.mouse.up(); pg.wait_for_timeout(400)
         moved = pg.evaluate("S.beer.feed")
         check(moved is not None and moved["y"] < 1350 * 0.865 - 100, f"FREE BEER! dragged to {moved}")
         check(pg.evaluate("S.pan.x === 0 && S.pan.y === 0"), "map did not move while dragging FREE BEER!")
         check(pg.is_visible("#beerreset"), "reset button appears")
+        # size and angle sliders
+        pg.fill("#beersize", "150"); pg.dispatch_event("#beersize", "input")
+        pg.fill("#beerrot", "-12"); pg.dispatch_event("#beerrot", "input"); pg.wait_for_timeout(300)
+        b2 = pg.evaluate("beerState()")
+        check(abs(b2["scale"] - 1.5) < 1e-6 and b2["rot"] == -12 and abs(b2["x"] - moved["x"]) < 1e-6, f"size 150% and angle -12° keep the position: {b2}")
+        # two fingers on FREE BEER!: spread and twist (synthetic pointer events, like a phone)
+        res = pg.evaluate("""() => { const h=S.beerHit, r=cv.getBoundingClientRect(), k=r.width/cv.width;
+          const cx=r.left+h.cx*k, cy=r.top+h.cy*k;
+          const ev=(t,id,x,y)=>cv.dispatchEvent(new PointerEvent(t,{pointerId:id,clientX:x,clientY:y,bubbles:true,isPrimary:id===1}));
+          ev("pointerdown",1,cx-20,cy); ev("pointerdown",2,cx+20,cy);
+          ev("pointermove",2,cx+20,cy+20);            // twist: about +45°
+          ev("pointermove",1,cx-40,cy-20);            // spread
+          ev("pointerup",1,cx-40,cy-20); ev("pointerup",2,cx+20,cy+20);
+          return beerState(); }""")
+        check(res["rot"] > b2["rot"] + 20 and res["scale"] > b2["scale"], f"two-finger twist and spread on FREE BEER!: {res}")
+        check(pg.evaluate("S.zoom") == 1, "map zoom unchanged by the FREE BEER! gesture")
         save(pg, "feed-beer-moved.png")
         pg.click("#beerreset"); pg.wait_for_timeout(300)
-        check(pg.evaluate("S.beer.feed") is None and not pg.is_visible("#beerreset"), "FREE BEER! back in place")
+        check(pg.evaluate("S.beer.feed") is None and not pg.is_visible("#beerreset") and pg.input_value("#beersize") == "100" and pg.input_value("#beerrot") == "0", "FREE BEER! back in place, size and angle reset")
 
         # dragging elsewhere still moves the map
         pg.locator("#cv").scroll_into_view_if_needed(); box = pg.locator("#cv").bounding_box()

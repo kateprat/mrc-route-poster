@@ -152,8 +152,14 @@ footer a{color:inherit}
         <button type="button" data-v="route" aria-pressed="false">Route only</button>
       </div>
       <div class="preview"><canvas id="cv" width="1080" height="1350" aria-label="Post preview"></canvas></div>
-      <p class="hint">Drag the map to move it. Drag “FREE BEER!” to put it somewhere else.</p>
+      <p class="hint">Drag the map to move it. Drag “FREE BEER!” to put it somewhere else; with two fingers on it you can also turn and resize it.</p>
       <p class="status" id="status" role="status"></p>
+      <div class="grid" id="beerctl" style="margin:6px 0 4px">
+        <div><div class="row" style="margin:0"><label for="beersize">“FREE BEER!” size</label><span class="val" id="beersizev">100%</span></div>
+          <input id="beersize" type="range" min="60" max="220" step="5" value="100"></div>
+        <div><div class="row" style="margin:0"><label for="beerrot">Angle</label><span class="val" id="beerrotv">0°</span></div>
+          <input id="beerrot" type="range" min="-45" max="45" step="1" value="0"></div>
+      </div>
       <div style="text-align:center"><button type="button" class="btn ghost hidden" id="beerreset">Put “FREE BEER!” back</button></div>
       <div class="row" style="margin-top:4px">
         <label for="zoom">Zoom</label><span class="val" id="zoomv">100%</span>
