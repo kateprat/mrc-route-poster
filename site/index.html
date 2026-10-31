@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>MRC ZH</title>
 <meta name="description" content="Turn a GPX file into a Mikkeller Run Club route post.">
-<meta name="theme-color" content="#0f0f54">
+<meta name="theme-color" content="#eee5d2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1714" media="(prefers-color-scheme: dark)">
+<script>try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MRC ZH">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -21,20 +23,21 @@
 /* Layout: phone-first single column — preview on top, controls in cards below, sticky share bar */
 :root{
   --paper:#eee5d2; --panel:#fbf7ef; --ink:#1a1714; --muted:#6b6358; --line:#ddd2bd;
-  /* Mikkeller brand book: Paper ground, Evening Blue as the main colour, Moss Green / Yellow for states */
-  --burgundy:#882c29; --blue:#3584ba; --accent:#0f0f54; --accent-ink:#eee5d2;
-  --ok:#357c4f; --ok-ink:#ffffff; --lead:#0f0f54; --lead-ink:#eee5d2; --note:#f6efc0; --note-line:#e0cf5a;
+  /* Mikkeller brand book: Paper ground, Blue (the bar logo blue) as the main colour, Moss Green for coming */
+  --burgundy:#882c29; --blue:#3584ba; --accent:#3584ba; --accent-ink:#ffffff;
+  --ok:#357c4f; --ok-ink:#ffffff; --lead:#3584ba; --lead-ink:#ffffff; --note:#f6efc0; --note-line:#e0cf5a;
   --display:"Windsor",Georgia,serif; --sub:"Gotham","Helvetica Neue",Arial,sans-serif; --body:"Gotham","Helvetica Neue",Arial,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --paper:#0f0f54; --panel:#18186a; --ink:#eee5d2; --muted:#c7bfd6; --line:#2e2e86; --accent:#f0b7ad; --accent-ink:#0f0f54; --lead:#f0b7ad; --lead-ink:#0f0f54; --note:#2a2a7a; --note-line:#f5e14b; color-scheme:dark}}
-:root[data-theme="dark"]{--paper:#0f0f54; --panel:#18186a; --ink:#eee5d2; --muted:#c7bfd6; --line:#2e2e86; --accent:#f0b7ad; --accent-ink:#0f0f54; --lead:#f0b7ad; --lead-ink:#0f0f54; --note:#2a2a7a; --note-line:#f5e14b; color-scheme:dark}
+  --paper:#1a1714; --panel:#26221d; --ink:#eee5d2; --muted:#b5ab9c; --line:#3a352e; --accent:#3584ba; --accent-ink:#ffffff; --lead:#3584ba; --lead-ink:#ffffff; --note:#2e2a22; --note-line:#f5e14b; color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#1a1714; --panel:#26221d; --ink:#eee5d2; --muted:#b5ab9c; --line:#3a352e; --accent:#3584ba; --accent-ink:#ffffff; --lead:#3584ba; --lead-ink:#ffffff; --note:#2e2a22; --note-line:#f5e14b; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;
   padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) calc(96px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .wrap{max-width:640px;margin:0 auto}
-header{padding:20px 0 8px;display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+header{padding:20px 0 8px;display:flex;align-items:center;gap:12px}
+.head-title{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 14px;min-width:0}
 h1{font-family:var(--display);font-weight:700;font-size:32px;line-height:1.05;margin:0;letter-spacing:-.01em}
 h1 span{color:var(--accent)}
 header p{margin:0;color:var(--muted);font-size:14px}
@@ -149,13 +152,26 @@ details[open] summary::after{content:" –"}
 footer{color:var(--muted);font-size:12px;text-align:center;margin:24px 0 0}
 footer a{color:inherit}
 @media (min-width:720px){h1{font-size:40px}}
+
+/* ⋯ menu with the theme choice (Auto follows the phone) */
+[hidden]{display:none!important}
+.more-menu{position:relative;margin-left:auto;align-self:center}
+.more-menu>button{appearance:none;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;width:40px;height:40px;font:900 20px/1 system-ui,sans-serif;cursor:pointer;display:grid;place-items:center;padding:0 0 4px}
+.more-menu .menu{position:absolute;right:0;top:46px;z-index:50;min-width:230px;background:var(--panel);color:var(--ink);border:1.5px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);display:grid;gap:8px}
+.more-menu .menu-h{margin:0;font:900 12px/1 var(--sub);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.more-menu .menu-seg{display:flex;gap:4px}
+.more-menu .menu-seg button{flex:1;appearance:none;border:1.5px solid var(--line);background:transparent;color:var(--ink);border-radius:999px;padding:8px 10px;font:600 14px/1 var(--body);cursor:pointer}
+.more-menu .menu-seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>MRC <span>ZH</span></h1>
-    <p>Mikkeller Run Club Zürich</p>
+    <div class="head-title"><h1>MRC <span>ZH</span></h1>
+    <p>Mikkeller Run Club Zürich</p></div>
+    <div class="more-menu"><button type="button" id="menubtn" aria-label="More options" aria-expanded="false" aria-controls="moremenu">⋯</button>
+  <div id="moremenu" class="menu" hidden><p class="menu-h">Theme</p>
+    <div class="menu-seg" role="group" aria-label="Theme"><button type="button" data-theme-v="auto">Auto</button><button type="button" data-theme-v="light">Light</button><button type="button" data-theme-v="dark">Dark</button></div></div></div>
   </header>
 
   <nav class="tabs" role="tablist" aria-label="Sections">
@@ -289,5 +305,19 @@ footer a{color:inherit}
 <div id="mapbox" aria-hidden="true" style="position:fixed;left:-20000px;top:0;width:1080px;height:1350px;pointer-events:none"></div>
 <script src="vendor/maplibre-gl.js"></script>
 <script src="app.js"></script>
+<script>
+/* ⋯ menu: theme Auto / Light / Dark, remembered on this phone */
+(function(){const root=document.documentElement, btn=document.getElementById("menubtn"), m=document.getElementById("moremenu");
+  const get=()=>{try{return localStorage.getItem("theme")||"auto"}catch(e){return "auto"}};
+  const apply=v=>{ if(v==="auto") root.removeAttribute("data-theme"); else root.setAttribute("data-theme",v);
+    m.querySelectorAll("[data-theme-v]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.themeV===v))); };
+  const close=()=>{m.hidden=true; btn.setAttribute("aria-expanded","false")};
+  btn.addEventListener("click",e=>{e.stopPropagation(); m.hidden=!m.hidden; btn.setAttribute("aria-expanded",String(!m.hidden))});
+  document.addEventListener("click",e=>{ if(!m.hidden && !m.contains(e.target)) close(); });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !m.hidden){ close(); btn.focus(); } });
+  m.addEventListener("click",e=>{ const b=e.target.closest("[data-theme-v]"); if(!b) return; try{localStorage.setItem("theme",b.dataset.themeV)}catch(err){} apply(b.dataset.themeV); });
+  apply(get());
+})();
+</script>
 </body>
 </html>
