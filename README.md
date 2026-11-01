@@ -15,7 +15,8 @@ Everything here stays on your own phone; nobody else sees your edits.
 - Title, distance, **FREE BEER!** and date in **MikkelWind**, like the earlier route posts. Title, distance and FREE BEER! can each be dragged with one finger and turned (any angle) and resized with two; “Put text back in place” resets them. FREE BEER! is always there.
 - **Two route options:** add a second GPX; it's drawn in the other colour and both distances are shown, each in its route's colour.
 - Formats: **Post 4:5** (1080×1350), **Story 9:16** (1080×1920), **Square** (1080×1080), and **Route only**: a transparent PNG of just the line(s), to put on a group photo.
-- Drag the map to move it, pinch or use the slider to zoom.
+- Drag the map to move it, pinch or use the slider to zoom. The text you're handling gets a dashed outline (only on screen, never in the image).
+- The three sections (Route post, Schedule, Routes) are in a tab bar at the bottom, within thumb reach.
 - **Advanced settings** (folded away, with “Reset to standard”): line width, smoothing GPS wobble, round corners, trimming the ends.
 - **Share** opens the phone's share sheet (Instagram, Photos, WhatsApp…). **Download PNG** saves the file.
 
@@ -33,7 +34,7 @@ Every route we've run, shortest first, each with a picture of the line, its dist
 Replaces the old `MRC-leads.xlsx` availability sheet (its rows up to January 2027 were imported).
 
 - Captains are recognised from their login email (`src/captains.js`); nobody has to pick who they are. A login that isn't in that list (a guest) sees “View only”: route posts and the schedule, but no schedule changes.
-- For every run, one row of captain names. **Tap a name** to move that captain on: tbd → coming → lead → not coming → tbd. Everyone starts as tbd (plain, no colour) until they answer. Any number of leads; leads count as coming.
+- For every run, one row of captain names. **Tap a name** to pick that captain's answer: coming, lead, tbd or not coming (everyone starts as tbd). Any number of leads; leads count as coming.
 - **Anyone can change anyone** (e.g. fill in for someone who texted); each run shows who made the last change.
 - Every Wednesday 18:30 and first Sunday 15:00 appear automatically about three months ahead. Special runs can be added; runs can be retimed, noted or cancelled.
 - **Live:** while the Schedule is open it picks up other captains’ changes every 15 seconds and when the app comes back to the foreground (paused while you’re editing a run).

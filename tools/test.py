@@ -62,6 +62,11 @@ try:
               ev("pointerup",1,cx-20,cy-40); ev("pointerup",2,cx-20,cy+40);
               return itemOf(key); }""", key)
             check(res["rot"] > 60 and res["scale"] > 1.2, f"two fingers turn {key} past 45° and enlarge it: rot {res['rot']:.0f}°, size {res['scale']:.2f}")
+        h = pg.evaluate("S.hits.title"); box = pg.locator("#cv").bounding_box(); k = box["width"] / 1080
+        pg.mouse.move(box["x"] + h["cx"] * k, box["y"] + h["cy"] * k); pg.mouse.down(); pg.wait_for_timeout(100)
+        check(pg.evaluate("S.sel") == "title", "touched text gets an outline")
+        pg.mouse.up(); pg.wait_for_timeout(1500)
+        check(pg.evaluate("S.sel") is None, "outline fades after letting go")
         check(pg.evaluate("S.pan.x === 0 && S.pan.y === 0 && S.zoom === 1"), "map didn't move or zoom while handling text")
         check(pg.is_visible("#beerreset"), "'Put text back in place' appears")
         save(pg, "feed-text-moved.png")

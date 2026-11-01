@@ -292,7 +292,11 @@ function textMoved(){ return !!S.items[S.fmt]; }
 /* Draw one item around its centre (cx,cy) with its offset, angle and size; remember where it is for touches. */
 function drawItem(k, cx, cy, w, h, paint){
   const it=itemOf(k), X=cx+it.dx, Y=cy+it.dy;
-  ctx.save(); ctx.translate(X,Y); ctx.rotate(it.rot*Math.PI/180); ctx.scale(it.scale,it.scale); paint(); ctx.restore();
+  ctx.save(); ctx.translate(X,Y); ctx.rotate(it.rot*Math.PI/180); ctx.scale(it.scale,it.scale); paint();
+  if(S.sel===k){ // dashed outline on the text you're handling (preview only, never in the exported image)
+    const p=18/it.scale; ctx.lineWidth=3/it.scale; ctx.setLineDash([14/it.scale,10/it.scale]); ctx.strokeStyle="#3584ba";
+    ctx.strokeRect(-w/2-p, -h/2-p, w+2*p, h+2*p); }
+  ctx.restore();
   S.hits[k]={cx:X, cy:Y, w, h, rot:it.rot, scale:it.scale};
 }
 
@@ -358,7 +362,7 @@ function draw(){
 function nextWednesday(){
   const d=new Date(); const add=(3-d.getDay()+7)%7; d.setDate(d.getDate()+add); return localISO(d);
 }
-function exportBlob(){ return mapSettled().then(()=>new Promise(res=>{ draw(); cv.toBlob(b=>res(b),"image/png"); })); }
+function exportBlob(){ return mapSettled().then(()=>new Promise(res=>{ S.sel=null; draw(); cv.toBlob(b=>res(b),"image/png"); })); }
 function fileName(){
   const t=($("title").value||"route").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"route";
   return `mrc-${t}-${S.fmt}.png`;
@@ -600,6 +604,7 @@ function loadSchedule(){ SCH.today=localISO(); return schedCall("/api/state"); }
 const POLL_MS = Number(params.get("poll")) || 15000;
 function scheduleVisible(){ return !$("tab-schedule").classList.contains("hidden") && document.visibilityState==="visible"; }
 function busyEditing(){
+  if(!$("statepick").classList.contains("hidden")) return true;
   const a=document.activeElement;
   return !!(a && $("runs").contains(a) && a.matches("input,select,textarea")) || !!$("runs").querySelector("details[open]") || $("addrun").open;
 }
@@ -616,7 +621,6 @@ setInterval(refreshSchedule, POLL_MS);
 document.addEventListener("visibilitychange", refreshSchedule);
 
 /* Each captain's state on a run: no -> tbd -> yes -> lead -> no (tap their name to move on). */
-const CYCLE=["tbd","yes","lead","no"];   // no answer counts as tbd
 const STATE_TEXT={no:"not coming", tbd:"tbd", yes:"coming", lead:"leading"};
 const stateOf=(r,id)=> r.leads.includes(id) ? "lead" : (r.avail[id]||"tbd");
 
@@ -642,7 +646,7 @@ function renderSchedule(){
       ${r.cancelled && !past ? `<div class="todo"><strong>To do for ${leadNames?esc(leadNames):"the captain who was going to lead"}:</strong>
         Post an Instagram story (and edit the run post) saying the run is off and why, update the “next run” board in the bar, and tell the other captains. A cancelled run should stay the exception.</div>` : ""}
       <div class="who" role="group" aria-label="Captains on ${niceDate(r.date)}">${D.captains.map(c=>{ const st=stateOf(r,c.id);
-        return `<button type="button" class="${st}" data-cap="${c.id}" ${editable?"":"disabled"} aria-label="${esc(c.name)}: ${STATE_TEXT[st]}${editable?". Tap to change.":""}">${esc(c.name)}${st==="lead"?'<span class="leadmark">lead</span>':""}</button>`; }).join("")}</div>
+        return `<button type="button" class="${st}" data-cap="${c.id}" ${editable?"":"disabled"} aria-label="${esc(c.name)}: ${STATE_TEXT[st]}${editable?". Tap to change.":""}" aria-haspopup="menu">${esc(c.name)}${st==="lead"?'<span class="leadmark">lead</span>':""}</button>`; }).join("")}</div>
       <p class="run-meta" style="margin:2px 0 0">${r.leads.length?`Lead${r.leads.length>1?"s":""}: <strong>${esc(leadNames)}</strong>`:"No lead yet"}${r.changedBy?` · last change by ${esc(r.changedBy)}`:""}</p>
       ${editable ? `<details style="margin-top:8px"><summary>Edit run</summary>
         <div class="grid" style="margin-top:10px">
@@ -685,9 +689,23 @@ function renderHistory(){
 
 /* Taps update the screen at once and are sent in order; the server's answer is shown once all are saved. */
 let capQueue=Promise.resolve(), capPending=0;
-function tapCaptain(date, id){
+/* Tapping a name opens a small picker with the four answers. */
+const PICK=[["yes","Coming"],["lead","Lead"],["tbd","tbd"],["no","Not coming"]];
+function openPicker(btn, date, id){
+  const r=runOn(date), c=captain(id), box=$("statepick"); if(!r||!c) return;
+  const cur=stateOf(r,id);
+  box.innerHTML=`<p class="sp-h">${esc(c.name)} · ${niceDate(date)}</p><div class="sp-opts">`+
+    PICK.map(([st,label])=>`<button type="button" class="${st}" data-state="${st}" aria-pressed="${st===cur}">${label}</button>`).join("")+`</div>`;
+  box.dataset.date=date; box.dataset.cap=id; box.classList.remove("hidden");
+  const b=btn.getBoundingClientRect(), w=box.offsetWidth, h=box.offsetHeight;
+  const left=Math.max(12, Math.min(window.innerWidth-w-12, b.left+b.width/2-w/2));
+  const below=b.bottom+8+h < window.innerHeight-90;   // keep clear of the tab bar
+  box.style.left=left+"px"; box.style.top=(below ? b.bottom+8 : b.top-8-h)+window.scrollY+"px";
+  box.querySelector('[aria-pressed="true"]')?.focus();
+}
+function closePicker(){ $("statepick").classList.add("hidden"); }
+function tapCaptain(date, id, next){
   const r=runOn(date); if(!r) return;
-  const next=CYCLE[(CYCLE.indexOf(stateOf(r,id))+1)%CYCLE.length];
   r.leads=r.leads.filter(x=>x!==id); if(next==="lead") r.leads.push(id);
   r.avail[id]= next==="lead" ? "yes" : next;
   r.changedBy=(SCH.data.me.captain||{}).name||r.changedBy;
@@ -704,10 +722,14 @@ function tapCaptain(date, id){
 }
 
 function initSchedule(){
+  $("statepick").addEventListener("click",e=>{ const b=e.target.closest("[data-state]"); if(!b) return;
+    const box=$("statepick"); closePicker(); tapCaptain(box.dataset.date, Number(box.dataset.cap), b.dataset.state); });
+  document.addEventListener("click",e=>{ if(!$("statepick").contains(e.target)) closePicker(); });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape") closePicker(); });
   $("runs").addEventListener("click",e=>{
     const art=e.target.closest(".run"); if(!art) return;
     const cap=e.target.closest(".who button[data-cap]");
-    if(cap && !cap.disabled){ tapCaptain(art.dataset.date, Number(cap.dataset.cap)); return; }
+    if(cap && !cap.disabled){ e.stopPropagation(); openPicker(cap, art.dataset.date, Number(cap.dataset.cap)); return; }
     if(e.target.closest("[data-saverun]")){
       const f=k=>art.querySelector(`[data-f="${k}"]`);
       schedCall("/api/run",{date:art.dataset.date, time:f("time").value, note:f("note").value, cancelled:f("cancelled").checked});
@@ -812,7 +834,7 @@ function init(){
     return null; };
   const twoFinger=()=>{ const [a,b]=[...ptrs.values()]; return {d:Math.hypot(a.x-b.x,a.y-b.y), ang:Math.atan2(b.y-a.y,b.x-a.x)}; };
   cv.addEventListener("pointerdown",e=>{ try{ cv.setPointerCapture(e.pointerId); }catch(err){} ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); cv.classList.add("dragging");
-    if(ptrs.size===1) key=hitAt(e.clientX,e.clientY);
+    if(ptrs.size===1){ key=hitAt(e.clientX,e.clientY); clearTimeout(S.selT); S.sel=key; if(key) scheduleDraw(); }
     if(ptrs.size===2){ const t=twoFinger(); const it=key?itemOf(key):ITEM0; g0={d:t.d, ang:t.ang, zoom:S.zoom, scale:it.scale, rot:it.rot}; }
     last={x:e.clientX,y:e.clientY}; });
   cv.addEventListener("pointermove",e=>{ if(!ptrs.has(e.pointerId)||!S.view) return; ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
@@ -826,7 +848,8 @@ function init(){
       if(key){ const it=itemOf(key); setItem(key,{dx:it.dx+dx, dy:it.dy+dy}); }
       else { S.pan.x+=dx/S.view.scale; S.pan.y+=dy/S.view.scale; scheduleDraw(); }
     } });
-  const up=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) g0=null; if(!ptrs.size){ last=null; key=null; cv.classList.remove("dragging"); } else { const v=[...ptrs.values()][0]; last={x:v.x,y:v.y}; } };
+  const up=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) g0=null; if(!ptrs.size){ last=null; key=null; cv.classList.remove("dragging");
+    clearTimeout(S.selT); if(S.sel) S.selT=setTimeout(()=>{ S.sel=null; scheduleDraw(); },1200); } else { const v=[...ptrs.values()][0]; last={x:v.x,y:v.y}; } };
   cv.addEventListener("pointerup",up); cv.addEventListener("pointercancel",up);
   document.fonts.load('60px "MikkelWind"');
 }

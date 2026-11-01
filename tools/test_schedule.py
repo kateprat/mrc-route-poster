@@ -46,20 +46,28 @@ try:
         check(first.locator(".tag", has_text="Next run").count() == 1, f"next run highlighted: {date}")
         check(first.locator(".mine, .leadpick").count() == 0, "no separate availability buttons or lead dropdown")
         state = lambda who, d=date: kate.locator(f'.run[data-date="{d}"] .who button', has_text=who).get_attribute("class")
-        tap = lambda who, d=date: kate.locator(f'.run[data-date="{d}"] .who button', has_text=who).click()
+        def pick(who, st, d=date, pg=None):
+            pg = pg or kate
+            pg.locator(f'.run[data-date="{d}"] .who button', has_text=who).click()
+            pg.locator(f'#statepick [data-state="{st}"]').click()
         # Ale had the sheet's default 0 (no answer) for this run: she starts as tbd; tap through the whole cycle
-        seen = [state("Ale")]
-        for _ in range(4): tap("Ale"); kate.wait_for_timeout(500); seen.append(state("Ale"))
-        check(seen == ["tbd", "yes", "lead", "no", "tbd"], f"tapping Ale cycles tbd -> coming -> lead -> not coming -> tbd: {seen}")
-        # quick taps are kept in order
-        for _ in range(2): tap("Ale")
-        kate.wait_for_timeout(1500)
-        check(state("Ale") == "lead", f"two quick taps land on lead: {state('Ale')}")
+        # tapping a name opens a picker with the four answers
+        kate.locator(f'.run[data-date="{date}"] .who button', has_text="Ale").click()
+        opts = kate.locator("#statepick [data-state]").all_inner_texts()
+        check(kate.is_visible("#statepick") and opts == ["Coming", "Lead", "tbd", "Not coming"], f"picker shows the four answers: {opts}")
+        check(kate.locator('#statepick [aria-pressed="true"]').get_attribute("data-state") == "tbd", "current answer is marked")
+        kate.locator("#statepick").screenshot(path=os.path.join(OUT, "picker.png"))
+        kate.mouse.click(5, 5); kate.wait_for_timeout(200)
+        check(not kate.is_visible("#statepick") and state("Ale") == "tbd", "tapping outside closes it without changing anything")
+        seen = []
+        for st in ["yes", "no", "tbd", "lead"]: pick("Ale", st); kate.wait_for_timeout(500); seen.append(state("Ale"))
+        check(seen == ["yes", "no", "tbd", "lead"], f"each answer can be picked directly: {seen}")
+        kate.wait_for_timeout(800)
         kate.reload(); kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1200)
         check(state("Ale") == "lead", "saved: still lead after reloading")
         meta = kate.locator(".run").first.locator(".run-meta").last.inner_text()
         check("Lead" in meta and "Ale" in meta and "last change by Kate" in meta, f"run shows lead and who changed it: {meta!r}")
-        tap("Kate"); tap("Kate"); kate.wait_for_timeout(1500)   # Kate: tbd -> yes -> lead
+        pick("Kate", "lead"); kate.wait_for_timeout(1500)
         meta = kate.locator(".run").first.locator(".run-meta").last.inner_text()
         check(meta.startswith("Leads:") and "Kate" in meta and "Ale" in meta, f"several leads: {meta!r}")
         coming = kate.locator(".run").first.locator(".run-head").inner_text()
@@ -68,7 +76,7 @@ try:
         # Cancel the second run that has leads: to-do names them
         d2 = kate.locator(".run").nth(1).get_attribute("data-date")
         for who in ("Felix", "Kate"):
-            while state(who, d2) != "lead": tap(who, d2); kate.wait_for_timeout(400)
+            pick(who, "lead", d2); kate.wait_for_timeout(400)
         kate.wait_for_timeout(800)
         run2 = kate.locator(f'.run[data-date="{d2}"]')
         run2.locator("details:not(.leadpick) summary").click(); run2.locator('[data-f="cancelled"]').check(); run2.locator("[data-saverun]").click(); kate.wait_for_timeout(700)
@@ -81,7 +89,7 @@ try:
         other.click("#tabbtn-schedule"); other.wait_for_timeout(1200)
         d3 = kate.locator(".run").nth(2).get_attribute("data-date")
         before = other.locator(f'.run[data-date="{d3}"] .who button', has_text="Andrea").get_attribute("class")
-        kate.locator(f'.run[data-date="{d3}"] .who button', has_text="Andrea").click(); kate.wait_for_timeout(800)
+        pick("Andrea", "no" if before != "no" else "yes", d3); kate.wait_for_timeout(800)
         expected = state("Andrea", d3)
         other.wait_for_timeout(2500)   # no reload, just waiting
         after = other.locator(f'.run[data-date="{d3}"] .who button', has_text="Andrea").get_attribute("class")
@@ -91,7 +99,7 @@ try:
         kate2 = page_for(b, "captain@example.com", "&poll=1000")
         kate2.click("#tabbtn-schedule"); kate2.wait_for_timeout(1200)
         kate2.locator(f'.run[data-date="{d3}"] details:not(.leadpick) summary').click()
-        tap("Fabio", d3); kate.wait_for_timeout(2500)
+        pick("Fabio", "lead", d3); kate.wait_for_timeout(2500)
         check(kate2.locator(f'.run[data-date="{d3}"] details:not(.leadpick)[open]').count() == 1, "open 'Edit run' isn't wiped by a refresh")
         kate2.close()
 

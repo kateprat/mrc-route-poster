@@ -35,7 +35,7 @@
 html,body{margin:0}
 html{touch-action:manipulation}   /* no double-tap zoom when tapping quickly; pinch still zooms */
 body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;
-  padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) calc(96px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+  padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) calc(96px + var(--tabbar) + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .wrap{max-width:640px;margin:0 auto}
 header{padding:20px 0 8px;display:flex;align-items:center;gap:12px}
 .head-title{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 14px;min-width:0}
@@ -93,15 +93,22 @@ details summary{cursor:pointer;font:900 13px/1 var(--sub);letter-spacing:.12em;t
 details summary::-webkit-details-marker{display:none}
 details summary::after{content:" +"}
 details[open] summary::after{content:" –"}
-.actions{position:fixed;left:0;right:0;bottom:0;z-index:5;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(8px);
-  border-top:1px solid var(--line);padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.actions{position:fixed;left:0;right:0;bottom:calc(var(--tabbar) + env(safe-area-inset-bottom,0px));z-index:5;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(8px);
+  border-top:1px solid var(--line);padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px))}
 .actions .wrap{display:flex;gap:10px}
 .actions .btn{flex:1}
 .hidden{display:none!important}
 /* tabs + schedule */
-.tabs{display:flex;gap:6px;margin:6px 0 4px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:4px}
-.tabs button{flex:1;appearance:none;border:0;background:transparent;color:var(--ink);border-radius:999px;min-height:42px;font:900 14px/1 var(--sub);letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
-.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+/* bottom tab bar (thumb reach); the post's Share/Download bar sits just above it */
+:root{--tabbar:64px}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;justify-content:center;gap:4px;margin:0;
+  background:color-mix(in srgb,var(--paper) 94%,transparent);backdrop-filter:blur(10px);border-top:1px solid var(--line);
+  padding:6px max(12px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px))}
+.tabs button{flex:1;max-width:160px;appearance:none;border:0;background:transparent;color:var(--muted);border-radius:14px;min-height:52px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font:900 11px/1 var(--sub);letter-spacing:.05em;text-transform:uppercase;cursor:pointer}
+.tabs button svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;padding:2px 12px;box-sizing:content-box;border-radius:999px}
+.tabs button[aria-selected="true"]{color:var(--ink)}
+.tabs button[aria-selected="true"] svg{background:var(--accent);color:var(--accent-ink)}
 .run{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:12px 0}
 .run.next{border:2px solid var(--accent)}
 .run.cancelled{opacity:.55}
@@ -124,7 +131,15 @@ details[open] summary::after{content:" –"}
 .who button.lead{background:var(--lead);border-color:var(--lead);color:var(--lead-ink)}
 .who button:disabled{cursor:default}
 .leadmark{font:900 10px/1 var(--sub);letter-spacing:.1em;text-transform:uppercase;border:1px solid currentColor;border-radius:999px;padding:3px 5px}
-.legend{display:flex;flex-wrap:wrap;gap:6px 4px;align-items:center;font-size:12px;color:var(--muted);margin:8px 0 0;white-space:nowrap}
+.legend{display:flex;flex-wrap:wrap;gap:6px 4px;align-items:center;font-size:12px;color:var(--muted);margin:14px 2px 0;white-space:nowrap}
+.statepick{position:absolute;z-index:20;width:min(300px,calc(100vw - 24px));background:var(--panel);color:var(--ink);border:1.5px solid var(--line);border-radius:16px;padding:12px;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+.statepick .sp-h{margin:0 0 8px;font:900 12px/1.2 var(--sub);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.statepick .sp-opts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.statepick button{appearance:none;min-height:44px;border-radius:999px;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);font:600 15px/1 var(--body);cursor:pointer}
+.statepick button.yes{background:var(--ok);border-color:var(--ok);color:var(--ok-ink)}
+.statepick button.lead{background:var(--lead);border-color:var(--lead);color:var(--lead-ink)}
+.statepick button.no{text-decoration:line-through;border-style:dashed;color:var(--muted)}
+.statepick button[aria-pressed="true"]{outline:3px solid var(--ink);outline-offset:2px}
 .legend span.k{border-radius:999px;padding:4px 8px;border:1.5px solid var(--line);font-weight:600}
 .leadpick{border:1.5px solid var(--line);border-radius:10px;margin:4px 0 0}
 .leadpick summary{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;cursor:pointer;list-style:none;font:inherit;text-transform:none;letter-spacing:0;color:var(--ink)}
@@ -173,7 +188,6 @@ footer a{color:inherit}
 .dup figcaption{font:900 11px/1 var(--sub);letter-spacing:.06em;text-transform:uppercase;margin-top:5px;color:var(--ink)}
 .dup figcaption i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:-1px}
 .dup .btn{min-height:38px;padding:8px 16px;font-size:13px}
-.tabs button{font-size:13px;letter-spacing:.04em}
 
 /* ⋯ menu with the theme choice (Auto follows the phone) */
 [hidden]{display:none!important}
@@ -213,9 +227,9 @@ footer a{color:inherit}
   </header>
 
   <nav class="tabs" role="tablist" aria-label="Sections">
-    <button type="button" role="tab" id="tabbtn-poster" aria-selected="true" aria-controls="tab-poster">Route post</button>
-    <button type="button" role="tab" id="tabbtn-schedule" aria-selected="false" aria-controls="tab-schedule">Schedule</button>
-    <button type="button" role="tab" id="tabbtn-routes" aria-selected="false" aria-controls="tab-routes">Routes</button>
+    <button type="button" role="tab" id="tabbtn-poster" aria-selected="true" aria-controls="tab-poster"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 15c2-5 4 1 6-3s2-2 2-2"/></svg><span>Route post</span></button>
+    <button type="button" role="tab" id="tabbtn-schedule" aria-selected="false" aria-controls="tab-schedule"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Schedule</span></button>
+    <button type="button" role="tab" id="tabbtn-routes" aria-selected="false" aria-controls="tab-routes"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3.5 6v14L9 18l6 2 5.5-2V4L15 6 9 4zM9 4v14M15 6v14"/></svg><span>Routes</span></button>
   </nav>
 
   <div id="tab-poster" role="tabpanel" aria-labelledby="tabbtn-poster">
@@ -236,7 +250,7 @@ footer a{color:inherit}
         <button type="button" data-v="route" aria-pressed="false">Route only</button>
       </div>
       <div class="preview"><canvas id="cv" width="1080" height="1350" aria-label="Post preview"></canvas></div>
-      <p class="hint">Drag the map to move it. Drag the title, the distance or “FREE BEER!” to move it; put two fingers on one of them to turn and resize it.</p>
+      <p class="hint">Drag to move. Two fingers on text: turn and resize.</p>
       <p class="status" id="status" role="status"></p>
       <div style="text-align:center"><button type="button" class="btn ghost hidden" id="beerreset">Put text back in place</button></div>
       <div class="row" style="margin-top:4px">
@@ -264,7 +278,6 @@ footer a{color:inherit}
       </div>
       <div id="route2none">
         <label class="btn ghost" for="gpx2" style="margin-top:6px">Add a second route</label>
-        <p class="hint" style="text-align:left">For the odd day with two route options. It’s drawn in the other colour.</p>
       </div>
       <div id="route2some" class="row hidden">
         <span id="route2info"></span>
@@ -272,7 +285,6 @@ footer a{color:inherit}
       </div>
       <div id="libsave" class="hidden" style="margin-top:14px">
         <button type="button" class="btn ghost" id="libsavebtn">Save to route library</button>
-        <p class="hint" style="text-align:left">So other captains can find it in Routes later, with its GPX.</p>
         <div id="libdup" class="dup hidden" role="alert"></div>
         <p class="status" id="libstatus" style="text-align:left"></p>
       </div>
@@ -280,7 +292,6 @@ footer a{color:inherit}
 
       <details id="advanced" style="margin-top:14px">
         <summary>Advanced settings</summary>
-        <p class="hint" style="text-align:left">Usually best left as they are.</p>
         <div class="row"><label for="width">Line width</label><span class="val" id="widthv">10</span></div>
         <input id="width" type="range" min="4" max="24" step="1" value="10">
         <div class="row"><label for="simplify">Smooth out GPS wobble</label><span class="val" id="simplifyv">8 m</span></div>
@@ -290,7 +301,7 @@ footer a{color:inherit}
         <input id="trimS" type="range" min="0" max="1000" step="10" value="0">
         <div class="row"><label for="trimE">Trim finish</label><span class="val" id="trimEv">0 m</span></div>
         <input id="trimE" type="range" min="0" max="1000" step="10" value="0">
-        <p class="hint" style="text-align:left">Trimming cuts a few metres off the line’s ends, e.g. when start and finish don’t quite meet at the bar. The distance isn’t changed.</p>
+        <p class="hint" style="text-align:left">Trim cuts the line’s ends where start and finish don’t meet. Distance stays.</p>
         <button type="button" class="btn ghost" id="advreset">Reset to standard</button>
       </details>
     </div>
@@ -309,10 +320,7 @@ footer a{color:inherit}
       <p style="margin:0">You can see who’s coming and leading, and make route posts. Changes to the schedule are made by the captains.</p>
       <span id="unlinkedemail" hidden></span>
     </div>
-    <div class="card hidden" id="schedhelp" style="padding:12px 16px">
-      <p style="margin:0;font-size:14px">Tap a name to change it. Each run shows last editor.</p>
-      <div class="legend" aria-hidden="true"><span class="k" style="background:var(--panel);color:var(--ink)">tbd</span>→<span class="k" style="background:var(--ok);border-color:var(--ok);color:var(--ok-ink)">coming</span>→<span class="k" style="background:var(--lead);border-color:var(--lead);color:var(--lead-ink)">lead</span>→<span class="k" style="text-decoration:line-through;border-style:dashed;opacity:.7">not coming</span></div>
-    </div>
+    <div class="legend hidden" id="schedhelp" aria-hidden="true"><span class="k" style="background:var(--ok);border-color:var(--ok);color:var(--ok-ink)">coming</span><span class="k" style="background:var(--lead);border-color:var(--lead);color:var(--lead-ink)">lead</span><span class="k" style="background:var(--panel);color:var(--ink)">tbd</span><span class="k" style="text-decoration:line-through;border-style:dashed;opacity:.7">not coming</span><span>· tap a name</span></div>
     <div class="seg" id="schedview" role="group" aria-label="Schedule view" style="margin:12px 0 0">
       <button type="button" data-v="upcoming" aria-pressed="true">Upcoming</button>
       <button type="button" data-v="history" aria-pressed="false">History (12 months)</button>
@@ -333,12 +341,12 @@ footer a{color:inherit}
   </section>
 
   <section id="tab-routes" class="hidden" role="tabpanel" aria-labelledby="tabbtn-routes">
-    <p class="hint" style="text-align:left;margin-top:12px">Every route we’ve run, shortest first. No inspiration today? Take one from here: “Use” opens it in Route post, “GPX” gives you the file.</p>
+    <p class="hint" style="text-align:left;margin-top:12px">Every route we’ve run, shortest first.</p>
     <p class="status" id="routesstatus" role="status"></p>
     <div id="routelist"></div>
     <div id="routeadd" class="card hidden">
       <h2>Add a route</h2>
-      <p class="hint" style="text-align:left;margin-top:0">For routes run before the app; you can pick several at once and rename them afterwards with Edit. New ones: make the post, then “Save to route library”.</p>
+      <p class="hint" style="text-align:left;margin-top:0">Older routes; you can pick several at once.</p>
       <label class="btn ghost" for="gpx3" style="margin-top:8px">Add GPX files</label>
       <input id="gpx3" type="file" multiple accept=".gpx,application/gpx+xml,application/xml,text/xml" class="hidden">
       <div id="adddup" class="dup hidden" role="alert"></div>
@@ -348,6 +356,8 @@ footer a{color:inherit}
   <footer>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors, map tiles by <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> and <a href="https://openmaptiles.org" target="_blank" rel="noopener">OpenMapTiles</a>. Your GPX file stays on your phone unless you save it to the route library.
     <span id="whoami" class="hidden"><br>Signed in as <strong id="whoemail"></strong> · <a href="/cdn-cgi/access/logout" id="signout">Sign out</a></span></footer>
 </div>
+
+<div id="statepick" class="statepick hidden" role="menu"></div>
 
 <div class="actions hidden" id="actions"><div class="wrap">
   <button type="button" class="btn" id="share">Share</button>
