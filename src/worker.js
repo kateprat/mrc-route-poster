@@ -119,7 +119,7 @@ export class Schedule extends DurableObject {
 
   requireMe(viewer) {
     const me = this.me(viewer.name);
-    if (!me) throw new HttpError(403, "Your login isn't linked to a captain yet. Ask Kate to add it.");
+    if (!me) throw new HttpError(403, "View only: changes to the schedule are made by the captains.");
     return me;
   }
 
@@ -206,7 +206,7 @@ async function api(request, env, url) {
     return json(await stub.state(viewer, zurichToday()));
   } catch (e) {
     // Errors thrown inside the Durable Object arrive as plain errors; keep their message.
-    const status = e.status || (/linked/i.test(e.message) ? 403 : /Bad|Please|Unknown|No run/i.test(e.message) ? 400 : 500);
+    const status = e.status || (/linked|View only/i.test(e.message) ? 403 : /Bad|Please|Unknown|No run/i.test(e.message) ? 400 : 500);
     return json({ error: e.message || "Something went wrong." }, status);
   }
 }

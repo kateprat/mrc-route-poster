@@ -23,7 +23,7 @@ Everything here stays on your own phone; nobody else sees your edits.
 
 Replaces the old `MRC-leads.xlsx` availability sheet (its rows up to January 2027 were imported).
 
-- Captains are recognised from their login email (`src/captains.js`); nobody has to pick who they are. A login that isn't in that list can look but not change anything.
+- Captains are recognised from their login email (`src/captains.js`); nobody has to pick who they are. A login that isn't in that list (a guest) sees “View only”: route posts and the schedule, but no schedule changes.
 - For every run, one row of captain names. **Tap a name** to move that captain on: tbd → coming → lead → not coming → tbd. Everyone starts as tbd (plain, no colour) until they answer. Any number of leads; leads count as coming.
 - **Anyone can change anyone** (e.g. fill in for someone who texted); each run shows who made the last change.
 - Every Wednesday 18:30 and first Sunday 15:00 appear automatically about three months ahead. Special runs can be added; runs can be retimed, noted or cancelled.
