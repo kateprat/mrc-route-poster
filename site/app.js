@@ -350,6 +350,11 @@ function draw(){
   // second route first, so the main route sits on top where they share streets
   for(let i=S.rpts.length-1;i>=0;i--){ let px=S.rpts[i].map(V.toPx); if(S.round) px=chaikin(px,3); strokeRoute(px, S.width, routeColor(i)); }
   if(S.fmt!=="route") drawText(F,W,H);
+  if(S.guides && S.fmt!=="route"){ // centre guide lines while text sticks to them (preview only)
+    ctx.save(); ctx.strokeStyle="#3584ba"; ctx.lineWidth=3; ctx.setLineDash([16,12]);
+    if(S.guides.v){ ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke(); }
+    if(S.guides.h){ ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke(); }
+    ctx.restore(); }
   $("beerreset").classList.toggle("hidden", !textMoved() || S.fmt==="route");
   const st=$("status");
   if(S.fmt!=="route" && M.error && !M.ready){ st.textContent="Map couldn’t load. Check your connection and reload."; st.classList.add("warn"); }
@@ -362,7 +367,7 @@ function draw(){
 function nextWednesday(){
   const d=new Date(); const add=(3-d.getDay()+7)%7; d.setDate(d.getDate()+add); return localISO(d);
 }
-function exportBlob(){ return mapSettled().then(()=>new Promise(res=>{ S.sel=null; draw(); cv.toBlob(b=>res(b),"image/png"); })); }
+function exportBlob(){ return mapSettled().then(()=>new Promise(res=>{ S.sel=null; S.guides=null; draw(); cv.toBlob(b=>res(b),"image/png"); })); }
 function fileName(){
   const t=($("title").value||"route").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"route";
   return `mrc-${t}-${S.fmt}.png`;
@@ -824,7 +829,16 @@ function init(){
 
   // One finger: drag the map, or the title / distance / FREE BEER! when the finger starts on it.
   // Two fingers: pinch the map to zoom, or turn + resize the text the gesture started on (any angle).
-  const ptrs=new Map(); let last=null, g0=null, key=null;
+  // Like Instagram: text sticks to the centre lines (and to straight angles) when it comes close, with a guide line,
+  // and comes off again once you move a bit further. raw = where your finger would put it without sticking.
+  const ptrs=new Map(); let last=null, g0=null, key=null, raw=null;
+  const SNAP=28, SNAP_DEG=6;
+  const sticky=(k, rdx, rdy)=>{ const F=FORMATS[S.fmt], h=S.hits[k], cur=itemOf(k); if(!h) return {dx:rdx, dy:rdy};
+    const bx=h.cx-cur.dx, by=h.cy-cur.dy; let dx=rdx, dy=rdy; S.guides={};
+    if(Math.abs(bx+rdx-F.w/2)<SNAP){ dx=F.w/2-bx; S.guides.v=true; }
+    if(Math.abs(by+rdy-F.h/2)<SNAP){ dy=F.h/2-by; S.guides.h=true; }
+    return {dx, dy}; };
+  const straight=r=>{ const n=Math.round(r/90)*90; return Math.abs(r-n)<SNAP_DEG ? n : r; };
   const toCanvas=(x,y)=>{ const r=cv.getBoundingClientRect(), k=cv.width/r.width; return {x:(x-r.left)*k, y:(y-r.top)*k}; };
   const hitAt=(x,y)=>{ if(S.fmt==="route") return null; const c=toCanvas(x,y), pad=30;
     for(const k of ["beer","title","dist"]){ const h=(S.hits||{})[k]; if(!h) continue;
@@ -834,22 +848,22 @@ function init(){
     return null; };
   const twoFinger=()=>{ const [a,b]=[...ptrs.values()]; return {d:Math.hypot(a.x-b.x,a.y-b.y), ang:Math.atan2(b.y-a.y,b.x-a.x)}; };
   cv.addEventListener("pointerdown",e=>{ try{ cv.setPointerCapture(e.pointerId); }catch(err){} ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); cv.classList.add("dragging");
-    if(ptrs.size===1){ key=hitAt(e.clientX,e.clientY); clearTimeout(S.selT); S.sel=key; if(key) scheduleDraw(); }
+    if(ptrs.size===1){ key=hitAt(e.clientX,e.clientY); clearTimeout(S.selT); S.sel=key; if(key){ const it=itemOf(key); raw={dx:it.dx, dy:it.dy}; scheduleDraw(); } }
     if(ptrs.size===2){ const t=twoFinger(); const it=key?itemOf(key):ITEM0; g0={d:t.d, ang:t.ang, zoom:S.zoom, scale:it.scale, rot:it.rot}; }
     last={x:e.clientX,y:e.clientY}; });
   cv.addEventListener("pointermove",e=>{ if(!ptrs.has(e.pointerId)||!S.view) return; ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
     const k=cv.width/cv.getBoundingClientRect().width;
     if(ptrs.size===2 && g0){ const t=twoFinger();
-      if(key){ setItem(key,{scale:g0.scale*t.d/g0.d, rot:g0.rot+(t.ang-g0.ang)*180/Math.PI}); return; }
+      if(key){ setItem(key,{scale:g0.scale*t.d/g0.d, rot:straight(g0.rot+(t.ang-g0.ang)*180/Math.PI)}); return; }
       const z=Math.max(.5,Math.min(2,g0.zoom*t.d/g0.d));
       S.zoom=z; $("zoom").value=Math.round(z*100); $("zoomv").textContent=Math.round(z*100)+"%"; scheduleDraw(); return; }
     if(ptrs.size===1 && last){
       const dx=(e.clientX-last.x)*k, dy=(e.clientY-last.y)*k; last={x:e.clientX,y:e.clientY};
-      if(key){ const it=itemOf(key); setItem(key,{dx:it.dx+dx, dy:it.dy+dy}); }
+      if(key){ raw.dx+=dx; raw.dy+=dy; setItem(key, sticky(key, raw.dx, raw.dy)); }
       else { S.pan.x+=dx/S.view.scale; S.pan.y+=dy/S.view.scale; scheduleDraw(); }
     } });
-  const up=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) g0=null; if(!ptrs.size){ last=null; key=null; cv.classList.remove("dragging");
-    clearTimeout(S.selT); if(S.sel) S.selT=setTimeout(()=>{ S.sel=null; scheduleDraw(); },1200); } else { const v=[...ptrs.values()][0]; last={x:v.x,y:v.y}; } };
+  const up=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) g0=null; if(!ptrs.size){ last=null; key=null; S.guides=null; scheduleDraw(); cv.classList.remove("dragging");
+    clearTimeout(S.selT); if(S.sel) S.selT=setTimeout(()=>{ S.sel=null; scheduleDraw(); },1200); } else { const v=[...ptrs.values()][0]; last={x:v.x,y:v.y}; if(key){ const it=itemOf(key); raw={dx:it.dx, dy:it.dy}; } } };
   cv.addEventListener("pointerup",up); cv.addEventListener("pointercancel",up);
   document.fonts.load('60px "MikkelWind"');
 }

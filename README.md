@@ -12,7 +12,7 @@ Everything here stays on your own phone; nobody else sees your edits.
 
 - Reads the GPX on the phone (nothing is uploaded unless you save it to the route library): the **distance** comes straight from the GPX, the **title** from its name (`261014_MRC_LITTLE-DIPPER` becomes LITTLE DIPPER, editable), the **date** from the next run in the schedule.
 - Draws the MRC grey street map with the route on top in **burgundy `#882c29`** or **blue `#3584ba`**.
-- Title, distance, **FREE BEER!** and date in **MikkelWind**, like the earlier route posts. Title, distance and FREE BEER! can each be dragged with one finger and turned (any angle) and resized with two; “Put text back in place” resets them. FREE BEER! is always there.
+- Title, distance, **FREE BEER!** and date in **MikkelWind**, like the earlier route posts. Title, distance and FREE BEER! can each be dragged with one finger and turned (any angle) and resized with two; Like on Instagram, text sticks to the centre lines (with a guide line) and to straight angles when it gets close, and comes off when you move further. “Put text back in place” resets them. FREE BEER! is always there.
 - **Two route options:** add a second GPX; it's drawn in the other colour and both distances are shown, each in its route's colour.
 - Formats: **Post 4:5** (1080×1350), **Story 9:16** (1080×1920), **Square** (1080×1080), and **Route only**: a transparent PNG of just the line(s), to put on a group photo.
 - Drag the map to move it, pinch or use the slider to zoom. The text you're handling gets a dashed outline (only on screen, never in the image).

@@ -62,6 +62,17 @@ try:
               ev("pointerup",1,cx-20,cy-40); ev("pointerup",2,cx-20,cy+40);
               return itemOf(key); }""", key)
             check(res["rot"] > 60 and res["scale"] > 1.2, f"two fingers turn {key} past 45° and enlarge it: rot {res['rot']:.0f}°, size {res['scale']:.2f}")
+        # sticky centre line: FREE BEER! (already moved left) dragged back near the middle sticks to it, then comes off
+        h = pg.evaluate("S.hits.beer"); box = pg.locator("#cv").bounding_box(); k = box["width"] / 1080
+        sx, sy = box["x"] + h["cx"] * k, box["y"] + h["cy"] * k
+        pg.mouse.move(sx, sy); pg.mouse.down(); pg.mouse.move(sx + (540 - h["cx"] + 15) * k, sy + 40 * k, steps=8); pg.wait_for_timeout(200)
+        snapped = pg.evaluate("[S.hits.beer.cx, S.guides && S.guides.v]")
+        check(abs(snapped[0] - 540) < 1 and snapped[1], f"sticks to the centre line with a guide: {snapped}")
+        pg.mouse.move(sx + (540 - h["cx"] + 80) * k, sy + 40 * k, steps=4); pg.wait_for_timeout(200)
+        off = pg.evaluate("[S.hits.beer.cx, !!(S.guides && S.guides.v)]")
+        check(off[0] > 600 and not off[1], f"comes off when moved further: {off}")
+        pg.mouse.up(); pg.wait_for_timeout(200)
+        check(pg.evaluate("S.guides") is None, "guide lines gone after letting go")
         h = pg.evaluate("S.hits.title"); box = pg.locator("#cv").bounding_box(); k = box["width"] / 1080
         pg.mouse.move(box["x"] + h["cx"] * k, box["y"] + h["cy"] * k); pg.mouse.down(); pg.wait_for_timeout(100)
         check(pg.evaluate("S.sel") == "title", "touched text gets an outline")
