@@ -206,6 +206,15 @@ export class Schedule extends DurableObject {
     return this.listRoutes(viewer);
   }
 
+  editRoute(viewer, { id, name, date }) {
+    this.requireMe(viewer);
+    name = clean(name, 80);
+    if (!name) throw new HttpError(400, "Please give the route a name.");
+    if (date && !isDate(date)) throw new HttpError(400, "Bad date.");
+    this.sql.exec("UPDATE routes SET name = ?, run_date = ? WHERE id = ?", name, date || null, Number(id));
+    return this.listRoutes(viewer);
+  }
+
   removeRoute(viewer, { id }) {
     this.requireMe(viewer);
     this.sql.exec("DELETE FROM routes WHERE id = ?", Number(id));
@@ -244,6 +253,7 @@ async function api(request, env, url) {
       return new Response(r.gpx, { headers: { "content-type": "application/gpx+xml", "content-disposition": `attachment; filename="mrc-${file}"`, "cache-control": "no-store" } });
     }
     if (request.method === "POST" && url.pathname === "/api/routes/add") return json(await stub.addRoute(viewer, await request.json().catch(() => ({}))));
+    if (request.method === "POST" && url.pathname === "/api/routes/edit") return json(await stub.editRoute(viewer, await request.json().catch(() => ({}))));
     if (request.method === "POST" && url.pathname === "/api/routes/remove") return json(await stub.removeRoute(viewer, await request.json().catch(() => ({}))));
     if (request.method !== "POST") return json({ error: "Not found." }, 404);
     const body = await request.json().catch(() => ({}));

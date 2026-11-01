@@ -163,6 +163,8 @@ footer a{color:inherit}
 .rcard .btns{display:flex;flex-wrap:wrap;gap:6px}
 .rcard .btns .btn{min-height:36px;padding:8px 14px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center}
 .rcard .btns .rm{color:var(--muted)}
+.rcard .edit{grid-column:1/-1;display:grid;gap:8px;border-top:1px solid var(--line);padding-top:10px}
+.rcard .edit .btns{margin-top:2px}
 .dup{margin-top:10px;background:var(--note);border:1.5px solid var(--note-line);border-radius:12px;padding:12px;font-size:14px}
 .dup .btns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 .dup .btn{min-height:38px;padding:8px 16px;font-size:13px}
@@ -331,9 +333,9 @@ footer a{color:inherit}
     <div id="routelist"></div>
     <div id="routeadd" class="card hidden">
       <h2>Add a route</h2>
-      <p class="hint" style="text-align:left;margin-top:0">For routes run before the app. New ones: make the post, then “Save to route library”.</p>
-      <label class="btn ghost" for="gpx3" style="margin-top:8px">Add a GPX</label>
-      <input id="gpx3" type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" class="hidden">
+      <p class="hint" style="text-align:left;margin-top:0">For routes run before the app; you can pick several at once and rename them afterwards with Edit. New ones: make the post, then “Save to route library”.</p>
+      <label class="btn ghost" for="gpx3" style="margin-top:8px">Add GPX files</label>
+      <input id="gpx3" type="file" multiple accept=".gpx,application/gpx+xml,application/xml,text/xml" class="hidden">
       <div id="adddup" class="dup hidden" role="alert"></div>
     </div>
   </section>

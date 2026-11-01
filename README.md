@@ -24,7 +24,7 @@ Everything here stays on your own phone; nobody else sees your edits.
 Every route we've run, shortest first, each with a picture of the line.
 
 - **Make a post** opens the route in Route post; **GPX** downloads it (for watches, Komoot, Strava).
-- Captains add routes with **Save to route library** in Route post (title, distance, run date and the GPX file), or **Add a GPX** in Routes for older runs. If it's the same route as one already there (similar distance and the lines within about 60 m of each other, or the same name), the app asks: replace it or skip.
+- Captains add routes with **Save to route library** in Route post (title, distance, run date and the GPX file), or **Add GPX files** in Routes for older runs (several at once). **Edit** on a route changes its title and run date, or removes it. If it's the same route as one already there (similar distance and the lines within about 60 m of each other, or the same name), the app asks: replace it or skip.
 - Everyone signed in can browse and download; only captains can add or remove (remove: tap twice).
 - Stored with the schedule in the Durable Object (`routes` table); very large GPX files are rewritten from their points.
 

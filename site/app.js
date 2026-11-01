@@ -471,7 +471,11 @@ function renderRoutes(){
         <p class="meta">${[when, r.addedBy?`added by ${esc(r.addedBy)}`:""].filter(Boolean).join(" · ")}</p>
         <div class="btns"><button type="button" class="btn" data-use="${r.id}">Make a post</button>
           <a class="btn ghost" href="/api/routes/gpx?id=${r.id}" download>GPX</a>
-          ${LIB.canEdit?`<button type="button" class="btn ghost rm" data-rm="${r.id}">Remove</button>`:""}</div></div></article>`; }).join("");
+          ${LIB.canEdit?`<button type="button" class="btn ghost" data-edit="${r.id}">Edit</button>`:""}</div></div>
+      ${LIB.canEdit?`<div class="edit hidden" id="edit-${r.id}">
+        <div><label for="en-${r.id}">Title</label><input id="en-${r.id}" type="text" value="${esc(r.name)}" autocomplete="off"></div>
+        <div><label for="ed-${r.id}">Run date</label><input id="ed-${r.id}" type="date" value="${esc(r.date)}"></div>
+        <div class="btns"><button type="button" class="btn" data-save="${r.id}">Save</button><button type="button" class="btn ghost rm" data-rm="${r.id}">Remove route</button></div></div>`:""}</article>`; }).join("");
 }
 /* Ask before adding a route that's already in the library: replace it, or skip. */
 function askDuplicate(box, cand, existing){
@@ -507,14 +511,23 @@ async function useRoute(id){
 function initRoutes(){
   $("routelist").addEventListener("click", async e=>{
     const u=e.target.closest("[data-use]"); if(u) return useRoute(Number(u.dataset.use));
+    const ed=e.target.closest("[data-edit]"); if(ed){ $("edit-"+ed.dataset.edit).classList.toggle("hidden"); return; }
+    const sv=e.target.closest("[data-save]"); if(sv){ const id=sv.dataset.save;
+      try{ await libCall("/api/routes/edit",{id:Number(id), name:$("en-"+id).value.toUpperCase().trim(), date:$("ed-"+id).value}); $("routesstatus").textContent="Saved."; $("routesstatus").classList.remove("warn"); }
+      catch(err){ $("routesstatus").textContent=err.message; $("routesstatus").classList.add("warn"); } return; }
     const rm=e.target.closest("[data-rm]"); if(!rm) return;
     if(rm.dataset.sure!=="1"){ rm.dataset.sure="1"; rm.textContent="Sure? Tap again"; setTimeout(()=>{ if(rm.isConnected){ rm.dataset.sure=""; rm.textContent="Remove"; } },4000); return; }
     try{ await libCall("/api/routes/remove",{id:Number(rm.dataset.rm)}); }catch(err){ $("routesstatus").textContent=err.message; $("routesstatus").classList.add("warn"); }
   });
   $("libsavebtn").addEventListener("click", ()=>addToLibrary(S.routes, ($("title").value||"").toUpperCase().trim(), $("date").value, $("libdup"), $("libstatus")));
-  $("gpx3").addEventListener("change", async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return;
-    try{ const r=await readRoute(f); await addToLibrary([r], cleanTitle(r.name), "", $("adddup"), $("routesstatus")); }
-    catch(err){ $("routesstatus").textContent=err.message||String(err); $("routesstatus").classList.add("warn"); } });
+  // several GPX files at once: each is checked against the library (replace / skip) in turn
+  $("gpx3").addEventListener("change", async e=>{ const files=[...e.target.files]; e.target.value=""; if(!files.length) return;
+    const st=$("routesstatus"), notes=[];
+    for(const f of files){
+      try{ const r=await readRoute(f); await addToLibrary([r], cleanTitle(r.name)||cleanTitle(f.name), "", $("adddup"), st); if(st.textContent) notes.push(st.textContent.replace(/\.$/,"")); }
+      catch(err){ notes.push(`${f.name}: ${err.message||err}`); }
+    }
+    st.textContent=notes.join(" · ")+(notes.length?".":""); st.classList.toggle("warn", notes.some(n=>/:/.test(n))); });
 }
 
 /* ---------- schedule (captains' availability + lead) ---------- */

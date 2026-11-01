@@ -133,7 +133,10 @@ try:
         kate.click('#libdup [data-a="replace"]'); kate.wait_for_timeout(1000)
         check("Replaced" in kate.inner_text("#libstatus"), f"replace: {kate.inner_text('#libstatus')!r}")
         kate.click("#tabbtn-routes"); kate.wait_for_timeout(800)
-        kate.set_input_files("#gpx3", os.path.join(ROOT, "test", "sample2.gpx")); kate.wait_for_timeout(1500)
+        kate.set_input_files("#gpx3", [os.path.join(ROOT, "test", "sample2.gpx"), os.path.join(ROOT, "test", "sample.gpx")])
+        kate.wait_for_selector("#adddup:not(.hidden)")   # second file is the same route as one already saved
+        kate.click('#adddup [data-a="skip"]'); kate.wait_for_timeout(800)
+        check("Saved" in kate.inner_text("#routesstatus") and "Skipped" in kate.inner_text("#routesstatus"), f"several files at once: {kate.inner_text('#routesstatus')!r}")
         cards = kate.locator("#routelist .rcard")
         kms = [float(t.split()[0]) for t in kate.locator("#routelist .rcard .km").all_inner_texts()]
         check(cards.count() == 2 and kms == sorted(kms), f"two routes, shortest first: {kms}")
@@ -145,7 +148,13 @@ try:
         kate.locator("#routelist .rcard").first.locator("[data-use]").click(); kate.wait_for_timeout(2500)
         check(kate.is_visible("#tab-poster") and kate.locator("#editor:not(.hidden)").count() == 1, "'Make a post' opens the route in Route post")
         kate.click("#tabbtn-routes"); kate.wait_for_timeout(600)
-        rm = kate.locator("#routelist .rcard").last.locator("[data-rm]"); rm.click(); rm.click(); kate.wait_for_timeout(800)
+        last = kate.locator("#routelist .rcard").last; rid2 = last.get_attribute("data-id")
+        last.locator("[data-edit]").click(); kate.fill(f"#en-{rid2}", "the long one"); kate.fill(f"#ed-{rid2}", "2026-08-12")
+        kate.locator(f'[data-save="{rid2}"]').click(); kate.wait_for_timeout(800)
+        txt = kate.locator(f'#routelist .rcard[data-id="{rid2}"]').inner_text()
+        check("THE LONG ONE" in txt and "12 Aug 2026" in txt, f"rename and date an uploaded route: {txt[:80]!r}")
+        last = kate.locator(f'#routelist .rcard[data-id="{rid2}"]'); last.locator("[data-edit]").click()
+        rm = last.locator("[data-rm]"); rm.click(); rm.click(); kate.wait_for_timeout(800)
         check(kate.locator("#routelist .rcard").count() == 1, "remove (tap twice) works")
 
         # An email that isn't in src/captains.js can look but not change anything
