@@ -23,8 +23,7 @@ const S = {
   fmt: "feed", color: COLORS[0], mapstyle: "grey",   // always the MRC grey map
   zoom: 1, ...ADV_DEFAULTS,
   pan: {x:0, y:0},   // mercator units
-  moved: {},         // per format: {title:{dx,dy}, dist:{dx,dy}} once someone drags the title or the distance
-  beer: {},          // per format: {x,y,scale,rot} once someone moves/turns/resizes FREE BEER!, else default
+  items: {},         // per format: {title|dist|beer: {dx,dy,scale,rot}} once someone moves, turns or resizes them
 };
 const $ = id => document.getElementById(id);
 const cv = $("cv"), ctx = cv.getContext("2d");
@@ -276,61 +275,51 @@ function fitText(text, font, maxW, size, min){
 function fmtDate(v){ if(!v) return ""; const [y,m,d]=v.split("-").map(Number); return `${d}/${m}/${y}`; }
 const kmText = r => (r.total/1000).toFixed(1);
 
-const BEER_DEFAULT = () => { const F=FORMATS[S.fmt]; return {x:F.w/2, y:F.h*F.beer, scale:1, rot:0}; };
-function beerState(){ return {...BEER_DEFAULT(), ...(S.beer[S.fmt]||{})}; }
-function setBeer(patch){
-  const F=FORMATS[S.fmt], b={...beerState(), ...patch};
-  b.x=Math.max(60,Math.min(F.w-60,b.x)); b.y=Math.max(10,Math.min(F.h-60,b.y));
-  b.scale=Math.max(.6,Math.min(2.2,b.scale)); b.rot=Math.max(-45,Math.min(45,b.rot));
-  S.beer[S.fmt]=b; syncBeerControls(); scheduleDraw();
+/* Title, distance and FREE BEER! can each be moved (one finger), and turned and resized (two fingers).
+   Offsets are per format; "Put text back in place" clears them. */
+const ITEM0={dx:0, dy:0, scale:1, rot:0};
+function itemOf(k){ return {...ITEM0, ...((S.items[S.fmt]||{})[k]||{})}; }
+function setItem(k, patch){
+  const F=FORMATS[S.fmt], cur=itemOf(k), it={...cur, ...patch}, h=(S.hits||{})[k];
+  if(h){ const bx=h.cx-cur.dx, by=h.cy-cur.dy;   // keep the centre on the image
+    it.dx=Math.max(30-bx, Math.min(F.w-30-bx, it.dx)); it.dy=Math.max(30-by, Math.min(F.h-30-by, it.dy)); }
+  it.scale=Math.max(.3, Math.min(4, it.scale));
+  it.rot=((it.rot+180)%360+360)%360-180;
+  (S.items[S.fmt] ||= {})[k]=it; scheduleDraw();
 }
-function syncBeerControls(){
-  const b=beerState();
-  $("beersize").value=Math.round(b.scale*100); $("beersizev").textContent=Math.round(b.scale*100)+"%";
-  $("beerrot").value=Math.round(b.rot); $("beerrotv").textContent=Math.round(b.rot)+"°";
+function textMoved(){ return !!S.items[S.fmt]; }
+/* Draw one item around its centre (cx,cy) with its offset, angle and size; remember where it is for touches. */
+function drawItem(k, cx, cy, w, h, paint){
+  const it=itemOf(k), X=cx+it.dx, Y=cy+it.dy;
+  ctx.save(); ctx.translate(X,Y); ctx.rotate(it.rot*Math.PI/180); ctx.scale(it.scale,it.scale); paint(); ctx.restore();
+  S.hits[k]={cx:X, cy:Y, w, h, rot:it.rot, scale:it.scale};
 }
-
-/* Title and distance can be dragged; the offsets are per format, and "Put text back" clears them. */
-function moveOf(key){ return ((S.moved[S.fmt]||{})[key]) || {dx:0, dy:0}; }
-function moveText(key, ddx, ddy){
-  const F=FORMATS[S.fmt], m=moveOf(key), h=(S.textHits||{})[key];
-  let dx=m.dx+ddx, dy=m.dy+ddy;
-  if(h){ // keep the text's centre on the image
-    const cx=(h.x0+h.x1)/2-m.dx, cy=(h.y0+h.y1)/2-m.dy;
-    dx=Math.max(40-cx, Math.min(F.w-40-cx, dx)); dy=Math.max(40-cy, Math.min(F.h-40-cy, dy));
-  }
-  (S.moved[S.fmt] ||= {})[key]={dx, dy}; scheduleDraw();
-}
-function textMoved(){ return !!S.beer[S.fmt] || !!S.moved[S.fmt]; }
 
 function drawText(F, W, H){
   ctx.save(); ctx.fillStyle=TEXT; ctx.textAlign="center"; ctx.textBaseline="top";
   const title=($("title").value||"").toUpperCase().trim();
-  S.textHits={};
-  const mt=moveOf("title"), md=moveOf("dist");
+  S.hits={};
   let y=F.title;
-  if(title){ const s=fitText(title,'"MikkelWind"',W*0.86,160,60); drawMW(title,W/2+mt.dx,y+mt.dy,s);
+  if(title){ const s=fitText(title,'"MikkelWind"',W*0.86,160,60);
     ctx.font=`${s}px "MikkelWind"`; const tw=ctx.measureText(mwSplit(title).base).width;
-    S.textHits.title={x0:W/2+mt.dx-tw/2, x1:W/2+mt.dx+tw/2, y0:y+mt.dy, y1:y+mt.dy+s}; y+=s*1.02; }
-  const dy=(title?y+8:F.dist)+md.dy, dxc=W/2+md.dx;
+    drawItem("title", W/2, y+s/2, tw, s, ()=>drawMW(title, 0, -s/2, s)); y+=s*1.02; }
+  const dy=title?y+8:F.dist;
   // distance(s): one route in black, two routes each in their route colour
   ctx.font=`100px "MikkelWind"`;
-  if(S.routes.length===1){ const t=`${kmText(S.routes[0])} KM`; drawMW(t, dxc, dy, 100);
-    ctx.font=`100px "MikkelWind"`; const w=ctx.measureText(t).width; S.textHits.dist={x0:dxc-w/2, x1:dxc+w/2, y0:dy, y1:dy+100}; }
+  if(S.routes.length===1){ const t=`${kmText(S.routes[0])} KM`; const w=ctx.measureText(t).width;
+    drawItem("dist", W/2, dy+50, w, 100, ()=>drawMW(t, 0, -50, 100)); }
   else if(S.routes.length===2){
     const parts=[[`${kmText(S.routes[0])} KM`,routeColor(0)],["  /  ",TEXT],[`${kmText(S.routes[1])} KM`,routeColor(1)]];
     let size=100, total; do{ ctx.font=`${size}px "MikkelWind"`; total=parts.reduce((t,[s])=>t+ctx.measureText(s).width,0); size-=6; }while(total>W*0.9 && size>50);
-    let x=dxc-total/2; ctx.textAlign="left"; S.textHits.dist={x0:x, x1:x+total, y0:dy, y1:dy+size};
-    for(const [s,c] of parts){ ctx.fillStyle=c; ctx.fillText(s,x,dy); x+=ctx.measureText(s).width; }
+    size+=6; ctx.font=`${size}px "MikkelWind"`;
+    drawItem("dist", W/2, dy+size/2, total, size, ()=>{ let x=-total/2; ctx.textAlign="left";
+      for(const [s,c] of parts){ ctx.fillStyle=c; ctx.fillText(s,x,-size/2); x+=ctx.measureText(s).width; } });
     ctx.textAlign="center"; ctx.fillStyle=TEXT;
   }
-  // FREE BEER! — always there; can be moved, turned and resized; the reset button puts it back
-  const b=beerState();
+  // FREE BEER! — always there
   ctx.font=`68px "MikkelWind"`;
   const bw=ctx.measureText("FREE BEER!").width, bh=76;
-  ctx.save(); ctx.translate(b.x, b.y+bh/2); ctx.rotate(b.rot*Math.PI/180); ctx.scale(b.scale,b.scale);
-  ctx.textBaseline="middle"; ctx.fillText("FREE BEER!", 0, 0); ctx.restore();
-  S.beerHit={cx:b.x, cy:b.y+bh/2, r:Math.max(bw,bh)/2*b.scale};
+  drawItem("beer", W/2, F.h*F.beer+bh/2, bw, bh, ()=>{ ctx.textBaseline="middle"; ctx.fillText("FREE BEER!", 0, 0); });
   const date=fmtDate($("date").value);
   if(date){ ctx.textAlign="right"; ctx.textBaseline="bottom"; ctx.font=`58px "MikkelWind"`; ctx.fillText(date, W-40, H-F.dateY); }   // digits and slashes are all in the font
   ctx.restore();
@@ -351,13 +340,12 @@ function draw(){
   if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
   const V=computeView(F,W,H); S.view=V;
   let mapOk=true;
-  if(S.fmt==="route"){ ctx.clearRect(0,0,W,H); S.beerHit=null; }
+  if(S.fmt==="route"){ ctx.clearRect(0,0,W,H); S.hits={}; }
   else mapOk=drawMap(V,W,H);
   // second route first, so the main route sits on top where they share streets
   for(let i=S.rpts.length-1;i>=0;i--){ let px=S.rpts[i].map(V.toPx); if(S.round) px=chaikin(px,3); strokeRoute(px, S.width, routeColor(i)); }
   if(S.fmt!=="route") drawText(F,W,H);
   $("beerreset").classList.toggle("hidden", !textMoved() || S.fmt==="route");
-  $("beerctl").classList.toggle("hidden", S.fmt==="route");
   const st=$("status");
   if(S.fmt!=="route" && M.error && !M.ready){ st.textContent="Map couldn’t load. Check your connection and reload."; st.classList.add("warn"); }
   else if(S.fmt!=="route" && !mapOk){ st.textContent="Loading map…"; st.classList.remove("warn"); }
@@ -411,7 +399,7 @@ function routesChanged(){
 async function loadFile(file){
   try{
     const r=await readRoute(file);
-    S.routes=[r]; S.zoom=1; $("zoom").value=100; $("zoomv").textContent="100%"; S.beer={}; S.moved={}; syncBeerControls();
+    S.routes=[r]; S.zoom=1; $("zoom").value=100; $("zoomv").textContent="100%"; S.items={};
     $("title").value=cleanTitle(r.name);
     fillFromSchedule(true);
     if(!$("date").value) $("date").value=nextWednesday();
@@ -641,10 +629,7 @@ function init(){
   range("trimE","trimE",v=>v+" m",Number,prepareRoute);
   $("round").addEventListener("change",e=>{S.round=e.target.checked; scheduleDraw();});
   $("advreset").addEventListener("click",resetAdvanced);
-  $("beerreset").addEventListener("click",()=>{ delete S.beer[S.fmt]; delete S.moved[S.fmt]; syncBeerControls(); scheduleDraw(); });
-  $("beersize").addEventListener("input",e=>setBeer({scale:e.target.value/100}));
-  $("beerrot").addEventListener("input",e=>setBeer({rot:Number(e.target.value)}));
-  $("fmt").addEventListener("click",()=>setTimeout(syncBeerControls,0));
+  $("beerreset").addEventListener("click",()=>{ delete S.items[S.fmt]; scheduleDraw(); });
   ["title","date"].forEach(i=>$(i).addEventListener("input",scheduleDraw));
   $("gpx").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadFile(f); e.target.value=""; });
   $("gpx2").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadSecond(f); e.target.value=""; });
@@ -656,33 +641,33 @@ function init(){
   $("save").addEventListener("click",download);
   $("share").addEventListener("click",share);
 
-  // One finger: drag the map, or FREE BEER! / the title / the distance when the finger starts on it.
-  // Two fingers: pinch the map to zoom, or turn + resize FREE BEER! when the gesture started on it.
-  const ptrs=new Map(); let last=null, g0=null, beerMode=false, textKey=null;
+  // One finger: drag the map, or the title / distance / FREE BEER! when the finger starts on it.
+  // Two fingers: pinch the map to zoom, or turn + resize the text the gesture started on (any angle).
+  const ptrs=new Map(); let last=null, g0=null, key=null;
   const toCanvas=(x,y)=>{ const r=cv.getBoundingClientRect(), k=cv.width/r.width; return {x:(x-r.left)*k, y:(y-r.top)*k}; };
-  const onBeer=(x,y)=>{ const h=S.beerHit; if(!h) return false; const c=toCanvas(x,y); return Math.hypot(c.x-h.cx,c.y-h.cy) < h.r+40; };
-  const onText=(x,y)=>{ const c=toCanvas(x,y), pad=24;
-    for(const [k,h] of Object.entries(S.textHits||{})) if(c.x>h.x0-pad && c.x<h.x1+pad && c.y>h.y0-pad && c.y<h.y1+pad) return k;
+  const hitAt=(x,y)=>{ if(S.fmt==="route") return null; const c=toCanvas(x,y), pad=30;
+    for(const k of ["beer","title","dist"]){ const h=(S.hits||{})[k]; if(!h) continue;
+      const a=-h.rot*Math.PI/180, px=c.x-h.cx, py=c.y-h.cy;
+      const lx=(px*Math.cos(a)-py*Math.sin(a))/h.scale, ly=(px*Math.sin(a)+py*Math.cos(a))/h.scale;
+      if(Math.abs(lx)<h.w/2+pad/h.scale && Math.abs(ly)<h.h/2+pad/h.scale) return k; }
     return null; };
   const twoFinger=()=>{ const [a,b]=[...ptrs.values()]; return {d:Math.hypot(a.x-b.x,a.y-b.y), ang:Math.atan2(b.y-a.y,b.x-a.x)}; };
   cv.addEventListener("pointerdown",e=>{ try{ cv.setPointerCapture(e.pointerId); }catch(err){} ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); cv.classList.add("dragging");
-    if(ptrs.size===1){ beerMode=S.fmt!=="route" && onBeer(e.clientX,e.clientY); textKey=(!beerMode && S.fmt!=="route") ? onText(e.clientX,e.clientY) : null; }
-    if(ptrs.size===2) textKey=null;
-    if(ptrs.size===2){ const t=twoFinger(); const bs=beerState(); g0={d:t.d, ang:t.ang, zoom:S.zoom, scale:bs.scale, rot:bs.rot}; }
+    if(ptrs.size===1) key=hitAt(e.clientX,e.clientY);
+    if(ptrs.size===2){ const t=twoFinger(); const it=key?itemOf(key):ITEM0; g0={d:t.d, ang:t.ang, zoom:S.zoom, scale:it.scale, rot:it.rot}; }
     last={x:e.clientX,y:e.clientY}; });
   cv.addEventListener("pointermove",e=>{ if(!ptrs.has(e.pointerId)||!S.view) return; ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
     const k=cv.width/cv.getBoundingClientRect().width;
     if(ptrs.size===2 && g0){ const t=twoFinger();
-      if(beerMode){ setBeer({scale:g0.scale*t.d/g0.d, rot:g0.rot+(t.ang-g0.ang)*180/Math.PI}); return; }
+      if(key){ setItem(key,{scale:g0.scale*t.d/g0.d, rot:g0.rot+(t.ang-g0.ang)*180/Math.PI}); return; }
       const z=Math.max(.5,Math.min(2,g0.zoom*t.d/g0.d));
       S.zoom=z; $("zoom").value=Math.round(z*100); $("zoomv").textContent=Math.round(z*100)+"%"; scheduleDraw(); return; }
     if(ptrs.size===1 && last){
       const dx=(e.clientX-last.x)*k, dy=(e.clientY-last.y)*k; last={x:e.clientX,y:e.clientY};
-      if(beerMode){ const b=beerState(); setBeer({x:b.x+dx, y:b.y+dy}); }
-      else if(textKey) moveText(textKey, dx, dy);
+      if(key){ const it=itemOf(key); setItem(key,{dx:it.dx+dx, dy:it.dy+dy}); }
       else { S.pan.x+=dx/S.view.scale; S.pan.y+=dy/S.view.scale; scheduleDraw(); }
     } });
-  const up=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) g0=null; if(!ptrs.size){ last=null; beerMode=false; textKey=null; cv.classList.remove("dragging"); } else { const v=[...ptrs.values()][0]; last={x:v.x,y:v.y}; } };
+  const up=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) g0=null; if(!ptrs.size){ last=null; key=null; cv.classList.remove("dragging"); } else { const v=[...ptrs.values()][0]; last={x:v.x,y:v.y}; } };
   cv.addEventListener("pointerup",up); cv.addEventListener("pointercancel",up);
   document.fonts.load('60px "MikkelWind"');
 }

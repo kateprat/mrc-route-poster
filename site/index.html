@@ -33,6 +33,7 @@
 :root[data-theme="dark"]{--paper:#0f0f54; --panel:#18186a; --ink:#eee5d2; --muted:#c7bfd6; --line:#2e2e86; --accent:#f0b7ad; --accent-ink:#0f0f54; --lead:#f0b7ad; --lead-ink:#0f0f54; --note:#2a2a7a; --note-line:#f5e14b; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0}
+html{touch-action:manipulation}   /* no double-tap zoom when tapping quickly; pinch still zooms */
 body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.45;
   padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) calc(96px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
 .wrap{max-width:640px;margin:0 auto}
@@ -213,15 +214,8 @@ footer a{color:inherit}
         <button type="button" data-v="route" aria-pressed="false">Route only</button>
       </div>
       <div class="preview"><canvas id="cv" width="1080" height="1350" aria-label="Post preview"></canvas></div>
-      <p class="hint">Drag the map to move it. Drag the title, the distance or “FREE BEER!” to put them somewhere else; with two fingers on “FREE BEER!” you can also turn and resize it.</p>
+      <p class="hint">Drag the map to move it. Drag the title, the distance or “FREE BEER!” to move it; put two fingers on one of them to turn and resize it.</p>
       <p class="status" id="status" role="status"></p>
-      <div class="grid" id="beerctl" style="margin:6px 0 4px">
-        <div class="full"><label style="margin:0">“FREE BEER!”</label></div>
-        <div><div class="row" style="margin:0"><label for="beersize">Size</label><span class="val" id="beersizev">100%</span></div>
-          <input id="beersize" type="range" min="60" max="220" step="5" value="100"></div>
-        <div><div class="row" style="margin:0"><label for="beerrot">Angle</label><span class="val" id="beerrotv">0°</span></div>
-          <input id="beerrot" type="range" min="-45" max="45" step="1" value="0"></div>
-      </div>
       <div style="text-align:center"><button type="button" class="btn ghost hidden" id="beerreset">Put text back in place</button></div>
       <div class="row" style="margin-top:4px">
         <label for="zoom">Zoom</label><span class="val" id="zoomv">100%</span>
