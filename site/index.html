@@ -154,6 +154,20 @@ footer{color:var(--muted);font-size:12px;text-align:center;margin:24px 0 0}
 footer a{color:inherit}
 @media (min-width:720px){h1{font-size:40px}}
 
+/* Routes tab */
+.rcard{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px;margin:10px 0}
+.rcard svg{width:96px;height:96px;border-radius:10px;background:var(--paper);display:block}
+.rcard h3{font:900 16px/1.15 var(--sub);letter-spacing:.02em;text-transform:uppercase;margin:4px 0 2px;overflow-wrap:anywhere}
+.rcard .km{font:900 13px/1 var(--sub);letter-spacing:.04em;text-transform:uppercase;color:var(--accent)}
+.rcard .meta{font-size:13px;color:var(--muted);margin:4px 0 8px}
+.rcard .btns{display:flex;flex-wrap:wrap;gap:6px}
+.rcard .btns .btn{min-height:36px;padding:8px 14px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center}
+.rcard .btns .rm{color:var(--muted)}
+.dup{margin-top:10px;background:var(--note);border:1.5px solid var(--note-line);border-radius:12px;padding:12px;font-size:14px}
+.dup .btns{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.dup .btn{min-height:38px;padding:8px 16px;font-size:13px}
+.tabs button{font-size:13px;letter-spacing:.04em}
+
 /* ⋯ menu with the theme choice (Auto follows the phone) */
 [hidden]{display:none!important}
 .more-menu{position:relative;margin-left:auto;align-self:center}
@@ -194,6 +208,7 @@ footer a{color:inherit}
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button type="button" role="tab" id="tabbtn-poster" aria-selected="true" aria-controls="tab-poster">Route post</button>
     <button type="button" role="tab" id="tabbtn-schedule" aria-selected="false" aria-controls="tab-schedule">Schedule</button>
+    <button type="button" role="tab" id="tabbtn-routes" aria-selected="false" aria-controls="tab-routes">Routes</button>
   </nav>
 
   <div id="tab-poster" role="tabpanel" aria-labelledby="tabbtn-poster">
@@ -247,6 +262,12 @@ footer a{color:inherit}
       <div id="route2some" class="row hidden">
         <span id="route2info"></span>
         <button type="button" class="btn ghost" id="route2remove">Remove</button>
+      </div>
+      <div id="libsave" class="hidden" style="margin-top:14px">
+        <button type="button" class="btn ghost" id="libsavebtn">Save to route library</button>
+        <p class="hint" style="text-align:left">So other captains can find it in Routes later, with its GPX.</p>
+        <div id="libdup" class="dup hidden" role="alert"></div>
+        <p class="status" id="libstatus" style="text-align:left"></p>
       </div>
       <input id="gpx2" type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" class="hidden">
 
@@ -304,7 +325,20 @@ footer a{color:inherit}
     </details>
   </section>
 
-  <footer>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors, map tiles by <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> and <a href="https://openmaptiles.org" target="_blank" rel="noopener">OpenMapTiles</a>. Your GPX file is never uploaded.
+  <section id="tab-routes" class="hidden" role="tabpanel" aria-labelledby="tabbtn-routes">
+    <p class="hint" style="text-align:left;margin-top:12px">Every route we’ve run, shortest first. No inspiration today? Take one from here: make a post with it, or download its GPX.</p>
+    <p class="status" id="routesstatus" role="status"></p>
+    <div id="routelist"></div>
+    <div id="routeadd" class="card hidden">
+      <h2>Add a route</h2>
+      <p class="hint" style="text-align:left;margin-top:0">For routes run before the app. New ones: make the post, then “Save to route library”.</p>
+      <label class="btn ghost" for="gpx3" style="margin-top:8px">Add a GPX</label>
+      <input id="gpx3" type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" class="hidden">
+      <div id="adddup" class="dup hidden" role="alert"></div>
+    </div>
+  </section>
+
+  <footer>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors, map tiles by <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> and <a href="https://openmaptiles.org" target="_blank" rel="noopener">OpenMapTiles</a>. Your GPX file stays on your phone unless you save it to the route library.
     <span id="whoami" class="hidden"><br>Signed in as <strong id="whoemail"></strong> · <a href="/cdn-cgi/access/logout" id="signout">Sign out</a></span></footer>
 </div>
 

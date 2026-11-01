@@ -121,6 +121,33 @@ try:
         check(kate.input_value("#date") == date, f"poster date = next run ({kate.input_value('#date')})")
         check("led by" in kate.inner_text("#nextrun-hint") and "Ale" in kate.inner_text("#nextrun-hint") and "Kate" in kate.inner_text("#nextrun-hint"), f"hint: {kate.inner_text('#nextrun-hint')}")
 
+        # Route library: save the loaded route, then the same one again (ask: skip / replace), add an old GPX, use, download, remove
+        kate.wait_for_selector("#libsave:not(.hidden)")
+        kate.click("#libsavebtn"); kate.wait_for_timeout(1000)
+        check("Saved" in kate.inner_text("#libstatus"), f"route saved to the library: {kate.inner_text('#libstatus')!r}")
+        kate.click("#libsavebtn"); kate.wait_for_selector("#libdup:not(.hidden)")
+        check("already in the library" in kate.inner_text("#libdup"), "same route again: asks replace or skip")
+        kate.click('#libdup [data-a="skip"]'); kate.wait_for_timeout(500)
+        check("Skipped" in kate.inner_text("#libstatus"), f"skip: {kate.inner_text('#libstatus')!r}")
+        kate.fill("#title", "LITTLE DIPPER v2"); kate.click("#libsavebtn"); kate.wait_for_selector("#libdup:not(.hidden)")
+        kate.click('#libdup [data-a="replace"]'); kate.wait_for_timeout(1000)
+        check("Replaced" in kate.inner_text("#libstatus"), f"replace: {kate.inner_text('#libstatus')!r}")
+        kate.click("#tabbtn-routes"); kate.wait_for_timeout(800)
+        kate.set_input_files("#gpx3", os.path.join(ROOT, "test", "sample2.gpx")); kate.wait_for_timeout(1500)
+        cards = kate.locator("#routelist .rcard")
+        kms = [float(t.split()[0]) for t in kate.locator("#routelist .rcard .km").all_inner_texts()]
+        check(cards.count() == 2 and kms == sorted(kms), f"two routes, shortest first: {kms}")
+        check("LITTLE DIPPER V2" in kate.inner_text("#routelist").upper() and kate.locator("#routelist svg path").count() == 2, "names and route pictures shown")
+        kate.locator("#routelist").screenshot(path=os.path.join(OUT, "routes.png"))
+        rid = kate.locator("#routelist .rcard").first.get_attribute("data-id")
+        g = kate.evaluate("(id)=>fetch('/api/routes/gpx?id='+id).then(async r=>[r.status, r.headers.get('content-disposition'), (await r.text()).slice(0,200)])", rid)
+        check(g[0] == 200 and "attachment" in g[1] and "<gpx" in g[2], f"GPX download: {g[:2]}")
+        kate.locator("#routelist .rcard").first.locator("[data-use]").click(); kate.wait_for_timeout(2500)
+        check(kate.is_visible("#tab-poster") and kate.locator("#editor:not(.hidden)").count() == 1, "'Make a post' opens the route in Route post")
+        kate.click("#tabbtn-routes"); kate.wait_for_timeout(600)
+        rm = kate.locator("#routelist .rcard").last.locator("[data-rm]"); rm.click(); rm.click(); kate.wait_for_timeout(800)
+        check(kate.locator("#routelist .rcard").count() == 1, "remove (tap twice) works")
+
         # An email that isn't in src/captains.js can look but not change anything
         guest = page_for(b, "someone@example.com")
         guest.click("#tabbtn-schedule"); guest.wait_for_timeout(1500)
@@ -128,6 +155,10 @@ try:
         check(guest.locator(".who button").first.is_disabled() and not guest.is_visible("#schedhelp"), "unlinked email can't change anything")
         r = guest.evaluate("fetch('/api/captain',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({date:'%s',captain:1,state:'yes'})}).then(r=>r.status)" % date)
         check(r == 403, f"API refuses changes from an unlinked email ({r})")
+        guest.click("#tabbtn-routes"); guest.wait_for_timeout(800)
+        check(guest.locator("#routelist .rcard").count() == 1 and guest.locator("#routelist [data-rm]").count() == 0 and not guest.is_visible("#routeadd"), "guest sees routes but can't add or remove")
+        r = guest.evaluate("fetch('/api/routes/remove',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({id:1})}).then(r=>r.status)")
+        check(r == 403, f"API refuses route changes from a guest ({r})")
         guest.close()
 
         # Without the Access header the API refuses

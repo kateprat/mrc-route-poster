@@ -10,7 +10,7 @@ It replaces the old Inkscape workflow (GPX → SVG converter → Snazzy Maps scr
 
 Everything here stays on your own phone; nobody else sees your edits.
 
-- Reads the GPX on the phone (nothing is uploaded): the **distance** comes straight from the GPX, the **title** from its name (`261014_MRC_LITTLE-DIPPER` becomes LITTLE DIPPER, editable), the **date** from the next run in the schedule.
+- Reads the GPX on the phone (nothing is uploaded unless you save it to the route library): the **distance** comes straight from the GPX, the **title** from its name (`261014_MRC_LITTLE-DIPPER` becomes LITTLE DIPPER, editable), the **date** from the next run in the schedule.
 - Draws the MRC grey street map with the route on top in **burgundy `#882c29`** or **blue `#3584ba`**.
 - Title, distance, **FREE BEER!** and date in **MikkelWind**, like the earlier route posts. Title, distance and FREE BEER! can each be dragged with one finger and turned (any angle) and resized with two; “Put text back in place” resets them. FREE BEER! is always there.
 - **Two route options:** add a second GPX; it's drawn in the other colour and both distances are shown, each in its route's colour.
@@ -18,6 +18,15 @@ Everything here stays on your own phone; nobody else sees your edits.
 - Drag the map to move it, pinch or use the slider to zoom.
 - **Advanced settings** (folded away, with “Reset to standard”): line width, smoothing GPS wobble, round corners, trimming the ends.
 - **Share** opens the phone's share sheet (Instagram, Photos, WhatsApp…). **Download PNG** saves the file.
+
+### Routes tab
+
+Every route we've run, shortest first, each with a picture of the line.
+
+- **Make a post** opens the route in Route post; **GPX** downloads it (for watches, Komoot, Strava).
+- Captains add routes with **Save to route library** in Route post (title, distance, run date and the GPX file), or **Add a GPX** in Routes for older runs. If it's the same route as one already there (similar distance and the lines within about 60 m of each other, or the same name), the app asks: replace it or skip.
+- Everyone signed in can browse and download; only captains can add or remove (remove: tap twice).
+- Stored with the schedule in the Durable Object (`routes` table); very large GPX files are rewritten from their points.
 
 ### Schedule tab
 

@@ -37,6 +37,8 @@ export class Schedule extends DurableObject {
       CREATE TABLE IF NOT EXISTS avail (date TEXT NOT NULL, captain INTEGER NOT NULL, status TEXT NOT NULL, PRIMARY KEY (date, captain));
       CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT);
       CREATE TABLE IF NOT EXISTS leads (date TEXT NOT NULL, captain INTEGER NOT NULL, PRIMARY KEY (date, captain));
+      CREATE TABLE IF NOT EXISTS routes (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, km REAL NOT NULL,
+                                         pts TEXT NOT NULL, gpx TEXT NOT NULL, run_date TEXT, added_by TEXT, added_at TEXT);
     `);
     // Who last changed a run's answers (anyone can change anyone's, so it's shown on the run).
     try { this.sql.exec("ALTER TABLE runs ADD COLUMN changed_by TEXT"); } catch {}
@@ -173,6 +175,43 @@ export class Schedule extends DurableObject {
     this.sql.exec("UPDATE runs SET changed_by = ? WHERE date = ?", me.name, date);
   }
 
+  // Route library: every route we've run, with its GPX. Anyone signed in can browse and download;
+  // captains add (or replace) and remove. pts is a thinned-out [[lat, lon], …] for the pictures.
+  listRoutes(viewer) {
+    const routes = this.sql.exec("SELECT id, name, km, pts, run_date, added_by, added_at FROM routes ORDER BY km, name").toArray()
+      .map((r) => ({ id: r.id, name: r.name, km: r.km, pts: JSON.parse(r.pts), date: r.run_date || "", addedBy: r.added_by || "", addedAt: r.added_at || "" }));
+    return { routes, canEdit: !!this.me(viewer.name) };
+  }
+
+  routeGpx(id) {
+    return this.sql.exec("SELECT name, gpx FROM routes WHERE id = ?", Number(id)).toArray()[0] || null;
+  }
+
+  addRoute(viewer, { name, km, pts, gpx, date, replace }) {
+    const me = this.requireMe(viewer);
+    name = clean(name, 80); km = Number(km);
+    if (!name || !(km > 0 && km < 300)) throw new HttpError(400, "Bad route name or distance.");
+    if (!Array.isArray(pts) || pts.length < 2 || pts.length > 400 || !pts.every((p) => Array.isArray(p) && p.length === 2 && p.every(Number.isFinite)))
+      throw new HttpError(400, "Bad route points.");
+    if (typeof gpx !== "string" || gpx.length > 1800000 || !/<gpx[\s>]/i.test(gpx)) throw new HttpError(400, "Bad GPX file.");
+    if (date && !isDate(date)) throw new HttpError(400, "Bad date.");
+    const now = new Date().toISOString(), P = JSON.stringify(pts);
+    if (replace) {
+      if (!this.sql.exec("SELECT 1 FROM routes WHERE id = ?", Number(replace)).toArray().length) throw new HttpError(404, "Unknown route.");
+      this.sql.exec("UPDATE routes SET name = ?, km = ?, pts = ?, gpx = ?, run_date = COALESCE(?, run_date), added_by = ?, added_at = ? WHERE id = ?",
+        name, km, P, gpx, date || null, me.name, now, Number(replace));
+    } else {
+      this.sql.exec("INSERT INTO routes (name, km, pts, gpx, run_date, added_by, added_at) VALUES (?, ?, ?, ?, ?, ?, ?)", name, km, P, gpx, date || null, me.name, now);
+    }
+    return this.listRoutes(viewer);
+  }
+
+  removeRoute(viewer, { id }) {
+    this.requireMe(viewer);
+    this.sql.exec("DELETE FROM routes WHERE id = ?", Number(id));
+    return this.listRoutes(viewer);
+  }
+
   saveRun(viewer, { date, time, note, cancelled }) {
     this.requireMe(viewer);
     if (!isDate(date) || !isTime(time)) throw new HttpError(400, "Please give a date and a time.");
@@ -197,6 +236,15 @@ async function api(request, env, url) {
   const stub = env.SCHEDULE.get(env.SCHEDULE.idFromName("mrc-zurich"));
   try {
     if (request.method === "GET" && url.pathname === "/api/state") return json(await stub.state(viewer, zurichToday()));
+    if (request.method === "GET" && url.pathname === "/api/routes") return json(await stub.listRoutes(viewer));
+    if (request.method === "GET" && url.pathname === "/api/routes/gpx") {
+      const r = await stub.routeGpx(url.searchParams.get("id"));
+      if (!r) return json({ error: "Unknown route." }, 404);
+      const file = (r.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "route") + ".gpx";
+      return new Response(r.gpx, { headers: { "content-type": "application/gpx+xml", "content-disposition": `attachment; filename="mrc-${file}"`, "cache-control": "no-store" } });
+    }
+    if (request.method === "POST" && url.pathname === "/api/routes/add") return json(await stub.addRoute(viewer, await request.json().catch(() => ({}))));
+    if (request.method === "POST" && url.pathname === "/api/routes/remove") return json(await stub.removeRoute(viewer, await request.json().catch(() => ({}))));
     if (request.method !== "POST") return json({ error: "Not found." }, 404);
     const body = await request.json().catch(() => ({}));
     const actions = { "/api/captain": "setCaptain", "/api/status": "setStatus", "/api/leads": "setLeads", "/api/lead": "setLeads", "/api/run": "saveRun" };

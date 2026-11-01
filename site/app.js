@@ -382,9 +382,9 @@ function cleanTitle(n){
           .replace(/\b(MRC|MIKKELLER( RUN(NING)? CLUB)?)\b/ig,"").replace(/\s+/g," ").trim().toUpperCase();
 }
 async function readRoute(file){
-  const g=parseGPX(await file.text());
+  const text=await file.text(), g=parseGPX(text);
   const cum=cumulative(g.pts);
-  return {name:g.name||file.name.replace(/\.gpx$/i,""), pts:g.pts, cum, total:cum[cum.length-1]};
+  return {name:g.name||file.name.replace(/\.gpx$/i,""), pts:g.pts, cum, total:cum[cum.length-1], gpx:text};
 }
 function routesChanged(){
   const maxTrim=Math.max(50, Math.round(Math.min(...S.routes.map(r=>r.total))/2/10)*10);
@@ -399,6 +399,7 @@ function routesChanged(){
 async function loadFile(file){
   try{
     const r=await readRoute(file);
+    $("libstatus").textContent=""; $("libdup").classList.add("hidden");
     S.routes=[r]; S.zoom=1; $("zoom").value=100; $("zoomv").textContent="100%"; S.items={};
     $("title").value=cleanTitle(r.name);
     fillFromSchedule(true);
@@ -412,6 +413,108 @@ async function loadFile(file){
 async function loadSecond(file){
   try{ const r=await readRoute(file); S.routes=[S.routes[0], r]; routesChanged(); }
   catch(e){ alert(e.message||String(e)); }
+}
+
+/* ---------- route library (Routes tab) ---------- */
+const LIB={routes:null, canEdit:false};
+/* At most n evenly spaced points, as [[lat, lon], …] rounded to ~1 m: for pictures and for spotting the same route. */
+function thin(pts, n=300){ const step=Math.max(1, (pts.length-1)/(n-1)), out=[];
+  for(let i=0;i<pts.length-0.5;i+=step) out.push(pts[Math.round(i)]);
+  if(out[out.length-1]!==pts[pts.length-1]) out.push(pts[pts.length-1]);
+  return out.slice(0,n).map(p=>[+p.lat.toFixed(5), +p.lon.toFixed(5)]); }
+/* Very large GPX files (some watches record every second for hours) are rewritten from their points. */
+function gpxFor(r, title){
+  if(r.gpx && r.gpx.length < 1500000) return r.gpx;
+  const pts=r.pts.length>8000 ? thin(r.pts,8000).map(([lat,lon])=>({lat,lon})) : r.pts;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="MRC ZH" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>${esc(title)}</name><trkseg>\n`+
+    pts.map(p=>`<trkpt lat="${p.lat.toFixed(6)}" lon="${p.lon.toFixed(6)}"/>`).join("\n")+`\n</trkseg></trk></gpx>\n`;
+}
+/* Same route? Similar distance and every part of each line close to the other (≈ within 60 m on average both ways),
+   or the same name with a similar distance. */
+function sameRoute(a, b){
+  const close = Math.abs(a.km-b.km) <= Math.max(0.3, 0.06*Math.max(a.km,b.km));
+  if(!close) return false;
+  if(a.name && b.name && a.name.toUpperCase()===b.name.toUpperCase()) return true;
+  const k=Math.cos(a.pts[0][0]*Math.PI/180)*111320, m=111320;
+  const d=(p,q)=>Math.hypot((p[0]-q[0])*m, (p[1]-q[1])*k);
+  const mean=(P,Q)=>{ const sample=P.filter((_,i)=>i%Math.max(1,Math.floor(P.length/60))===0);
+    return sample.reduce((t,p)=>t+Math.min(...Q.map(q=>d(p,q))),0)/sample.length; };
+  return mean(a.pts,b.pts) < 60 && mean(b.pts,a.pts) < 60;
+}
+function routeSVG(pts, color="#882c29"){
+  const k=Math.cos(pts[0][0]*Math.PI/180), xy=pts.map(([la,lo])=>[lo*k, -la]);
+  const xs=xy.map(p=>p[0]), ys=xy.map(p=>p[1]), x0=Math.min(...xs), y0=Math.min(...ys);
+  const span=Math.max(Math.max(...xs)-x0, Math.max(...ys)-y0) || 1, sc=84/span;
+  const ox=(100-(Math.max(...xs)-x0)*sc)/2, oy=(100-(Math.max(...ys)-y0)*sc)/2;
+  const d=xy.map(([x,y],i)=>`${i?"L":"M"}${(ox+(x-x0)*sc).toFixed(1)} ${(oy+(y-y0)*sc).toFixed(1)}`).join("");
+  return `<svg viewBox="0 0 100 100" aria-hidden="true"><path d="${d}" fill="none" stroke="${color}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+async function libCall(path, body){
+  const r=await fetch(path, body ? {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(body), credentials:"include"} : {credentials:"include", cache:"no-store"});
+  const j=await r.json().catch(()=>({error:"The route library isn’t available here."}));
+  if(!r.ok) throw new Error(j.error||"Something went wrong.");
+  LIB.routes=j.routes; LIB.canEdit=j.canEdit; renderRoutes(); return j;
+}
+async function loadRoutes(){
+  const st=$("routesstatus");
+  try{ await libCall("/api/routes"); st.textContent=""; st.classList.remove("warn"); }
+  catch(e){ st.textContent=e.message||String(e); st.classList.add("warn"); }
+}
+function renderRoutes(){
+  $("routeadd").classList.toggle("hidden", !LIB.canEdit);
+  $("libsave").classList.toggle("hidden", !LIB.canEdit);
+  const list=$("routelist"); if(!LIB.routes) return;
+  if(!LIB.routes.length){ list.innerHTML=`<p class="empty">No routes yet. Make a route post and tap “Save to route library”.</p>`; return; }
+  list.innerHTML=LIB.routes.map(r=>{ const when=r.date?`Run on ${niceDate(r.date)} ${r.date.slice(0,4)}`:"";
+    return `<article class="rcard" data-id="${r.id}">${routeSVG(r.pts)}
+      <div><span class="km">${r.km.toFixed(1)} km</span><h3>${esc(r.name)}</h3>
+        <p class="meta">${[when, r.addedBy?`added by ${esc(r.addedBy)}`:""].filter(Boolean).join(" · ")}</p>
+        <div class="btns"><button type="button" class="btn" data-use="${r.id}">Make a post</button>
+          <a class="btn ghost" href="/api/routes/gpx?id=${r.id}" download>GPX</a>
+          ${LIB.canEdit?`<button type="button" class="btn ghost rm" data-rm="${r.id}">Remove</button>`:""}</div></div></article>`; }).join("");
+}
+/* Ask before adding a route that's already in the library: replace it, or skip. */
+function askDuplicate(box, cand, existing){
+  return new Promise(res=>{
+    box.innerHTML=`<strong>“${esc(cand.name)}” (${cand.km.toFixed(1)} km)</strong> looks like a route already in the library: <strong>“${esc(existing.name)}”</strong>, ${existing.km.toFixed(1)} km.
+      <div class="btns"><button type="button" class="btn" data-a="replace">Replace it</button><button type="button" class="btn ghost" data-a="skip">Skip</button></div>`;
+    box.classList.remove("hidden");
+    box.onclick=e=>{ const b=e.target.closest("[data-a]"); if(!b) return; box.classList.add("hidden"); box.onclick=null; res(b.dataset.a); };
+  });
+}
+async function addToLibrary(routes, title, date, box, status){
+  if(!LIB.routes) await loadRoutes();
+  const done=[];
+  for(const [i,r] of routes.entries()){
+    const name=(routes.length>1 ? `${title} (${kmText(r)} km)` : title) || cleanTitle(r.name) || "ROUTE";
+    const cand={name, km:r.total/1000, pts:thin(r.pts)};
+    const dup=(LIB.routes||[]).find(x=>sameRoute(cand,x));
+    let replace=null;
+    if(dup){ status.textContent=""; const a=await askDuplicate(box, cand, dup); if(a==="skip"){ done.push(`skipped “${name}”`); continue; } replace=dup.id; }
+    status.textContent="Saving…"; status.classList.remove("warn");
+    try{ await libCall("/api/routes/add",{...cand, gpx:gpxFor(r,name), date:date||"", replace}); done.push(replace?`replaced “${dup.name}”`:`saved “${name}”`); }
+    catch(e){ status.textContent=e.message||String(e); status.classList.add("warn"); return; }
+  }
+  status.textContent=done.length ? done.join(", ").replace(/^./,c=>c.toUpperCase())+"." : "";
+}
+async function useRoute(id){
+  const r=(LIB.routes||[]).find(x=>x.id===id); if(!r) return;
+  const res=await fetch(`/api/routes/gpx?id=${id}`, {credentials:"include"}); if(!res.ok) return;
+  const file=new File([await res.blob()], `${r.name}.gpx`, {type:"application/gpx+xml"});
+  document.getElementById("tabbtn-poster").click();
+  await loadFile(file); $("title").value=r.name; scheduleDraw();
+}
+function initRoutes(){
+  $("routelist").addEventListener("click", async e=>{
+    const u=e.target.closest("[data-use]"); if(u) return useRoute(Number(u.dataset.use));
+    const rm=e.target.closest("[data-rm]"); if(!rm) return;
+    if(rm.dataset.sure!=="1"){ rm.dataset.sure="1"; rm.textContent="Sure? Tap again"; setTimeout(()=>{ if(rm.isConnected){ rm.dataset.sure=""; rm.textContent="Remove"; } },4000); return; }
+    try{ await libCall("/api/routes/remove",{id:Number(rm.dataset.rm)}); }catch(err){ $("routesstatus").textContent=err.message; $("routesstatus").classList.add("warn"); }
+  });
+  $("libsavebtn").addEventListener("click", ()=>addToLibrary(S.routes, ($("title").value||"").toUpperCase().trim(), $("date").value, $("libdup"), $("libstatus")));
+  $("gpx3").addEventListener("change", async e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return;
+    try{ const r=await readRoute(f); await addToLibrary([r], cleanTitle(r.name), "", $("adddup"), $("routesstatus")); }
+    catch(err){ $("routesstatus").textContent=err.message||String(err); $("routesstatus").classList.add("warn"); } });
 }
 
 /* ---------- schedule (captains' availability + lead) ---------- */
@@ -565,12 +668,14 @@ function initSchedule(){
     $("history").classList.toggle("hidden",!hist); ["runs","addrun","schedhelp"].forEach(id=>$(id).classList.toggle("hidden",hist || (id==="schedhelp" && !(SCH.data&&SCH.data.me.captain))));
     renderSchedule(); });
   $("newsave").addEventListener("click",async()=>{ if(await schedCall("/api/run",{date:$("newdate").value, time:$("newtime").value, note:$("newnote").value, cancelled:false})){ $("newnote").value=""; $("addrun").open=false; } });
-  const tabs={poster:$("tabbtn-poster"), schedule:$("tabbtn-schedule")};
+  const tabs={poster:$("tabbtn-poster"), schedule:$("tabbtn-schedule"), routes:$("tabbtn-routes")};
   const show=k=>{ for(const [n,b] of Object.entries(tabs)){ b.setAttribute("aria-selected", String(n===k)); $("tab-"+n).classList.toggle("hidden", n!==k); }
     $("actions").classList.toggle("hidden", k!=="poster" || $("editor").classList.contains("hidden"));
-    if(k==="schedule") loadSchedule(); };
+    if(k==="schedule") loadSchedule();
+    if(k==="routes") loadRoutes(); };
   tabs.poster.addEventListener("click",()=>show("poster"));
   tabs.schedule.addEventListener("click",()=>show("schedule"));
+  tabs.routes.addEventListener("click",()=>show("routes"));
 }
 
 
@@ -620,6 +725,8 @@ function init(){
   showWhoAmI();
   initSchedule();
   loadSchedule();
+  initRoutes();
+  loadRoutes();
   seg("fmt","fmt");
   seg("color","color",savePrefs);
   range("zoom","zoom",v=>v+"%",v=>v/100);
