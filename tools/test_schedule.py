@@ -150,6 +150,9 @@ try:
         rid = kate.locator("#routelist .rcard").first.get_attribute("data-id")
         g = kate.evaluate("(id)=>fetch('/api/routes/gpx?id='+id).then(async r=>[r.status, r.headers.get('content-disposition'), (await r.text()).slice(0,200)])", rid)
         check(g[0] == 200 and "attachment" in g[1] and "<gpx" in g[2], f"GPX download: {g[:2]}")
+        with kate.expect_download() as dl:
+            kate.locator("#routelist .rcard").first.locator("[data-gpx]").click()
+        check(dl.value.suggested_filename.endswith(".gpx") and "/api/" not in kate.url, f"GPX button downloads without leaving the app: {dl.value.suggested_filename} {kate.url}")
         kate.locator("#routelist .rcard").first.locator("[data-use]").click(); kate.wait_for_timeout(2500)
         check(kate.is_visible("#tab-poster") and kate.locator("#editor:not(.hidden)").count() == 1, "'Make a post' opens the route in Route post")
         kate.click("#tabbtn-routes"); kate.wait_for_timeout(600)

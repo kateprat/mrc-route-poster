@@ -482,7 +482,7 @@ function renderRoutes(){
       <div><span class="km">${r.km.toFixed(1)} km${r.up!=null?` · ↑ ${r.up} m`:""}</span><h3>${esc(r.name)}</h3>
         <p class="meta">${[when, r.addedBy?`added by ${esc(r.addedBy)}`:""].filter(Boolean).join(" · ")}</p>
         <div class="btns"><button type="button" class="btn" data-use="${r.id}">Make a post</button>
-          <a class="btn ghost" href="/api/routes/gpx?id=${r.id}" download>GPX</a>
+          <button type="button" class="btn ghost" data-gpx="${r.id}">GPX</button>
           ${LIB.canEdit?`<button type="button" class="btn ghost" data-edit="${r.id}">Edit</button>`:""}</div></div>
       ${LIB.canEdit?`<div class="edit hidden" id="edit-${r.id}">
         <div><label for="en-${r.id}">Title</label><input id="en-${r.id}" type="text" value="${esc(r.name)}" autocomplete="off"></div>
@@ -520,6 +520,25 @@ async function addToLibrary(routes, title, date, box, status){
   }
   status.textContent=done.length ? done.join(", ").replace(/^./,c=>c.toUpperCase())+"." : "";
 }
+/* GPX download. On a phone it opens the share sheet (Save to Files, Garmin Connect, Komoot…): opening the
+   file directly would trap the home-screen app in iOS's file preview, which has no way back. */
+async function downloadGpx(id){
+  const st=$("routesstatus");
+  try{
+    const res=await fetch(`/api/routes/gpx?id=${id}`, {credentials:"include"}); if(!res.ok) throw new Error("Couldn’t load the GPX file.");
+    const name=(/filename="([^"]+)"/.exec(res.headers.get("content-disposition")||"")||[])[1]||"route.gpx";
+    const blob=await res.blob();
+    for(const type of ["application/gpx+xml","application/octet-stream"]){
+      const f=new File([blob], name, {type});
+      if(navigator.canShare && navigator.canShare({files:[f]})){
+        try{ await navigator.share({files:[f]}); }catch(e){ if(e.name!=="AbortError") throw e; }
+        return;
+      }
+    }
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },2000);
+  }catch(e){ st.textContent=e.message||String(e); st.classList.add("warn"); }
+}
 async function useRoute(id){
   const r=(LIB.routes||[]).find(x=>x.id===id); if(!r) return;
   const res=await fetch(`/api/routes/gpx?id=${id}`, {credentials:"include"}); if(!res.ok) return;
@@ -530,6 +549,7 @@ async function useRoute(id){
 function initRoutes(){
   $("routelist").addEventListener("click", async e=>{
     const u=e.target.closest("[data-use]"); if(u) return useRoute(Number(u.dataset.use));
+    const g=e.target.closest("[data-gpx]"); if(g) return downloadGpx(Number(g.dataset.gpx));
     const ed=e.target.closest("[data-edit]"); if(ed){ $("edit-"+ed.dataset.edit).classList.toggle("hidden"); return; }
     const sv=e.target.closest("[data-save]"); if(sv){ const id=sv.dataset.save;
       try{ await libCall("/api/routes/edit",{id:Number(id), name:$("en-"+id).value.toUpperCase().trim(), date:$("ed-"+id).value}); $("routesstatus").textContent="Saved."; $("routesstatus").classList.remove("warn"); }
