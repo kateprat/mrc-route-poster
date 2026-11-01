@@ -481,7 +481,7 @@ function renderRoutes(){
     return `<article class="rcard" data-id="${r.id}">${routeSVG(r.pts)}
       <div><span class="km">${r.km.toFixed(1)} km${r.up!=null?` · ↑ ${r.up} m`:""}</span><h3>${esc(r.name)}</h3>
         <p class="meta">${[when, r.addedBy?`added by ${esc(r.addedBy)}`:""].filter(Boolean).join(" · ")}</p>
-        <div class="btns"><button type="button" class="btn" data-use="${r.id}">Make a post</button>
+        <div class="btns"><button type="button" class="btn" data-use="${r.id}" aria-label="Use ${esc(r.name)} for a route post">Use</button>
           <button type="button" class="btn ghost" data-gpx="${r.id}">GPX</button>
           ${LIB.canEdit?`<button type="button" class="btn ghost" data-edit="${r.id}">Edit</button>`:""}</div></div>
       ${LIB.canEdit?`<div class="edit hidden" id="edit-${r.id}">

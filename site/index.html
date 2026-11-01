@@ -160,8 +160,8 @@ footer a{color:inherit}
 .rcard h3{font:900 16px/1.15 var(--sub);letter-spacing:.02em;text-transform:uppercase;margin:4px 0 2px;overflow-wrap:anywhere}
 .rcard .km{font:900 13px/1 var(--sub);letter-spacing:.04em;text-transform:uppercase;color:var(--accent)}
 .rcard .meta{font-size:13px;color:var(--muted);margin:4px 0 8px}
-.rcard .btns{display:flex;flex-wrap:wrap;gap:6px}
-.rcard .btns .btn{min-height:36px;padding:8px 14px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center}
+.rcard .btns{display:flex;flex-wrap:nowrap;gap:6px}
+.rcard .btns .btn{min-height:40px;padding:8px 12px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;flex:1 1 auto;white-space:nowrap}
 .rcard .btns .rm{color:var(--muted)}
 .rcard .edit{grid-column:1/-1;display:grid;gap:8px;border-top:1px solid var(--line);padding-top:10px}
 .rcard .edit .btns{margin-top:2px}
@@ -333,7 +333,7 @@ footer a{color:inherit}
   </section>
 
   <section id="tab-routes" class="hidden" role="tabpanel" aria-labelledby="tabbtn-routes">
-    <p class="hint" style="text-align:left;margin-top:12px">Every route we’ve run, shortest first. No inspiration today? Take one from here: make a post with it, or download its GPX.</p>
+    <p class="hint" style="text-align:left;margin-top:12px">Every route we’ve run, shortest first. No inspiration today? Take one from here: “Use” opens it in Route post, “GPX” gives you the file.</p>
     <p class="status" id="routesstatus" role="status"></p>
     <div id="routelist"></div>
     <div id="routeadd" class="card hidden">
