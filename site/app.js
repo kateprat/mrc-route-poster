@@ -39,7 +39,8 @@ function parseGPX(text){
   let nodes = [...doc.getElementsByTagName("trkpt")];
   if (!nodes.length) nodes = [...doc.getElementsByTagName("rtept")];
   if (!nodes.length) nodes = [...doc.getElementsByTagName("wpt")];
-  const pts = nodes.map(n => ({lat:parseFloat(n.getAttribute("lat")), lon:parseFloat(n.getAttribute("lon"))}))
+  const pts = nodes.map(n => { const e=n.getElementsByTagName("ele")[0];
+                     return {lat:parseFloat(n.getAttribute("lat")), lon:parseFloat(n.getAttribute("lon")), ele:e?parseFloat(e.textContent):NaN}; })
                    .filter(p => isFinite(p.lat) && isFinite(p.lon));
   if (pts.length < 2) throw new Error("No route points found in this GPX file.");
   const nm = doc.querySelector("metadata > name, trk > name, rte > name");
@@ -381,18 +382,26 @@ function cleanTitle(n){
   return n.replace(/\.gpx$/i,"").replace(/[_\-]+/g," ").replace(/^[\d\s.]+/,"")
           .replace(/\b(MRC|MIKKELLER( RUN(NING)? CLUB)?)\b/ig,"").replace(/\s+/g," ").trim().toUpperCase();
 }
+/* Metres climbed; rises under 3 m are GPS noise. null without elevation data. Same rule as climbOf() in src/worker.js. */
+function climb(pts){
+  const ele=pts.map(p=>p.ele).filter(Number.isFinite); if(ele.length<2) return null;
+  let up=0, ref=ele[0];
+  for(const e of ele){ if(e>ref+3){ up+=e-ref; ref=e; } else if(e<ref-3) ref=e; }
+  return Math.round(up);
+}
+const routeInfo = r => `${kmText(r)} km`+(r.up!=null?` · ↑ ${r.up} m`:"");
 async function readRoute(file){
   const text=await file.text(), g=parseGPX(text);
   const cum=cumulative(g.pts);
-  return {name:g.name||file.name.replace(/\.gpx$/i,""), pts:g.pts, cum, total:cum[cum.length-1], gpx:text};
+  return {name:g.name||file.name.replace(/\.gpx$/i,""), pts:g.pts, cum, total:cum[cum.length-1], up:climb(g.pts), gpx:text};
 }
 function routesChanged(){
   const maxTrim=Math.max(50, Math.round(Math.min(...S.routes.map(r=>r.total))/2/10)*10);
   ["trimS","trimE"].forEach(i=>$(i).max=String(maxTrim));
-  $("distinfo").textContent=S.routes.map(r=>`${kmText(r)} km`).join(" / ");
+  $("distinfo").textContent=S.routes.map(routeInfo).join(" / ");
   const two=S.routes.length===2;
   $("route2none").classList.toggle("hidden", two); $("route2some").classList.toggle("hidden", !two);
-  if(two) $("route2info").textContent=`Second route: ${kmText(S.routes[1])} km`;
+  if(two) $("route2info").textContent=`Second route: ${routeInfo(S.routes[1])}`;
   S.pan={x:0,y:0};
   prepareRoute(); scheduleDraw();
 }
@@ -470,7 +479,7 @@ function renderRoutes(){
   if(!LIB.routes.length){ list.innerHTML=`<p class="empty">No routes yet. Make a route post and tap “Save to route library”.</p>`; return; }
   list.innerHTML=LIB.routes.map(r=>{ const when=r.date?`Run on ${niceDate(r.date)} ${r.date.slice(0,4)}`:"";
     return `<article class="rcard" data-id="${r.id}">${routeSVG(r.pts)}
-      <div><span class="km">${r.km.toFixed(1)} km</span><h3>${esc(r.name)}</h3>
+      <div><span class="km">${r.km.toFixed(1)} km${r.up!=null?` · ↑ ${r.up} m`:""}</span><h3>${esc(r.name)}</h3>
         <p class="meta">${[when, r.addedBy?`added by ${esc(r.addedBy)}`:""].filter(Boolean).join(" · ")}</p>
         <div class="btns"><button type="button" class="btn" data-use="${r.id}">Make a post</button>
           <a class="btn ghost" href="/api/routes/gpx?id=${r.id}" download>GPX</a>

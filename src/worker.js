@@ -40,6 +40,8 @@ export class Schedule extends DurableObject {
       CREATE TABLE IF NOT EXISTS routes (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, km REAL NOT NULL,
                                          pts TEXT NOT NULL, gpx TEXT NOT NULL, run_date TEXT, added_by TEXT, added_at TEXT);
     `);
+    // Elevation gain of each library route (metres), worked out from the GPX.
+    try { this.sql.exec("ALTER TABLE routes ADD COLUMN up REAL"); } catch {}
     // Who last changed a run's answers (anyone can change anyone's, so it's shown on the run).
     try { this.sql.exec("ALTER TABLE runs ADD COLUMN changed_by TEXT"); } catch {}
     // A run can have several leads. Move any single lead from the earlier version into the leads table.
@@ -178,8 +180,11 @@ export class Schedule extends DurableObject {
   // Route library: every route we've run, with its GPX. Anyone signed in can browse and download;
   // captains add (or replace) and remove. pts is a thinned-out [[lat, lon], …] for the pictures.
   listRoutes(viewer) {
-    const routes = this.sql.exec("SELECT id, name, km, pts, run_date, added_by, added_at FROM routes ORDER BY km, name").toArray()
-      .map((r) => ({ id: r.id, name: r.name, km: r.km, pts: JSON.parse(r.pts), date: r.run_date || "", addedBy: r.added_by || "", addedAt: r.added_at || "" }));
+    // routes saved before elevation was shown: work it out once (-1 = the GPX has no elevation)
+    for (const r of this.sql.exec("SELECT id, gpx FROM routes WHERE up IS NULL").toArray())
+      this.sql.exec("UPDATE routes SET up = ? WHERE id = ?", climbOf(r.gpx) ?? -1, r.id);
+    const routes = this.sql.exec("SELECT id, name, km, up, pts, run_date, added_by, added_at FROM routes ORDER BY km, name").toArray()
+      .map((r) => ({ id: r.id, name: r.name, km: r.km, up: r.up >= 0 ? r.up : null, pts: JSON.parse(r.pts), date: r.run_date || "", addedBy: r.added_by || "", addedAt: r.added_at || "" }));
     return { routes, canEdit: !!this.me(viewer.name) };
   }
 
@@ -198,10 +203,10 @@ export class Schedule extends DurableObject {
     const now = new Date().toISOString(), P = JSON.stringify(pts);
     if (replace) {
       if (!this.sql.exec("SELECT 1 FROM routes WHERE id = ?", Number(replace)).toArray().length) throw new HttpError(404, "Unknown route.");
-      this.sql.exec("UPDATE routes SET name = ?, km = ?, pts = ?, gpx = ?, run_date = COALESCE(?, run_date), added_by = ?, added_at = ? WHERE id = ?",
-        name, km, P, gpx, date || null, me.name, now, Number(replace));
+      this.sql.exec("UPDATE routes SET name = ?, km = ?, pts = ?, gpx = ?, run_date = COALESCE(?, run_date), added_by = ?, added_at = ?, up = ? WHERE id = ?",
+        name, km, P, gpx, date || null, me.name, now, climbOf(gpx) ?? -1, Number(replace));
     } else {
-      this.sql.exec("INSERT INTO routes (name, km, pts, gpx, run_date, added_by, added_at) VALUES (?, ?, ?, ?, ?, ?, ?)", name, km, P, gpx, date || null, me.name, now);
+      this.sql.exec("INSERT INTO routes (name, km, pts, gpx, run_date, added_by, added_at, up) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", name, km, P, gpx, date || null, me.name, now, climbOf(gpx) ?? -1);
     }
     return this.listRoutes(viewer);
   }
@@ -228,6 +233,16 @@ export class Schedule extends DurableObject {
                    ON CONFLICT(date) DO UPDATE SET time = excluded.time, note = excluded.note, cancelled = excluded.cancelled`,
       date, time, clean(note), cancelled ? 1 : 0);
   }
+}
+
+/* Metres climbed, from the <ele> values in a GPX file (in order). Rises smaller than 3 m are
+   GPS noise and ignored; null when the file has no elevation. Same rule as climb() in site/app.js. */
+function climbOf(gpx) {
+  const ele = [...gpx.matchAll(/<(?:trkpt|rtept)\b[^>]*>[\s\S]*?<ele>\s*(-?[\d.]+)\s*<\/ele>/g)].map((m) => parseFloat(m[1])).filter(Number.isFinite);
+  if (ele.length < 2) return null;
+  let up = 0, ref = ele[0];
+  for (const e of ele) { if (e > ref + 3) { up += e - ref; ref = e; } else if (e < ref - 3) ref = e; }
+  return Math.round(up);
 }
 
 class HttpError extends Error { constructor(status, message) { super(message); this.status = status; } }

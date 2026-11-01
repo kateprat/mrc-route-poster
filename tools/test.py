@@ -84,6 +84,7 @@ try:
         pg.set_input_files("#gpx2", os.path.join(ROOT, "test", "sample2.gpx")); pg.wait_for_timeout(2500)
         check(pg.evaluate("S.routes.length") == 2, "second route loaded")
         check(pg.inner_text("#distinfo").count("km") == 2, f"both distances shown: {pg.inner_text('#distinfo')}")
+        check("↑" in pg.inner_text("#distinfo"), f"climb from the GPX elevation: {pg.inner_text('#distinfo')}")
         save(pg, "feed-two-routes.png")
         pg.click('#fmt button[data-v="route"]'); pg.wait_for_timeout(800); save(pg, "route-two-routes.png")
         pg.click('#fmt button[data-v="feed"]')

@@ -143,6 +143,8 @@ try:
         cards = kate.locator("#routelist .rcard")
         kms = [float(t.split()[0]) for t in kate.locator("#routelist .rcard .km").all_inner_texts()]
         check(cards.count() == 2 and kms == sorted(kms), f"two routes, shortest first: {kms}")
+        ups = kate.locator("#routelist .rcard .km").all_inner_texts()
+        check(any("↑" in t and "M" in t.upper() for t in ups) and any("↑" not in t for t in ups), f"climb shown when the GPX has elevation: {ups}")
         check("LITTLE DIPPER V2" in kate.inner_text("#routelist").upper() and kate.locator("#routelist svg path").count() == 2, "names and route pictures shown")
         kate.locator("#routelist").screenshot(path=os.path.join(OUT, "routes.png"))
         rid = kate.locator("#routelist .rcard").first.get_attribute("data-id")
