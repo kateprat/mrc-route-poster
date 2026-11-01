@@ -364,7 +364,8 @@ footer a{color:inherit}
   <button type="button" class="btn ghost" id="save">Download PNG</button>
 </div></div>
 
-<div id="mapbox" aria-hidden="true" style="position:fixed;left:-20000px;top:0;width:1080px;height:1350px;pointer-events:none"></div>
+<!-- off-screen map used to draw the post; wrapped in a 0×0 box so its 1350 px height can't stretch the page on iPhone -->
+<div aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none"><div id="mapbox" style="position:absolute;left:0;top:0;width:1080px;height:1920px"></div></div>
 <script src="vendor/maplibre-gl.js"></script>
 <script src="app.js"></script>
 <script>
