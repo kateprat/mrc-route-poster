@@ -441,14 +441,17 @@ function sameRoute(a, b){
     return sample.reduce((t,p)=>t+Math.min(...Q.map(q=>d(p,q))),0)/sample.length; };
   return mean(a.pts,b.pts) < 60 && mean(b.pts,a.pts) < 60;
 }
-function routeSVG(pts, color="#882c29"){
-  const k=Math.cos(pts[0][0]*Math.PI/180), xy=pts.map(([la,lo])=>[lo*k, -la]);
-  const xs=xy.map(p=>p[0]), ys=xy.map(p=>p[1]), x0=Math.min(...xs), y0=Math.min(...ys);
+/* One or more lines in one picture, on shared bounds (so overlaid routes line up). */
+function routesSVG(lines){
+  const k=Math.cos(lines[0][0][0][0]*Math.PI/180), all=lines.map(([pts,c])=>[pts.map(([la,lo])=>[lo*k,-la]),c]);
+  const xs=all.flatMap(([xy])=>xy.map(p=>p[0])), ys=all.flatMap(([xy])=>xy.map(p=>p[1])), x0=Math.min(...xs), y0=Math.min(...ys);
   const span=Math.max(Math.max(...xs)-x0, Math.max(...ys)-y0) || 1, sc=84/span;
   const ox=(100-(Math.max(...xs)-x0)*sc)/2, oy=(100-(Math.max(...ys)-y0)*sc)/2;
-  const d=xy.map(([x,y],i)=>`${i?"L":"M"}${(ox+(x-x0)*sc).toFixed(1)} ${(oy+(y-y0)*sc).toFixed(1)}`).join("");
-  return `<svg viewBox="0 0 100 100" aria-hidden="true"><path d="${d}" fill="none" stroke="${color}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+  // overlaid: the first line wide underneath, the second thin on top, so both show where they share streets
+  const paths=all.map(([xy,c],j)=>`<path d="${xy.map(([x,y],i)=>`${i?"L":"M"}${(ox+(x-x0)*sc).toFixed(1)} ${(oy+(y-y0)*sc).toFixed(1)}`).join("")}" fill="none" stroke="${c}" stroke-width="${lines.length>1?(j?2:6):3}" stroke-linejoin="round" stroke-linecap="round"/>`).join("");
+  return `<svg viewBox="0 0 100 100" aria-hidden="true">${paths}</svg>`;
 }
+const routeSVG=(pts, color="#882c29")=>routesSVG([[pts,color]]);
 async function libCall(path, body){
   const r=await fetch(path, body ? {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(body), credentials:"include"} : {credentials:"include", cache:"no-store"});
   const j=await r.json().catch(()=>({error:"The route library isn’t available here."}));
@@ -477,11 +480,18 @@ function renderRoutes(){
         <div><label for="ed-${r.id}">Run date</label><input id="ed-${r.id}" type="date" value="${esc(r.date)}"></div>
         <div class="btns"><button type="button" class="btn" data-save="${r.id}">Save</button><button type="button" class="btn ghost rm" data-rm="${r.id}">Remove route</button></div></div>`:""}</article>`; }).join("");
 }
-/* Ask before adding a route that's already in the library: replace it, or skip. */
+/* Ask before adding a route that's already in the library: replace it, keep both, or skip.
+   Shows the new one, the saved one and both on top of each other to compare. */
 function askDuplicate(box, cand, existing){
+  const NEW="#882c29", OLD="#3584ba";
   return new Promise(res=>{
     box.innerHTML=`<strong>“${esc(cand.name)}” (${cand.km.toFixed(1)} km)</strong> looks like a route already in the library: <strong>“${esc(existing.name)}”</strong>, ${existing.km.toFixed(1)} km.
-      <div class="btns"><button type="button" class="btn" data-a="replace">Replace it</button><button type="button" class="btn ghost" data-a="skip">Skip</button></div>`;
+      <div class="cmp">
+        <figure>${routesSVG([[cand.pts,NEW]])}<figcaption><i style="background:${NEW}"></i>New</figcaption></figure>
+        <figure>${routesSVG([[existing.pts,OLD]])}<figcaption><i style="background:${OLD}"></i>Saved</figcaption></figure>
+        <figure>${routesSVG([[existing.pts,OLD],[cand.pts,NEW]])}<figcaption>Both</figcaption></figure>
+      </div>
+      <div class="btns"><button type="button" class="btn" data-a="replace">Replace it</button><button type="button" class="btn ghost" data-a="both">Keep both</button><button type="button" class="btn ghost" data-a="skip">Skip</button></div>`;
     box.classList.remove("hidden");
     box.onclick=e=>{ const b=e.target.closest("[data-a]"); if(!b) return; box.classList.add("hidden"); box.onclick=null; res(b.dataset.a); };
   });
@@ -494,7 +504,7 @@ async function addToLibrary(routes, title, date, box, status){
     const cand={name, km:r.total/1000, pts:thin(r.pts)};
     const dup=(LIB.routes||[]).find(x=>sameRoute(cand,x));
     let replace=null;
-    if(dup){ status.textContent=""; const a=await askDuplicate(box, cand, dup); if(a==="skip"){ done.push(`skipped “${name}”`); continue; } replace=dup.id; }
+    if(dup){ status.textContent=""; const a=await askDuplicate(box, cand, dup); if(a==="skip"){ done.push(`skipped “${name}”`); continue; } if(a==="replace") replace=dup.id; }
     status.textContent="Saving…"; status.classList.remove("warn");
     try{ await libCall("/api/routes/add",{...cand, gpx:gpxFor(r,name), date:date||"", replace}); done.push(replace?`replaced “${dup.name}”`:`saved “${name}”`); }
     catch(e){ status.textContent=e.message||String(e); status.classList.add("warn"); return; }

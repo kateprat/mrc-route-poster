@@ -135,6 +135,9 @@ try:
         kate.click("#tabbtn-routes"); kate.wait_for_timeout(800)
         kate.set_input_files("#gpx3", [os.path.join(ROOT, "test", "sample2.gpx"), os.path.join(ROOT, "test", "sample.gpx")])
         kate.wait_for_selector("#adddup:not(.hidden)")   # second file is the same route as one already saved
+        check(kate.locator("#adddup .cmp svg").count() == 3 and kate.locator("#adddup .cmp svg").nth(2).locator("path").count() == 2, "compare: new, saved and both overlaid")
+        kate.locator("#adddup").screenshot(path=os.path.join(OUT, "dup.png"))
+        check(kate.locator('#adddup [data-a="both"]').count() == 1, "'Keep both' offered")
         kate.click('#adddup [data-a="skip"]'); kate.wait_for_timeout(800)
         check("Saved" in kate.inner_text("#routesstatus") and "Skipped" in kate.inner_text("#routesstatus"), f"several files at once: {kate.inner_text('#routesstatus')!r}")
         cards = kate.locator("#routelist .rcard")
