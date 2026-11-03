@@ -399,11 +399,12 @@ function climb(pts){
   return Math.round(up);
 }
 const routeInfo = r => `${kmText(r)} km`+(r.up!=null?` · ↑ ${r.up} m`:"");
-async function readRoute(file){
-  const text=await file.text(), g=parseGPX(text);
+function routeFromText(text, fallbackName){
+  const g=parseGPX(text);
   const cum=cumulative(g.pts);
-  return {name:g.name||file.name.replace(/\.gpx$/i,""), pts:g.pts, cum, total:cum[cum.length-1], up:climb(g.pts), gpx:text};
+  return {name:g.name||fallbackName||"", pts:g.pts, cum, total:cum[cum.length-1], up:climb(g.pts), gpx:text};
 }
+async function readRoute(file){ return routeFromText(await file.text(), file.name.replace(/\.gpx$/i,"")); }
 function routesChanged(){
   const maxTrim=Math.max(50, Math.round(Math.min(...S.routes.map(r=>r.total))/2/10)*10);
   ["trimS","trimE"].forEach(i=>$(i).max=String(maxTrim));
@@ -414,15 +415,45 @@ function routesChanged(){
   S.pan={x:0,y:0};
   prepareRoute(); scheduleDraw();
 }
-async function loadFile(file){
+async function loadFile(file){ return loadRoute(()=>readRoute(file)); }
+/* Pasted GPX text (e.g. copied from gpx.studio or a mail). Trims anything around <gpx …>…</gpx>. */
+function loadPasted(text){
+  const m=/<\?xml[\s\S]*?<\/gpx>|<gpx[\s>][\s\S]*<\/gpx>/i.exec(text||"");
+  if(!m) return false;
+  loadRoute(()=>routeFromText(m[0].trim(), ""));
+  return true;
+}
+async function pasteGpx(){
+  const area=$("pastearea"), st=$("pastestatus");
+  try{ const t=await navigator.clipboard.readText(); if(loadPasted(t)) return; if(t) st.textContent="What you copied isn’t a GPX. Paste it below to check."; }catch(e){}
+  area.classList.remove("hidden"); $("pastetext").focus();
+}
+/* Back to the empty Route post, as if the app had just been opened. */
+function startOver(){
+  S.routes=[]; S.mpts=null; S.rpts=null; S.view=null; S.items={}; S.pan={x:0,y:0}; S.zoom=1;
+  Object.assign(S, ADV_DEFAULTS);
+  $("zoom").value=100; $("zoomv").textContent="100%";
+  $("width").value=S.width; $("widthv").textContent=S.width;
+  $("simplify").value=S.simplify; $("simplifyv").textContent=S.simplify+" m";
+  $("round").checked=false; ["trimS","trimE"].forEach(i=>{ $(i).value=0; $(i+"v").textContent="0 m"; });
+  $("title").value=""; $("distinfo").textContent="";
+  $("route2none").classList.remove("hidden"); $("route2some").classList.add("hidden");
+  $("libstatus").textContent=""; $("libdup").classList.add("hidden");
+  $("pastetext").value=""; $("pastestatus").textContent=""; $("pastearea").classList.add("hidden");
+  $("editor").classList.add("hidden"); $("actions").classList.add("hidden");
+  $("drop").classList.remove("hidden"); $("pastebox").classList.remove("hidden");
+  ctx.clearRect(0,0,cv.width,cv.height);
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+async function loadRoute(read){
   try{
-    const r=await readRoute(file);
+    const r=await read();
     $("libstatus").textContent=""; $("libdup").classList.add("hidden");
     S.routes=[r]; S.zoom=1; $("zoom").value=100; $("zoomv").textContent="100%"; S.items={};
     $("title").value=cleanTitle(r.name);
     fillFromSchedule(true);
     if(!$("date").value) $("date").value=nextWednesday();
-    $("editor").classList.remove("hidden"); $("actions").classList.remove("hidden"); $("drop").classList.add("hidden");
+    $("editor").classList.remove("hidden"); $("actions").classList.remove("hidden"); $("drop").classList.add("hidden"); $("pastebox").classList.add("hidden"); $("pastearea").classList.add("hidden"); $("pastetext").value=""; $("pastestatus").textContent="";
     routesChanged();
     await document.fonts.load('100px "MikkelWind"'); draw();
     cv.scrollIntoView({behavior:"smooth", block:"start"});
@@ -820,6 +851,14 @@ function init(){
   $("gpx").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadFile(f); e.target.value=""; });
   $("gpx2").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadSecond(f); e.target.value=""; });
   $("route2remove").addEventListener("click",()=>{ S.routes=S.routes.slice(0,1); routesChanged(); });
+  $("startover").addEventListener("click",startOver);
+  $("pastebtn").addEventListener("click",pasteGpx);
+  $("pastetext").addEventListener("input",e=>{ const t=e.target.value;
+    if(!loadPasted(t)) $("pastestatus").textContent = t.trim() ? (/<gpx[\s>]/i.test(t) ? "Not the whole GPX yet: it needs to end with </gpx>." : "That doesn’t look like GPX text.") : ""; });
+  // pasting anywhere on an empty Route post (e.g. Cmd+V on a laptop) loads it straight away
+  document.addEventListener("paste",e=>{ if($("tab-poster").classList.contains("hidden") || !$("editor").classList.contains("hidden")) return;
+    if(e.target.closest && e.target.closest("input,textarea")) return;
+    if(loadPasted(e.clipboardData && e.clipboardData.getData("text"))) e.preventDefault(); });
   const drop=$("drop");
   ["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault(); drop.classList.add("over");}));
   ["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault(); drop.classList.remove("over");}));

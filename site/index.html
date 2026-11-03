@@ -242,6 +242,14 @@ footer a{color:inherit}
     <!-- <small>From Strava, Komoot, gpx.studio or your watch. It stays on your phone.</small> -->
     <input id="gpx" type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" class="hidden">
   </label>
+  <div id="pastebox" style="text-align:center;margin-top:10px">
+    <button type="button" class="btn ghost" id="pastebtn">Paste a GPX</button>
+    <div id="pastearea" class="hidden" style="margin-top:10px;text-align:left">
+      <label for="pastetext">Paste the GPX text here</label>
+      <textarea id="pastetext" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="&lt;gpx …&gt; … &lt;/gpx&gt;"></textarea>
+      <p class="status" id="pastestatus" role="status"></p>
+    </div>
+  </div>
 
   <section id="editor" class="hidden">
     <div class="card" style="padding:12px">
@@ -312,6 +320,7 @@ footer a{color:inherit}
 
     <div style="text-align:center">
       <label class="btn ghost" for="gpx" style="margin:4px auto">Load a different GPX</label>
+      <button type="button" class="btn ghost" id="startover" style="margin:4px auto">Remove GPX, start over</button>
     </div>
   </section>
   </div>
