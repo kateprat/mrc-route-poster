@@ -372,6 +372,15 @@ function fileName(){
   const t=($("title").value||"route").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"route";
   return `mrc-${t}-${S.fmt}.png`;
 }
+/* On a phone, "Save image" shows the post as a picture: press and hold → Save to Photos.
+   (A PNG download lands in Files on iPhone.) On a computer it downloads the PNG. */
+const isPhone = () => matchMedia("(pointer: coarse)").matches;
+async function saveImage(){
+  if(!isPhone()) return download();
+  const b=await exportBlob(); if(!b) return alert("Couldn’t create the image. Check your connection, reload and try again.");
+  const img=$("saveimg"); if(img.src) URL.revokeObjectURL(img.src);
+  img.src=URL.createObjectURL(b); $("saveov").classList.remove("hidden");
+}
 async function download(){
   const b=await exportBlob(); if(!b) return alert("Couldn’t create the image. Check your connection, reload and try again.");
   const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=fileName(); document.body.appendChild(a); a.click();
@@ -863,7 +872,8 @@ function init(){
   ["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault(); drop.classList.add("over");}));
   ["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault(); drop.classList.remove("over");}));
   drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) loadFile(f); });
-  $("save").addEventListener("click",download);
+  $("save").addEventListener("click",saveImage);
+  $("saveclose").addEventListener("click",()=>$("saveov").classList.add("hidden"));
   $("share").addEventListener("click",share);
 
   // One finger: drag the map, or the title / distance / FREE BEER! when the finger starts on it.

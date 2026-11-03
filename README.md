@@ -19,7 +19,7 @@ Everything here stays on your own phone; nobody else sees your edits.
 - Drag the map to move it, pinch or use the slider to zoom. The text you're handling gets a dashed outline (only on screen, never in the image).
 - The three sections (Route post, Schedule, Routes) are in a tab bar at the bottom, within thumb reach.
 - **Advanced settings** (folded away, with “Reset to standard”): line width, smoothing GPS wobble, round corners, trimming the ends.
-- **Share** opens the phone's share sheet (Instagram, Photos, WhatsApp…). **Download PNG** saves the file.
+- **Share** opens the phone's share sheet (Instagram, Photos, WhatsApp…). **Save image** on a phone shows the post as a picture: press and hold, then Save to Photos. On a computer it downloads the PNG.
 
 ### Routes tab
 
