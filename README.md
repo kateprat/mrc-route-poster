@@ -23,7 +23,7 @@ Everything here stays on your own phone; nobody else sees your edits.
 
 ### Routes tab
 
-Every route we've run, shortest first, each with a picture of the line, its distance and, when the GPX has elevation, the climb (↑ metres; rises under 3 m are ignored as GPS noise).
+Every route we've run, shortest first, each with a picture of the line on the map, its distance and, when the GPX has elevation, the climb (↑ metres; rises under 3 m are ignored as GPS noise).
 
 - **Use** opens the route in Route post; **GPX** opens the share sheet (Save to Files, Garmin Connect, Komoot…) on phones, or downloads it on a computer. It never opens the file itself: in the home-screen app on iPhone that preview has no way back.
 - Captains add routes with **Save to route library** in Route post (title, distance, run date and the GPX file), or **Add GPX files** in Routes for older runs (several at once). **Edit** on a route changes its title and run date, or removes it. If it's the same route as one already there (similar distance and the lines within about 60 m of each other, or the same name), the app shows the new one, the saved one and both overlaid, and asks: replace it, keep both, or skip.

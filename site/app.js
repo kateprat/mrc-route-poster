@@ -523,6 +523,51 @@ function routesSVG(lines){
   return `<svg viewBox="0 0 100 100" aria-hidden="true">${paths}</svg>`;
 }
 const routeSVG=(pts, color="#882c29")=>routesSVG([[pts,color]]);
+
+/* Map behind each route picture in Routes: a small separate map, one route at a time, framed exactly like
+   routesSVG() (same centre, line fills 84 % of the square). Pictures are kept on this phone so it's done once per route. */
+const TH={map:null, ready:null, queue:[], busy:false, mem:new Map(), size:288};
+const thumbKey=r=>`mrc-thumb-v1-${r.id}-${r.km.toFixed(3)}-${r.pts.length}`;
+function thumbFrame(pts){
+  const k=Math.cos(pts[0][0]*Math.PI/180), xs=pts.map(p=>p[1]*k), ys=pts.map(p=>-p[0]);
+  const x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys);
+  const span=Math.max(x1-x0, y1-y0) || 0.001, lat=-(y0+y1)/2;
+  const mpp=span*111320/(0.84*TH.size);                       // metres per pixel so the line fills 84 %
+  return {center:[(x0+x1)/2/k, lat], zoom:Math.log2(78271.517*Math.cos(lat*Math.PI/180)/mpp)};
+}
+function thumbMap(){
+  if(TH.ready) return TH.ready;
+  TH.ready=new Promise(res=>{
+    if(typeof maplibregl==="undefined") return res(null);
+    TH.map=new maplibregl.Map({container:"thumbbox", style:mapStyle("grey"), interactive:false, attributionControl:false,
+      pixelRatio:1, preserveDrawingBuffer:true, fadeDuration:0, center:[8.53,47.37], zoom:13});
+    TH.map.on("load",()=>res(TH.map)); TH.map.on("error",()=>{}); setTimeout(()=>res(TH.map.loaded()?TH.map:null),15000);
+  });
+  return TH.ready;
+}
+function showThumb(id, url){ document.querySelectorAll(`[data-thumb="${id}"]`).forEach(el=>el.style.backgroundImage=`url(${url})`); }
+async function renderThumbs(){
+  if(TH.busy) return; TH.busy=true;
+  try{
+    while(TH.queue.length){
+      const r=TH.queue.shift(), key=thumbKey(r);
+      const map=await thumbMap(); if(!map) break;
+      const f=thumbFrame(r.pts); map.jumpTo(f);
+      await new Promise(res=>{ const t0=Date.now(); (function wait(){ if((map.loaded()&&map.areTilesLoaded())||Date.now()-t0>8000) return res(); setTimeout(wait,150); })(); });
+      map.triggerRepaint(); await new Promise(res=>map.once("render",res));
+      let url; try{ url=map.getCanvas().toDataURL("image/jpeg",0.8); }catch(e){ break; }
+      TH.mem.set(key,url); try{ localStorage.setItem(key,url); }catch(e){}
+      showThumb(r.id, url);
+    }
+  } finally { TH.busy=false; }
+}
+function queueThumbs(routes){
+  TH.queue=[];
+  for(const r of routes){ const key=thumbKey(r);
+    let url=TH.mem.get(key); if(!url){ try{ url=localStorage.getItem(key); }catch(e){} if(url) TH.mem.set(key,url); }
+    if(url) showThumb(r.id, url); else TH.queue.push(r); }
+  if(TH.queue.length) renderThumbs();
+}
 async function libCall(path, body){
   const r=await fetch(path, body ? {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(body), credentials:"include"} : {credentials:"include", cache:"no-store"});
   const j=await r.json().catch(()=>({error:"The route library isn’t available here."}));
@@ -540,7 +585,7 @@ function renderRoutes(){
   const list=$("routelist"); if(!LIB.routes) return;
   if(!LIB.routes.length){ list.innerHTML=`<p class="empty">No routes yet. Make a route post and tap “Save to route library”.</p>`; return; }
   list.innerHTML=LIB.routes.map(r=>{ const when=r.date?`Run on ${niceDate(r.date)} ${r.date.slice(0,4)}`:"";
-    return `<article class="rcard" data-id="${r.id}">${routeSVG(r.pts)}
+    return `<article class="rcard" data-id="${r.id}"><div class="thumb" data-thumb="${r.id}">${routeSVG(r.pts)}</div>
       <div><span class="km">${r.km.toFixed(1)} km${r.up!=null?` · ↑ ${r.up} m`:""}</span><h3>${esc(r.name)}</h3>
         <p class="meta">${[when, r.addedBy?`added by ${esc(r.addedBy)}`:""].filter(Boolean).join(" · ")}</p>
         <div class="btns"><button type="button" class="btn" data-use="${r.id}" aria-label="Use ${esc(r.name)} for a route post">Use</button>
@@ -557,6 +602,7 @@ function renderRoutes(){
         <div><label for="en-${r.id}">Title</label><input id="en-${r.id}" type="text" value="${esc(r.name)}" autocomplete="off"></div>
         <div><label for="ed-${r.id}">Run date</label><input id="ed-${r.id}" type="date" value="${esc(r.date)}"></div>
         <div class="btns"><button type="button" class="btn" data-save="${r.id}">Save</button><button type="button" class="btn ghost rm" data-rm="${r.id}">Remove route</button></div></div>`:""}</article>`; }).join("");
+  if(!$("tab-routes").classList.contains("hidden")) queueThumbs(LIB.routes);
 }
 /* Ask before adding a route that's already in the library: replace it, keep both, or skip.
    Shows the new one, the saved one and both on top of each other to compare. */

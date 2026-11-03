@@ -177,7 +177,8 @@ footer a{color:inherit}
 
 /* Routes tab */
 .rcard{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px;margin:10px 0}
-.rcard svg{width:96px;height:96px;border-radius:10px;background:var(--paper);display:block}
+.rcard .thumb{width:96px;height:96px;border-radius:10px;background:var(--paper) center/cover no-repeat;overflow:hidden}
+.rcard .thumb svg{width:96px;height:96px;display:block}
 .rcard h3{font:900 16px/1.15 var(--sub);letter-spacing:.02em;text-transform:uppercase;margin:4px 0 2px;overflow-wrap:anywhere}
 .rcard .km{font:900 13px/1 var(--sub);letter-spacing:.04em;text-transform:uppercase;color:var(--accent)}
 .rcard .meta{font-size:13px;color:var(--muted);margin:4px 0 8px}
@@ -393,7 +394,7 @@ footer a{color:inherit}
 </div>
 
 <!-- off-screen map used to draw the post; wrapped in a 0×0 box so its 1350 px height can't stretch the page on iPhone -->
-<div aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none"><div id="mapbox" style="position:absolute;left:0;top:0;width:1080px;height:1920px"></div></div>
+<div aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none"><div id="mapbox" style="position:absolute;left:0;top:0;width:1080px;height:1920px"></div><div id="thumbbox" style="position:absolute;left:0;top:0;width:288px;height:288px"></div></div>
 <script src="vendor/maplibre-gl.js"></script>
 <script src="app.js"></script>
 <script>
