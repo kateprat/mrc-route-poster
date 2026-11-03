@@ -56,7 +56,7 @@ h2{font-family:var(--sub);font-weight:900;font-size:13px;letter-spacing:.12em;te
   background:var(--accent);color:var(--accent-ink);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
 .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
 .btn:disabled{opacity:.45;cursor:default}
-.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.seg button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.chip:focus-visible,.btn:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.seg button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 
 .preview{position:relative;margin:14px 0 0}
 .preview canvas{display:block;width:100%;height:auto;border-radius:10px;box-shadow:0 1px 0 var(--line),0 8px 24px rgba(0,0,0,.12);
@@ -176,14 +176,20 @@ footer a{color:inherit}
 @media (min-width:720px){h1{font-size:40px}}
 
 /* Routes tab */
-.rcard{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px;margin:10px 0}
+.rcard{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px;margin:10px 0}
 .rcard svg{width:96px;height:96px;border-radius:10px;background:var(--paper);display:block}
 .rcard h3{font:900 16px/1.15 var(--sub);letter-spacing:.02em;text-transform:uppercase;margin:4px 0 2px;overflow-wrap:anywhere}
 .rcard .km{font:900 13px/1 var(--sub);letter-spacing:.04em;text-transform:uppercase;color:var(--accent)}
 .rcard .meta{font-size:13px;color:var(--muted);margin:4px 0 8px}
-.rcard .btns{display:flex;flex-wrap:nowrap;gap:6px}
-.rcard .btns .btn{min-height:40px;padding:8px 12px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;flex:1 1 auto;white-space:nowrap}
+.rcard .btns{display:flex;flex-wrap:wrap;gap:6px}
+.filebar{display:flex;justify-content:space-between;gap:8px;margin:0 0 8px}
+.chip{appearance:none;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;
+  padding:8px 14px;min-height:40px;font:900 13px/1 var(--sub);letter-spacing:.04em;cursor:pointer;display:inline-flex;align-items:center}
+.rcard .btns .btn{min-height:40px;padding:8px 12px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap}
 .rcard .btns .rm{color:var(--muted)}
+.rcard .komoot{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px;font-size:14px}
+.rcard .komoot p{margin:6px 0}
+.rcard .komoot .btn{min-height:36px;padding:8px 14px;font-size:13px;text-decoration:none;display:inline-flex}
 .rcard .edit{grid-column:1/-1;display:grid;gap:8px;border-top:1px solid var(--line);padding-top:10px}
 .rcard .edit .btns{margin-top:2px}
 .dup{margin-top:10px;background:var(--note);border:1.5px solid var(--note-line);border-radius:12px;padding:12px;font-size:14px}
@@ -256,6 +262,10 @@ footer a{color:inherit}
   </div>
 
   <section id="editor" class="hidden">
+    <div class="filebar">
+      <button type="button" class="chip" id="startover" aria-label="Remove GPX and start over">✕ Remove GPX</button>
+      <label class="chip" for="gpx">Change GPX</label>
+    </div>
     <div class="card" style="padding:12px">
       <div class="seg" id="fmt" role="group" aria-label="Format">
         <button type="button" data-v="feed" aria-pressed="true">Post 4:5</button>
@@ -322,10 +332,6 @@ footer a{color:inherit}
 
     <p class="hint" id="creditnote">When you post, add this line to the caption: <strong>Map: © OpenStreetMap contributors, OpenMapTiles</strong></p>
 
-    <div style="text-align:center">
-      <label class="btn ghost" for="gpx" style="margin:4px auto">Load a different GPX</label>
-      <button type="button" class="btn ghost" id="startover" style="margin:4px auto">Remove GPX, start over</button>
-    </div>
   </section>
   </div>
 

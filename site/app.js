@@ -545,7 +545,14 @@ function renderRoutes(){
         <p class="meta">${[when, r.addedBy?`added by ${esc(r.addedBy)}`:""].filter(Boolean).join(" · ")}</p>
         <div class="btns"><button type="button" class="btn" data-use="${r.id}" aria-label="Use ${esc(r.name)} for a route post">Use</button>
           <button type="button" class="btn ghost" data-gpx="${r.id}">GPX</button>
+          <button type="button" class="btn ghost" data-komoot="${r.id}" aria-expanded="false" aria-controls="komoot-${r.id}">Komoot</button>
           ${LIB.canEdit?`<button type="button" class="btn ghost" data-edit="${r.id}">Edit</button>`:""}</div></div>
+      <div class="komoot hidden" id="komoot-${r.id}">
+        <p><strong>1.</strong> Save the GPX to your phone (pick <em>Save to Files</em>).</p>
+        <button type="button" class="btn ghost" data-gpx="${r.id}">Save GPX</button>
+        <p><strong>2.</strong> In Komoot: <em>Profile › Saved routes › Import › Import a file</em>, then pick it.</p>
+        <a class="btn ghost" href="https://www.komoot.com/" target="_blank" rel="noopener">Open Komoot</a>
+      </div>
       ${LIB.canEdit?`<div class="edit hidden" id="edit-${r.id}">
         <div><label for="en-${r.id}">Title</label><input id="en-${r.id}" type="text" value="${esc(r.name)}" autocomplete="off"></div>
         <div><label for="ed-${r.id}">Run date</label><input id="ed-${r.id}" type="date" value="${esc(r.date)}"></div>
@@ -612,6 +619,7 @@ function initRoutes(){
   $("routelist").addEventListener("click", async e=>{
     const u=e.target.closest("[data-use]"); if(u) return useRoute(Number(u.dataset.use));
     const g=e.target.closest("[data-gpx]"); if(g) return downloadGpx(Number(g.dataset.gpx));
+    const k=e.target.closest("[data-komoot]"); if(k){ const box=$("komoot-"+k.dataset.komoot); box.classList.toggle("hidden"); k.setAttribute("aria-expanded", String(!box.classList.contains("hidden"))); return; }
     const ed=e.target.closest("[data-edit]"); if(ed){ $("edit-"+ed.dataset.edit).classList.toggle("hidden"); return; }
     const sv=e.target.closest("[data-save]"); if(sv){ const id=sv.dataset.save;
       try{ await libCall("/api/routes/edit",{id:Number(id), name:$("en-"+id).value.toUpperCase().trim(), date:$("ed-"+id).value}); $("routesstatus").textContent="Saved."; $("routesstatus").classList.remove("warn"); }
