@@ -10,7 +10,7 @@ It replaces the old Inkscape workflow (GPX → SVG converter → Snazzy Maps scr
 
 Everything here stays on your own phone; nobody else sees your edits.
 
-- Load a GPX file, or tap **Paste a GPX** to paste the GPX text (on a laptop, Cmd+V anywhere works). **Remove GPX, start over** at the bottom clears everything.
+- Load a GPX file, or tap **Paste a GPX** to paste a copied GPX file (in Files: press and hold → Copy; on a laptop, Cmd+V anywhere works; GPX text works too). **Remove GPX, start over** at the bottom clears everything.
 - Reads the GPX on the phone (nothing is uploaded unless you save it to the route library): the **distance** comes straight from the GPX, the **title** from its name (`261014_MRC_LITTLE-DIPPER` becomes LITTLE DIPPER, editable), the **date** from the next run in the schedule.
 - Draws the MRC grey street map with the route on top in **burgundy `#882c29`** or **blue `#3584ba`**.
 - Title, distance, **FREE BEER!** and date in **MikkelWind**, like the earlier route posts. Title, distance and FREE BEER! can each be dragged with one finger and turned (any angle) and resized with two; Like on Instagram, text sticks to the centre lines (with a guide line) and to straight angles when it gets close, and comes off when you move further. “Put text back in place” resets them. FREE BEER! is always there.

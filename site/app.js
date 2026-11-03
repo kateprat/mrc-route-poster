@@ -432,9 +432,22 @@ function loadPasted(text){
   loadRoute(()=>routeFromText(m[0].trim(), ""));
   return true;
 }
+/* A copied file (Files app, Finder, Explorer) or copied GPX text. Returns true if it loaded something. */
+async function loadFromClipboardData(dt){
+  if(!dt) return false;
+  const files=[...(dt.files||[])].concat([...(dt.items||[])].filter(i=>i.kind==="file").map(i=>i.getAsFile()).filter(Boolean));
+  for(const f of files){ const t=await f.text().catch(()=>""); if(/<gpx[\s>]/i.test(t)){ loadRoute(()=>routeFromText(t, f.name.replace(/\.gpx$/i,""))); return true; } }
+  return loadPasted(dt.getData && dt.getData("text"));
+}
 async function pasteGpx(){
   const area=$("pastearea"), st=$("pastestatus");
-  try{ const t=await navigator.clipboard.readText(); if(loadPasted(t)) return; if(t) st.textContent="What you copied isn’t a GPX. Paste it below to check."; }catch(e){}
+  try{ // Paste button reads the clipboard directly where the browser allows it
+    for(const item of await navigator.clipboard.read()){
+      for(const type of item.types){ const t=await (await item.getType(type)).text().catch(()=>"");
+        if(/<gpx[\s>]/i.test(t) && loadPasted(t)) return; }
+    }
+    st.textContent="What you copied isn’t a GPX file.";
+  }catch(e){}
   area.classList.remove("hidden"); $("pastetext").focus();
 }
 /* Back to the empty Route post, as if the app had just been opened. */
@@ -862,12 +875,14 @@ function init(){
   $("route2remove").addEventListener("click",()=>{ S.routes=S.routes.slice(0,1); routesChanged(); });
   $("startover").addEventListener("click",startOver);
   $("pastebtn").addEventListener("click",pasteGpx);
+  $("pastetext").addEventListener("paste",async e=>{ const dt=e.clipboardData; if(dt && [...(dt.items||[])].some(i=>i.kind==="file")){ e.preventDefault();
+      if(!(await loadFromClipboardData(dt))) $("pastestatus").textContent="That file isn’t a GPX."; } });
   $("pastetext").addEventListener("input",e=>{ const t=e.target.value;
     if(!loadPasted(t)) $("pastestatus").textContent = t.trim() ? (/<gpx[\s>]/i.test(t) ? "Not the whole GPX yet: it needs to end with </gpx>." : "That doesn’t look like GPX text.") : ""; });
   // pasting anywhere on an empty Route post (e.g. Cmd+V on a laptop) loads it straight away
   document.addEventListener("paste",e=>{ if($("tab-poster").classList.contains("hidden") || !$("editor").classList.contains("hidden")) return;
     if(e.target.closest && e.target.closest("input,textarea")) return;
-    if(loadPasted(e.clipboardData && e.clipboardData.getData("text"))) e.preventDefault(); });
+    e.preventDefault(); loadFromClipboardData(e.clipboardData); });
   const drop=$("drop");
   ["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault(); drop.classList.add("over");}));
   ["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault(); drop.classList.remove("over");}));
