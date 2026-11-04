@@ -658,7 +658,6 @@ function initRoutes(){
   $("routelist").addEventListener("click", async e=>{
     const u=e.target.closest("[data-use]"); if(u) return useRoute(Number(u.dataset.use));
     const g=e.target.closest("[data-gpx]"); if(g) return downloadGpx(Number(g.dataset.gpx));
-    const k=e.target.closest("[data-komoot]"); if(k){ const box=$("komoot-"+k.dataset.komoot); box.classList.toggle("hidden"); k.setAttribute("aria-expanded", String(!box.classList.contains("hidden"))); return; }
     const ed=e.target.closest("[data-edit]"); if(ed){ $("edit-"+ed.dataset.edit).classList.toggle("hidden"); return; }
     const sv=e.target.closest("[data-save]"); if(sv){ const id=sv.dataset.save;
       try{ await libCall("/api/routes/edit",{id:Number(id), name:$("en-"+id).value.toUpperCase().trim(), date:$("ed-"+id).value}); $("routesstatus").textContent="Saved."; $("routesstatus").classList.remove("warn"); }
