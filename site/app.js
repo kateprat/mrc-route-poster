@@ -556,10 +556,125 @@ async function renderThumbs(){
       await new Promise(res=>{ const t0=Date.now(); (function wait(){ if((map.loaded()&&map.areTilesLoaded())||Date.now()-t0>8000) return res(); setTimeout(wait,150); })(); });
       map.triggerRepaint(); await new Promise(res=>map.once("render",res));
       let url; try{ url=map.getCanvas().toDataURL("image/jpeg",0.8); }catch(e){ break; }
-      TH.mem.set(key,url); try{ localStorage.setItem(key,url); }catch(e){}
+      TH.mem.set(key,url); if(!String(r.id).startsWith("s")) try{ localStorage.setItem(key,url); }catch(e){}
       showThumb(r.id, url);
     }
   } finally { TH.busy=false; }
+}
+/* ---------- traffic lights (OpenStreetMap) ----------
+   Every traffic light and signalled crossing around Zurich, kept on the phone for a week.
+   A route "has" a light when it passes within 15 m; lights within 40 m of each other
+   (one junction) count once. */
+const SIG={pts:null, grid:null, loading:null};
+const SIG_KEY="mrc-signals-v1", CELL=0.001;
+function indexSignals(text){
+  const pts=text.trim().split(/\n/).map(l=>l.split(/[\t,]/).map(Number)).filter(p=>p.length>=2&&Number.isFinite(p[0])&&Number.isFinite(p[1]));
+  const grid=new Map();
+  for(const p of pts){ const k=Math.floor(p[0]/CELL)+":"+Math.floor(p[1]/CELL); (grid.get(k)||grid.set(k,[]).get(k)).push(p); }
+  SIG.pts=pts; SIG.grid=grid;
+}
+function loadSignals(){
+  if(SIG.pts) return Promise.resolve(true);
+  if(SIG.loading) return SIG.loading;
+  SIG.loading=(async()=>{
+    try{ const c=JSON.parse(localStorage.getItem(SIG_KEY)||"null"); if(c && Date.now()-c.t<7*864e5){ indexSignals(c.text); return true; } }catch(e){}
+    try{ const r=await fetch("/api/map/signals",{credentials:"include"}); if(!r.ok) throw 0; const text=await r.text(); indexSignals(text);
+      try{ localStorage.setItem(SIG_KEY, JSON.stringify({t:Date.now(), text})); }catch(e){}
+      return true; }catch(e){ SIG.loading=null; return false; }
+  })();
+  return SIG.loading;
+}
+/* pts: [[lat, lon], …] → number of traffic lights on the way */
+function countLights(pts){
+  if(!SIG.grid || !pts || pts.length<2) return null;
+  const k=Math.cos(pts[0][0]*Math.PI/180)*111320, m=111320, R=15, hits=[];
+  const seen=new Set();
+  for(let i=1;i<pts.length;i++){
+    const [a0,b0]=pts[i-1], [a1,b1]=pts[i];
+    const la0=Math.floor((Math.min(a0,a1)-0.0002)/CELL), la1=Math.floor((Math.max(a0,a1)+0.0002)/CELL);
+    const lo0=Math.floor((Math.min(b0,b1)-0.0003)/CELL), lo1=Math.floor((Math.max(b0,b1)+0.0003)/CELL);
+    for(let x=la0;x<=la1;x++) for(let y=lo0;y<=lo1;y++){ const cell=SIG.grid.get(x+":"+y); if(!cell) continue;
+      for(const s of cell){ if(seen.has(s)) continue;
+        const ax=(b0-s[1])*k, ay=(a0-s[0])*m, bx=(b1-s[1])*k, by=(a1-s[0])*m, dx=bx-ax, dy=by-ay;
+        const t=Math.max(0,Math.min(1,-(ax*dx+ay*dy)/((dx*dx+dy*dy)||1)));
+        if(Math.hypot(ax+t*dx, ay+t*dy)<=R){ seen.add(s); hits.push(s); } } }
+  }
+  const groups=[];
+  for(const s of hits){ const g=groups.find(g=>Math.hypot((g[1]-s[1])*k,(g[0]-s[0])*m)<40); if(!g) groups.push(s); }
+  return groups.length;
+}
+function lightsText(r){ if(!SIG.pts) return ""; if(r.lights==null) r.lights=countLights(r.pts); return r.lights==null?"":` · 🚦 ${r.lights}`; }
+function fillLights(){ document.querySelectorAll("[data-lights]").forEach(el=>{
+  const id=el.dataset.lights, r=(LIB.routes||[]).concat(SUG.list||[]).find(x=>String(x.id)===id); if(r) el.textContent=lightsText(r); }); }
+
+/* ---------- Suggest a loop (BRouter via /api/map/route) ----------
+   Six directions from the start; each loop goes start → three points on an arc → start.
+   BRouter's running profile (src/mrc-run.brf) keeps to paths and quiet streets and avoids traffic lights.
+   If a loop comes out too long or short it is scaled once and planned again. Best ones first: fewest lights. */
+const SUG={km:5, list:null, busy:false};
+const BAR=[47.3727, 8.5199];   // Mikkeller Zürich, Zweierstrasse 124
+function startPoint(){
+  const s=(LIB.routes||[]).map(r=>r.pts[0]).filter(Boolean);
+  if(s.length<2) return BAR;
+  // the start most routes share (they begin at the bar)
+  let best=s[0], n=0;
+  for(const p of s){ const c=s.filter(q=>Math.hypot((q[0]-p[0])*111320,(q[1]-p[1])*75000)<150).length; if(c>n){ n=c; best=p; } }
+  return n>=2 ? best : BAR;
+}
+const dest=(p,dist,brg)=>{ const b=brg*Math.PI/180; return [p[0]+dist*Math.cos(b)/111320, p[1]+dist*Math.sin(b)/(111320*Math.cos(p[0]*Math.PI/180))]; };
+const COMPASS=["NORTH","NORTH-EAST","EAST","SOUTH-EAST","SOUTH","SOUTH-WEST","WEST","NORTH-WEST"];
+async function planLoop(start, brg, d){
+  const wps=[start, dest(start,d,brg-50), dest(start,d*1.05,brg), dest(start,d,brg+50), start];
+  const lonlats=wps.map(p=>`${p[1].toFixed(6)},${p[0].toFixed(6)}`).join("|");
+  const r=await fetch(`/api/map/route?lonlats=${encodeURIComponent(lonlats).replace(/%2C/g,",")}`,{credentials:"include"});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok || !j.features) throw new Error(j.error||"No route.");
+  const f=j.features[0], co=f.geometry.coordinates, pr=f.properties||{};
+  const m=co.reduce((t,c,i)=>i?t+Math.hypot((c[1]-co[i-1][1])*111320,(c[0]-co[i-1][0])*111320*Math.cos(c[1]*Math.PI/180)):0,0);
+  return {co, m, brg};
+}
+function loopToRoute(l, km, i){
+  const name=`${COMPASS[Math.round(((l.brg%360)+360)%360/45)%8]} LOOP`;
+  const gpx=`<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="MRC ZH (BRouter, OpenStreetMap)" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>${esc(name)}</name><trkseg>\n`+
+    l.co.map(c=>`<trkpt lat="${c[1].toFixed(6)}" lon="${c[0].toFixed(6)}">${c.length>2?`<ele>${Number(c[2]).toFixed(1)}</ele>`:""}</trkpt>`).join("\n")+`\n</trkseg></trk></gpx>\n`;
+  const full=routeFromText(gpx, name);
+  return {id:`s${Date.now()}${i}`, name, km:full.total/1000, up:full.up, pts:thin(full.pts), full, gpx};
+}
+async function suggestLoops(){
+  if(SUG.busy) return; SUG.busy=true;
+  const st=$("sugstatus"), btn=$("sugbtn"), km=SUG.km, D=km*1000; btn.disabled=true; st.classList.remove("warn");
+  $("suglist").innerHTML=""; SUG.list=[];
+  try{
+    if(!LIB.routes) await loadRoutes().catch(()=>{});
+    const start=startPoint(); await loadSignals();
+    const found=[]; const dirs=[0,60,120,180,240,300].map(b=>b+Math.round(Math.random()*30-15));
+    let done=0;
+    await Promise.all([0,1].map(async w=>{
+      for(let i=w;i<dirs.length;i+=2){
+        try{
+          let d=D/4.6, l=await planLoop(start,dirs[i],d), len=l.m||0;
+          if(len && Math.abs(len-D)/D>0.1){ d*=D/len; l=await planLoop(start,dirs[i],d); len=l.m||0; }
+          if(len && Math.abs(len-D)/D<=0.2) found.push(l);
+        }catch(e){}
+        st.textContent=`Planning loops… ${++done}/${dirs.length}`;
+      }
+    }));
+    let routes=found.map((l,i)=>loopToRoute(l,km,i));
+    routes.forEach(r=>r.lights=countLights(r.pts));
+    routes.sort((a,b)=>(a.lights??99)-(b.lights??99) || Math.abs(a.km-km)-Math.abs(b.km-km));
+    const keep=[]; for(const r of routes) if(!keep.some(k=>sameRoute(r,k))) keep.push(r);
+    SUG.list=keep.slice(0,4);
+    st.textContent = SUG.list.length ? "" : "No loops found this time. Try again or pick another distance.";
+    renderSuggestions();
+  }catch(e){ st.textContent=e.message||String(e); st.classList.add("warn"); }
+  finally{ SUG.busy=false; btn.disabled=false; }
+}
+function renderSuggestions(){
+  $("suglist").innerHTML=(SUG.list||[]).map(r=>`<article class="rcard"><div class="thumb" data-thumb="${r.id}">${routeSVG(r.pts)}</div>
+    <div><span class="km">${r.km.toFixed(1)} km${r.up!=null?` · ↑ ${r.up} m`:""}<span class="lights" data-lights="${r.id}">${lightsText(r)}</span></span><h3>${esc(r.name)}</h3>
+      <div class="btns"><button type="button" class="btn" data-suse="${r.id}">Use</button>
+        ${LIB.canEdit?`<button type="button" class="btn ghost" data-ssave="${r.id}">Save to library</button>`:""}</div></div></article>`).join("");
+  queueThumbs(SUG.list);
 }
 function queueThumbs(routes){
   TH.queue=[];
@@ -586,7 +701,7 @@ function renderRoutes(){
   if(!LIB.routes.length){ list.innerHTML=`<p class="empty">No routes yet. Make a route post and tap “Save to route library”.</p>`; return; }
   list.innerHTML=LIB.routes.map(r=>{ const when=r.date?`Run on ${niceDate(r.date)} ${r.date.slice(0,4)}`:"";
     return `<article class="rcard" data-id="${r.id}"><div class="thumb" data-thumb="${r.id}">${routeSVG(r.pts)}</div>
-      <div><span class="km">${r.km.toFixed(1)} km${r.up!=null?` · ↑ ${r.up} m`:""}</span><h3>${esc(r.name)}</h3>
+      <div><span class="km">${r.km.toFixed(1)} km${r.up!=null?` · ↑ ${r.up} m`:""}<span class="lights" data-lights="${r.id}">${lightsText(r)}</span></span><h3>${esc(r.name)}</h3>
         <p class="meta">${[when, r.addedBy?`added by ${esc(r.addedBy)}`:""].filter(Boolean).join(" · ")}</p>
         <div class="btns"><button type="button" class="btn" data-use="${r.id}" aria-label="Use ${esc(r.name)} for a route post">Use</button>
           <button type="button" class="btn ghost" data-gpx="${r.id}">GPX</button>
@@ -595,7 +710,7 @@ function renderRoutes(){
         <div><label for="en-${r.id}">Title</label><input id="en-${r.id}" type="text" value="${esc(r.name)}" autocomplete="off"></div>
         <div><label for="ed-${r.id}">Run date</label><input id="ed-${r.id}" type="date" value="${esc(r.date)}"></div>
         <div class="btns"><button type="button" class="btn" data-save="${r.id}">Save</button><button type="button" class="btn ghost rm" data-rm="${r.id}">Remove route</button></div></div>`:""}</article>`; }).join("");
-  if(!$("tab-routes").classList.contains("hidden")) queueThumbs(LIB.routes);
+  if(!$("tab-routes").classList.contains("hidden")){ queueThumbs(LIB.routes); if(!SIG.pts) loadSignals().then(fillLights); }
 }
 /* Ask before adding a route that's already in the library: replace it, keep both, or skip.
    Shows the new one, the saved one and both on top of each other to compare. */
@@ -654,7 +769,19 @@ async function useRoute(id){
   document.getElementById("tabbtn-poster").click();
   await loadFile(file); $("title").value=r.name; scheduleDraw();
 }
+function initSuggest(){
+  $("sugkm").addEventListener("click",e=>{ const b=e.target.closest("[data-v]"); if(!b) return; SUG.km=Number(b.dataset.v);
+    $("sugkm").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); });
+  $("sugbtn").addEventListener("click",suggestLoops);
+  $("suglist").addEventListener("click",async e=>{
+    const u=e.target.closest("[data-suse]"), s=e.target.closest("[data-ssave]"); const id=(u||s)&&(u||s).dataset[u?"suse":"ssave"];
+    const r=(SUG.list||[]).find(x=>x.id===id); if(!r) return;
+    if(u){ document.getElementById("tabbtn-poster").click(); await loadRoute(()=>routeFromText(r.gpx, r.name)); return; }
+    await addToLibrary([r.full], r.name, "", $("sugdup"), $("sugstatus"));
+  });
+}
 function initRoutes(){
+  initSuggest();
   $("routelist").addEventListener("click", async e=>{
     const u=e.target.closest("[data-use]"); if(u) return useRoute(Number(u.dataset.use));
     const g=e.target.closest("[data-gpx]"); if(g) return downloadGpx(Number(g.dataset.gpx));

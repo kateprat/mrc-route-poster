@@ -30,6 +30,12 @@ Every route we've run, shortest first, each with a picture of the line on the ma
 - Everyone signed in can browse and download; only captains can add or remove (remove: tap twice).
 - Stored with the schedule in the Durable Object (`routes` table); very large GPX files are rewritten from their points.
 
+### Traffic lights and loop suggestions (Routes tab)
+
+- Every route shows **🚦 n**: the traffic lights (road signals and signalled crossings, from OpenStreetMap) within 15 m of the line; lights within 40 m of each other count as one junction. The list of lights comes from the Overpass API through `/api/map/signals`, cached a week by the Worker and on the phone.
+- **Suggest a loop**: pick 4–8 km and tap **Suggest loops**. The app plans loops from the bar (where most saved routes start) in six directions with BRouter (brouter.de) and our running profile `src/mrc-run.brf`: paths, parks and quiet streets first, big roads avoided, and each traffic light counted as a 400 m detour. Loops off by more than 10 % are rescaled once. The four with the fewest lights are shown; **Use** opens one in Route post, **Save to library** adds it to the routes.
+- Overpass and BRouter are free community services, so the app only asks them when someone taps. Check a suggested loop before posting it: the data doesn't know about lighting, building sites or how busy a path is.
+
 ### Schedule tab
 
 Replaces the old `MRC-leads.xlsx` availability sheet (its rows up to January 2027 were imported).

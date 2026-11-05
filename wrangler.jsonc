@@ -11,6 +11,7 @@
   "durable_objects": {
     "bindings": [{ "name": "SCHEDULE", "class_name": "Schedule" }]
   },
+  "rules": [{ "type": "Text", "globs": ["**/*.brf"], "fallthrough": true }],
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["Schedule"] }
   ]

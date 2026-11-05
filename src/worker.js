@@ -11,6 +11,7 @@
 import { DurableObject } from "cloudflare:workers";
 import SEED from "./seed.json";
 import CAPTAINS from "./captains.js";
+import RUN_PROFILE from "./mrc-run.brf";
 
 /** The captain for a login email, from src/captains.js (or null). */
 function captainFor(email) {
@@ -253,13 +254,54 @@ function zurichToday() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Zurich", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 }
 
-async function api(request, env, url) {
+/* ---------- map helpers for the Routes tab ----------
+   Traffic lights come from OpenStreetMap (Overpass API); loop suggestions from BRouter (brouter.de)
+   with our own running profile (src/mrc-run.brf), which treats every traffic light as a long detour.
+   Both are free community services: answers are cached, and the app asks only when someone taps. */
+const UA = "MRC-ZH route app (github.com/kateprat/mrc-route-poster)";
+const ZURICH_BOX = "47.30,8.40,47.47,8.65";   // south,west,north,east
+async function signals(env, ctx) {
+  const cache = caches.default, key = new Request("https://cache.mrc/signals-v1");
+  const hit = await cache.match(key); if (hit) return hit;
+  const q = `[out:csv(::lat,::lon;false)][timeout:90];(node["highway"="traffic_signals"](${ZURICH_BOX});node["crossing"="traffic_signals"](${ZURICH_BOX});node["crossing:signals"="yes"](${ZURICH_BOX}););out;`;
+  const r = await fetch((env.OVERPASS_URL || "https://overpass-api.de/api/interpreter") + "?data=" + encodeURIComponent(q), { headers: { "user-agent": UA } });
+  if (!r.ok) throw new HttpError(502, "Couldn’t load the traffic lights. Try again later.");
+  const text = await r.text();
+  if (!/^\s*\d/.test(text)) throw new HttpError(502, "Couldn’t load the traffic lights. Try again later.");
+  const res = new Response(text, { headers: { "content-type": "text/plain", "cache-control": "max-age=604800" } });
+  ctx.waitUntil(cache.put(key, res.clone()));
+  return res;
+}
+let profileId = null;   // BRouter custom profile, uploaded once per Worker instance
+async function uploadProfile(base) {
+  const r = await fetch(base + "/brouter/profile", { method: "POST", headers: { "user-agent": UA, "content-type": "text/plain" }, body: RUN_PROFILE });
+  const j = await r.json().catch(() => ({}));
+  if (!j.profileid || j.error) throw new HttpError(502, "The route planner didn’t accept our running profile.");
+  return j.profileid;
+}
+async function planRoute(env, url) {
+  const base = env.BROUTER_URL || "https://brouter.de";
+  const lonlats = url.searchParams.get("lonlats") || "";
+  if (!/^-?[\d.]+,-?[\d.]+(\|-?[\d.]+,-?[\d.]+){1,8}$/.test(lonlats)) throw new HttpError(400, "Bad waypoints.");
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (!profileId) profileId = await uploadProfile(base);
+    const r = await fetch(`${base}/brouter?lonlats=${lonlats}&profile=${profileId}&alternativeidx=0&format=geojson`, { headers: { "user-agent": UA } });
+    const text = await r.text();
+    if (r.ok && text.trim().startsWith("{")) return new Response(text, { headers: { "content-type": "application/json", "cache-control": "no-store" } });
+    if (/profile/i.test(text) && attempt === 0) { profileId = null; continue; }   // profile expired on the server: upload again
+    throw new HttpError(422, text.trim().slice(0, 160) || "No route found.");
+  }
+}
+
+async function api(request, env, url, ctx) {
   const email = (request.headers.get("cf-access-authenticated-user-email") || "").trim().toLowerCase();
   if (!email) return json({ error: "Not signed in." }, 401);
   const viewer = { email, name: captainFor(email)?.name || null };
   const stub = env.SCHEDULE.get(env.SCHEDULE.idFromName("mrc-zurich"));
   try {
     if (request.method === "GET" && url.pathname === "/api/state") return json(await stub.state(viewer, zurichToday()));
+    if (request.method === "GET" && url.pathname === "/api/map/signals") return await signals(env, ctx);
+    if (request.method === "GET" && url.pathname === "/api/map/route") return await planRoute(env, url);
     if (request.method === "GET" && url.pathname === "/api/routes") return json(await stub.listRoutes(viewer));
     if (request.method === "GET" && url.pathname === "/api/routes/gpx") {
       const r = await stub.routeGpx(url.searchParams.get("id"));
@@ -285,9 +327,9 @@ async function api(request, env, url) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    if (url.pathname.startsWith("/api/")) return api(request, env, url);
+    if (url.pathname.startsWith("/api/")) return api(request, env, url, ctx);
     return env.ASSETS.fetch(request);
   },
 };

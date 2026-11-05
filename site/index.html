@@ -188,6 +188,9 @@ footer a{color:inherit}
   padding:8px 14px;min-height:40px;font:900 13px/1 var(--sub);letter-spacing:.04em;cursor:pointer;display:inline-flex;align-items:center}
 .rcard .btns .btn{min-height:40px;padding:8px 12px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap}
 .rcard .btns .rm{color:var(--muted)}
+.lights{white-space:nowrap}
+#sugkm{margin-top:4px;flex-wrap:nowrap;display:flex}
+#sugkm button{flex:1;padding-left:4px;padding-right:4px;min-width:0}
 .rcard .komoot{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px;font-size:14px}
 .rcard .komoot p{margin:6px 0}
 .rcard .komoot .btn{min-height:36px;padding:8px 14px;font-size:13px;text-decoration:none;display:inline-flex}
@@ -363,6 +366,21 @@ footer a{color:inherit}
   </section>
 
   <section id="tab-routes" class="hidden" role="tabpanel" aria-labelledby="tabbtn-routes">
+    <div class="card" id="suggest">
+      <h2>Suggest a loop</h2>
+      <p class="hint" style="text-align:left;margin-top:0">Loops from the bar on paths and quiet streets, with as few traffic lights as possible.</p>
+      <div class="seg" id="sugkm" role="group" aria-label="Distance">
+        <button type="button" data-v="4" aria-pressed="false">4 km</button>
+        <button type="button" data-v="5" aria-pressed="true">5 km</button>
+        <button type="button" data-v="6" aria-pressed="false">6 km</button>
+        <button type="button" data-v="7" aria-pressed="false">7 km</button>
+        <button type="button" data-v="8" aria-pressed="false">8 km</button>
+      </div>
+      <button type="button" class="btn" id="sugbtn" style="margin-top:10px">Suggest loops</button>
+      <p class="status" id="sugstatus" role="status" style="text-align:left"></p>
+      <div id="sugdup" class="dup hidden" role="alert"></div>
+      <div id="suglist"></div>
+    </div>
     <p class="status" id="routesstatus" role="status"></p>
     <div id="routelist"></div>
     <div id="routeadd" class="card hidden">
@@ -395,7 +413,7 @@ footer a{color:inherit}
 <!-- off-screen map used to draw the post; wrapped in a 0×0 box so its 1350 px height can't stretch the page on iPhone -->
 <div aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none"><div id="mapbox" style="position:absolute;left:0;top:0;width:1080px;height:1920px"></div><div id="thumbbox" style="position:absolute;left:0;top:0;width:288px;height:288px"></div></div>
 <script src="vendor/maplibre-gl.js"></script>
-<script src="app.js?v=31fa7b6"></script>
+<script src="app.js?v=lights1"></script>
 <script>
 /* ⋯ menu: theme Auto / Light / Dark or a Mikkeller colour theme, remembered on this phone */
 (function(){const root=document.documentElement, btn=document.getElementById("menubtn"), m=document.getElementById("moremenu");
