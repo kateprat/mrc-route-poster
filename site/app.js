@@ -578,9 +578,11 @@ function loadSignals(){
   if(SIG.loading) return SIG.loading;
   SIG.loading=(async()=>{
     try{ const c=JSON.parse(localStorage.getItem(SIG_KEY)||"null"); if(c && Date.now()-c.t<7*864e5){ indexSignals(c.text); return true; } }catch(e){}
-    try{ const r=await fetch("/api/map/signals",{credentials:"include"}); if(!r.ok) throw 0; const text=await r.text(); indexSignals(text);
+    try{ const r=await fetch("/api/map/signals",{credentials:"include", cache:"no-store"});
+      if(!r.ok){ const j=await r.json().catch(()=>({})); throw new Error(j.error||`Couldn’t load the traffic lights (${r.status}).`); }
+      const text=await r.text(); indexSignals(text); SIG.error="";
       try{ localStorage.setItem(SIG_KEY, JSON.stringify({t:Date.now(), text})); }catch(e){}
-      return true; }catch(e){ SIG.loading=null; return false; }
+      return true; }catch(e){ SIG.loading=null; SIG.error=e.message||String(e); return false; }
   })();
   return SIG.loading;
 }
@@ -604,7 +606,10 @@ function countLights(pts){
   return groups.length;
 }
 function lightsText(r){ if(!SIG.pts) return ""; if(r.lights==null) r.lights=countLights(r.pts); return r.lights==null?"":` · 🚦 ${r.lights}`; }
-function fillLights(){ document.querySelectorAll("[data-lights]").forEach(el=>{
+function fillLights(){ const st=$("routesstatus");
+  if(SIG.error){ st.textContent="🚦 "+SIG.error+" Open Routes again to retry."; st.classList.add("warn"); }
+  else if(/^🚦/.test(st.textContent)){ st.textContent=""; st.classList.remove("warn"); }
+  document.querySelectorAll("[data-lights]").forEach(el=>{
   const id=el.dataset.lights, r=(LIB.routes||[]).concat(SUG.list||[]).find(x=>String(x.id)===id); if(r) el.textContent=lightsText(r); }); }
 
 /* ---------- Suggest a loop (BRouter via /api/map/route) ----------

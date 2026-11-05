@@ -180,6 +180,10 @@ export class Schedule extends DurableObject {
 
   // Route library: every route we've run, with its GPX. Anyone signed in can browse and download;
   // captains add (or replace) and remove. pts is a thinned-out [[lat, lon], …] for the pictures.
+  /* Traffic lights list (text, one "lat<TAB>lon" per line), kept here between Overpass downloads. */
+  async getSignals() { return (await this.ctx.storage.get("signals")) || null; }
+  async putSignals(text) { await this.ctx.storage.put("signals", { t: Date.now(), text }); }
+
   listRoutes(viewer) {
     // routes saved before elevation was shown: work it out once (-1 = the GPX has no elevation)
     for (const r of this.sql.exec("SELECT id, gpx FROM routes WHERE up IS NULL").toArray())
@@ -260,17 +264,27 @@ function zurichToday() {
    Both are free community services: answers are cached, and the app asks only when someone taps. */
 const UA = "MRC-ZH route app (github.com/kateprat/mrc-route-poster)";
 const ZURICH_BOX = "47.30,8.40,47.47,8.65";   // south,west,north,east
-async function signals(env, ctx) {
-  const cache = caches.default, key = new Request("https://cache.mrc/signals-v1");
-  const hit = await cache.match(key); if (hit) return hit;
+const OVERPASS = ["https://overpass-api.de/api/interpreter", "https://overpass.private.coffee/api/interpreter", "https://maps.mail.ru/osm/tools/overpass/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
+async function signals(env, stub) {
+  const kept = await stub.getSignals();
+  const text = (t) => new Response(t, { headers: { "content-type": "text/plain", "cache-control": "no-store" } });
+  if (kept && Date.now() - kept.t < 7 * 864e5) return text(kept.text);
   const q = `[out:csv(::lat,::lon;false)][timeout:90];(node["highway"="traffic_signals"](${ZURICH_BOX});node["crossing"="traffic_signals"](${ZURICH_BOX});node["crossing:signals"="yes"](${ZURICH_BOX}););out;`;
-  const r = await fetch((env.OVERPASS_URL || "https://overpass-api.de/api/interpreter") + "?data=" + encodeURIComponent(q), { headers: { "user-agent": UA } });
-  if (!r.ok) throw new HttpError(502, "Couldn’t load the traffic lights. Try again later.");
-  const text = await r.text();
-  if (!/^\s*\d/.test(text)) throw new HttpError(502, "Couldn’t load the traffic lights. Try again later.");
-  const res = new Response(text, { headers: { "content-type": "text/plain", "cache-control": "max-age=604800" } });
-  ctx.waitUntil(cache.put(key, res.clone()));
-  return res;
+  const tried = [];
+  for (const base of env.OVERPASS_URL ? [env.OVERPASS_URL] : OVERPASS) {
+    try {
+      const r = await fetch(base, { method: "POST", headers: { "user-agent": UA, "content-type": "application/x-www-form-urlencoded" }, body: "data=" + encodeURIComponent(q) });
+      const t = await r.text();
+      if (r.ok && /^\s*\d/.test(t)) {
+        const compact = t.trim().split("\n").map((l) => l.split("\t").map((v) => (+v).toFixed(6)).join("\t")).join("\n");
+        await stub.putSignals(compact);
+        return text(compact);
+      }
+      tried.push(`${new URL(base).host} ${r.status}`);
+    } catch (e) { tried.push(`${new URL(base).host} ${e.message}`); }
+  }
+  if (kept) return text(kept.text);   // older list beats none
+  throw new HttpError(502, "Couldn’t load the traffic lights (" + tried.join(", ") + ").");
 }
 let profileId = null;   // BRouter custom profile, uploaded once per Worker instance
 async function uploadProfile(base) {
@@ -300,7 +314,7 @@ async function api(request, env, url, ctx) {
   const stub = env.SCHEDULE.get(env.SCHEDULE.idFromName("mrc-zurich"));
   try {
     if (request.method === "GET" && url.pathname === "/api/state") return json(await stub.state(viewer, zurichToday()));
-    if (request.method === "GET" && url.pathname === "/api/map/signals") return await signals(env, ctx);
+    if (request.method === "GET" && url.pathname === "/api/map/signals") return await signals(env, stub);
     if (request.method === "GET" && url.pathname === "/api/map/route") return await planRoute(env, url);
     if (request.method === "GET" && url.pathname === "/api/routes") return json(await stub.listRoutes(viewer));
     if (request.method === "GET" && url.pathname === "/api/routes/gpx") {
