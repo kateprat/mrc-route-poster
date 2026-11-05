@@ -43,6 +43,8 @@ export class Schedule extends DurableObject {
     `);
     // Elevation gain of each library route (metres), worked out from the GPX.
     try { this.sql.exec("ALTER TABLE routes ADD COLUMN up REAL"); } catch {}
+    // Traffic lights on each library route, counted once by the app (OpenStreetMap data).
+    try { this.sql.exec("ALTER TABLE routes ADD COLUMN lights INTEGER"); } catch {}
     // Who last changed a run's answers (anyone can change anyone's, so it's shown on the run).
     try { this.sql.exec("ALTER TABLE runs ADD COLUMN changed_by TEXT"); } catch {}
     // A run can have several leads. Move any single lead from the earlier version into the leads table.
@@ -188,8 +190,8 @@ export class Schedule extends DurableObject {
     // routes saved before elevation was shown: work it out once (-1 = the GPX has no elevation)
     for (const r of this.sql.exec("SELECT id, gpx FROM routes WHERE up IS NULL").toArray())
       this.sql.exec("UPDATE routes SET up = ? WHERE id = ?", climbOf(r.gpx) ?? -1, r.id);
-    const routes = this.sql.exec("SELECT id, name, km, up, pts, run_date, added_by, added_at FROM routes ORDER BY km, name").toArray()
-      .map((r) => ({ id: r.id, name: r.name, km: r.km, up: r.up >= 0 ? r.up : null, pts: JSON.parse(r.pts), date: r.run_date || "", addedBy: r.added_by || "", addedAt: r.added_at || "" }));
+    const routes = this.sql.exec("SELECT id, name, km, up, lights, pts, run_date, added_by, added_at FROM routes ORDER BY km, name").toArray()
+      .map((r) => ({ id: r.id, name: r.name, km: r.km, up: r.up >= 0 ? r.up : null, lights: r.lights ?? null, pts: JSON.parse(r.pts), date: r.run_date || "", addedBy: r.added_by || "", addedAt: r.added_at || "" }));
     return { routes, canEdit: !!this.me(viewer.name) };
   }
 
@@ -197,7 +199,16 @@ export class Schedule extends DurableObject {
     return this.sql.exec("SELECT name, gpx FROM routes WHERE id = ?", Number(id)).toArray()[0] || null;
   }
 
-  addRoute(viewer, { name, km, pts, gpx, date, replace }) {
+  /* Fill in light counts for routes that don't have one yet (counted on someone's phone). */
+  setLights(viewer, { items }) {
+    for (const it of (Array.isArray(items) ? items : []).slice(0, 500)) {
+      const n = Number(it && it.lights);
+      if (Number.isInteger(n) && n >= 0 && n < 1000) this.sql.exec("UPDATE routes SET lights = ? WHERE id = ? AND lights IS NULL", n, Number(it.id));
+    }
+    return { ok: true };
+  }
+
+  addRoute(viewer, { name, km, pts, gpx, date, replace, lights }) {
     const me = this.requireMe(viewer);
     name = clean(name, 80); km = Number(km);
     if (!name || !(km > 0 && km < 300)) throw new HttpError(400, "Bad route name or distance.");
@@ -206,12 +217,13 @@ export class Schedule extends DurableObject {
     if (typeof gpx !== "string" || gpx.length > 1800000 || !/<gpx[\s>]/i.test(gpx)) throw new HttpError(400, "Bad GPX file.");
     if (date && !isDate(date)) throw new HttpError(400, "Bad date.");
     const now = new Date().toISOString(), P = JSON.stringify(pts);
+    const L = Number.isInteger(lights) && lights >= 0 && lights < 1000 ? lights : null;
     if (replace) {
       if (!this.sql.exec("SELECT 1 FROM routes WHERE id = ?", Number(replace)).toArray().length) throw new HttpError(404, "Unknown route.");
-      this.sql.exec("UPDATE routes SET name = ?, km = ?, pts = ?, gpx = ?, run_date = COALESCE(?, run_date), added_by = ?, added_at = ?, up = ? WHERE id = ?",
-        name, km, P, gpx, date || null, me.name, now, climbOf(gpx) ?? -1, Number(replace));
+      this.sql.exec("UPDATE routes SET name = ?, km = ?, pts = ?, gpx = ?, run_date = COALESCE(?, run_date), added_by = ?, added_at = ?, up = ?, lights = ? WHERE id = ?",
+        name, km, P, gpx, date || null, me.name, now, climbOf(gpx) ?? -1, L, Number(replace));
     } else {
-      this.sql.exec("INSERT INTO routes (name, km, pts, gpx, run_date, added_by, added_at, up) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", name, km, P, gpx, date || null, me.name, now, climbOf(gpx) ?? -1);
+      this.sql.exec("INSERT INTO routes (name, km, pts, gpx, run_date, added_by, added_at, up, lights) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", name, km, P, gpx, date || null, me.name, now, climbOf(gpx) ?? -1, L);
     }
     return this.listRoutes(viewer);
   }
@@ -323,6 +335,7 @@ async function api(request, env, url, ctx) {
       const file = (r.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "route") + ".gpx";
       return new Response(r.gpx, { headers: { "content-type": "application/gpx+xml", "content-disposition": `attachment; filename="mrc-${file}"`, "cache-control": "no-store" } });
     }
+    if (request.method === "POST" && url.pathname === "/api/routes/lights") return json(await stub.setLights(viewer, await request.json().catch(() => ({}))));
     if (request.method === "POST" && url.pathname === "/api/routes/add") return json(await stub.addRoute(viewer, await request.json().catch(() => ({}))));
     if (request.method === "POST" && url.pathname === "/api/routes/edit") return json(await stub.editRoute(viewer, await request.json().catch(() => ({}))));
     if (request.method === "POST" && url.pathname === "/api/routes/remove") return json(await stub.removeRoute(viewer, await request.json().catch(() => ({}))));

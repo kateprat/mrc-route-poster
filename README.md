@@ -10,16 +10,17 @@ It replaces the old Inkscape workflow (GPX → SVG converter → Snazzy Maps scr
 
 Everything here stays on your own phone; nobody else sees your edits.
 
+- Shows distance, climb and 🚦 traffic lights for the GPX.
 - Load a GPX file, or tap **Paste a GPX** to paste a copied GPX file (in Files: press and hold → Copy; on a laptop, Cmd+V anywhere works; GPX text works too). **✕ Remove GPX** at the top clears everything; **Change GPX** loads another.
 - Reads the GPX on the phone (nothing is uploaded unless you save it to the route library): the **distance** comes straight from the GPX, the **title** from its name (`261014_MRC_LITTLE-DIPPER` becomes LITTLE DIPPER, editable), the **date** from the next run in the schedule.
 - Draws the MRC grey street map with the route on top in **burgundy `#882c29`** or **blue `#3584ba`**.
 - Title, distance, **FREE BEER!** and date in **MikkelWind**, like the earlier route posts. Title, distance and FREE BEER! can each be dragged with one finger and turned (any angle) and resized with two; Like on Instagram, text sticks to the centre lines (with a guide line) and to straight angles when it gets close, and comes off when you move further. “Put text back in place” resets them. FREE BEER! is always there.
 - **Two route options:** add a second GPX; it's drawn in the other colour and both distances are shown, each in its route's colour.
-- Formats: **Post 4:5** (1080×1350), **Story 9:16** (1080×1920), **Square** (1080×1080), and **Route only**: a transparent PNG of just the line(s), to put on a group photo.
+- Formats: **Post 4:5** (1080×1350), **Square** (1080×1080), and **Route only**: a transparent PNG of just the line(s), to put on a group photo.
 - Drag the map to move it, pinch or use the slider to zoom. The text you're handling gets a dashed outline (only on screen, never in the image).
 - The three sections (Route post, Schedule, Routes) are in a tab bar at the bottom, within thumb reach.
 - **Advanced settings** (folded away, with “Reset to standard”): line width, smoothing GPS wobble, round corners, trimming the ends.
-- **Share** opens the phone's share sheet (Instagram, Photos, WhatsApp…). **Save image** on a phone shows the post as a picture: press and hold, then Save to Photos. On a computer it downloads the PNG.
+- **Share** opens the phone's share sheet (Instagram, Photos, WhatsApp…). 
 
 ### Routes tab
 
@@ -32,8 +33,8 @@ Every route we've run, shortest first, each with a picture of the line on the ma
 
 ### Traffic lights and loop suggestions (Routes tab)
 
-- Every route shows **🚦 n**: the traffic lights (road signals and signalled crossings, from OpenStreetMap) within 15 m of the line; lights within 40 m of each other count as one junction. The list of lights comes from the Overpass API through `/api/map/signals`, cached a week by the Worker and on the phone.
-- **Suggest a loop**: pick 4–8 km and tap **Suggest loops**. The app plans loops from the bar (where most saved routes start) in six directions with BRouter (brouter.de) and our running profile `src/mrc-run.brf`: paths, parks and quiet streets first, big roads avoided, and each traffic light counted as a 400 m detour. Loops off by more than 10 % are rescaled once. The four with the fewest lights are shown; **Use** opens one in Route post, **Save to library** adds it to the routes.
+- Every route shows **🚦 n** (counted once when it's added, then stored with the route): the traffic lights (road signals and signalled crossings, from OpenStreetMap) within 15 m of the line; lights within 40 m of each other count as one junction. The list of lights comes from the Overpass API through `/api/map/signals`, cached a week by the Worker and on the phone.
+- **Suggest a loop**: pick 4–8 km and tap **Suggest loops**. The app plans loops from the bar (where most saved routes start) in six directions with BRouter (brouter.de) and our running profile `src/mrc-run.brf`: paths, parks and quiet streets first, big roads avoided, and each traffic light counted as a 400 m detour. Loops off by more than 10 % are rescaled once. The four with the fewest lights are shown; **Use** opens one in Route post, **GPX** downloads it to check first, **Save to library** adds it to the routes.
 - Overpass and BRouter are free community services, so the app only asks them when someone taps. Check a suggested loop before posting it: the data doesn't know about lighting, building sites or how busy a path is.
 
 ### Schedule tab

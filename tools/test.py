@@ -35,12 +35,12 @@ try:
         pg.set_input_files("#gpx", os.path.join(ROOT, "test", "sample.gpx"))
         pg.wait_for_selector("#editor:not(.hidden)"); pg.wait_for_timeout(4000)
         check(pg.evaluate("M.ready") and not pg.evaluate("M.error"), "map loads")
-        check(pg.inner_text("#distinfo") == "4.6 km", f"distance read from GPX: {pg.inner_text('#distinfo')}")
+        check(pg.inner_text("#distinfo").startswith("4.6 km"), f"distance read from GPX: {pg.inner_text('#distinfo')}")
         check(pg.locator("#dist, #cropB, #beer, #capcard, #cap, #marker, #mapstyle").count() == 0, "removed: distance box, crop, FREE BEER switch, caption, marker, map style")
         check(not pg.is_visible("#width"), "advanced settings folded away")
         check(pg.input_value("#title") == "THE LITTLE DIPPER" and pg.input_value("#date") >= "2026-11-04", f"title and date filled: {pg.input_value('#date')}")
         check("Signed in as captain@example.com" in pg.inner_text("#whoami"), "signed-in line")
-        for fmt in ["feed", "story", "square", "route"]:
+        for fmt in ["feed", "square", "route"]:
             pg.click(f'#fmt button[data-v="{fmt}"]'); pg.wait_for_timeout(2000); save(pg, f"{fmt}.png")
         pg.click('#fmt button[data-v="feed"]'); pg.wait_for_timeout(1500)
 
@@ -108,9 +108,9 @@ try:
         check(pg.evaluate("S.routes.length") == 1, "second route removed")
 
         with pg.expect_download() as dl:
-            pg.click("#save")
+            pg.click("#share")
         dl.value.save_as(os.path.join(OUT, "download.png"))
-        check(dl.value.suggested_filename == "mrc-the-little-dipper-feed.png", "download works")
+        check(dl.value.suggested_filename == "mrc-the-little-dipper-feed.png", "Share downloads the PNG where there is no share sheet")
         b.close()
 finally:
     srv.terminate()

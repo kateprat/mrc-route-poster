@@ -372,15 +372,6 @@ function fileName(){
   const t=($("title").value||"route").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"route";
   return `mrc-${t}-${S.fmt}.png`;
 }
-/* On a phone, "Save image" shows the post as a picture: press and hold → Save to Photos.
-   (A PNG download lands in Files on iPhone.) On a computer it downloads the PNG. */
-const isPhone = () => matchMedia("(pointer: coarse)").matches;
-async function saveImage(){
-  if(!isPhone()) return download();
-  const b=await exportBlob(); if(!b) return alert("Couldn’t create the image. Check your connection, reload and try again.");
-  const img=$("saveimg"); if(img.src) URL.revokeObjectURL(img.src);
-  img.src=URL.createObjectURL(b); $("saveov").classList.remove("hidden");
-}
 async function download(){
   const b=await exportBlob(); if(!b) return alert("Couldn’t create the image. Check your connection, reload and try again.");
   const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=fileName(); document.body.appendChild(a); a.click();
@@ -407,7 +398,15 @@ function climb(pts){
   for(const e of ele){ if(e>ref+3){ up+=e-ref; ref=e; } else if(e<ref-3) ref=e; }
   return Math.round(up);
 }
-const routeInfo = r => `${kmText(r)} km`+(r.up!=null?` · ↑ ${r.up} m`:"");
+const routeInfo = r => `${kmText(r)} km`+(r.up!=null?` · ↑ ${r.up} m`:"")+(r.lights!=null?` · 🚦 ${r.lights}`:"");
+const latlon = r => r.pts.map(p=>[p.lat,p.lon]);
+/* Route post: count the lights once the list is on the phone (first time: a few seconds). */
+function lightsForPost(){
+  if(!S.routes.length) return;
+  loadSignals().then(ok=>{ if(!ok) return; let changed=false;
+    for(const r of S.routes) if(r.lights==null){ r.lights=countLights(latlon(r)); changed=true; }
+    if(changed) $("distinfo").textContent=S.routes.map(routeInfo).join(" / "); });
+}
 function routeFromText(text, fallbackName){
   const g=parseGPX(text);
   const cum=cumulative(g.pts);
@@ -417,7 +416,7 @@ async function readRoute(file){ return routeFromText(await file.text(), file.nam
 function routesChanged(){
   const maxTrim=Math.max(50, Math.round(Math.min(...S.routes.map(r=>r.total))/2/10)*10);
   ["trimS","trimE"].forEach(i=>$(i).max=String(maxTrim));
-  $("distinfo").textContent=S.routes.map(routeInfo).join(" / ");
+  $("distinfo").textContent=S.routes.map(routeInfo).join(" / "); lightsForPost();
   const two=S.routes.length===2;
   $("route2none").classList.toggle("hidden", two); $("route2some").classList.toggle("hidden", !two);
   if(two) $("route2info").textContent=`Second route: ${routeInfo(S.routes[1])}`;
@@ -605,7 +604,15 @@ function countLights(pts){
   for(const s of hits){ const g=groups.find(g=>Math.hypot((g[1]-s[1])*k,(g[0]-s[0])*m)<40); if(!g) groups.push(s); }
   return groups.length;
 }
-function lightsText(r){ if(!SIG.pts) return ""; if(r.lights==null) r.lights=countLights(r.pts); return r.lights==null?"":` · 🚦 ${r.lights}`; }
+function lightsText(r){ if(r.lights==null && SIG.pts) r.lights=countLights(r.pts); return r.lights==null?"":` · 🚦 ${r.lights}`; }
+/* Saved routes keep their count in the library; only routes without one are counted, once, and saved back. */
+async function fillMissingLights(){
+  const missing=(LIB.routes||[]).filter(r=>r.lights==null); if(!missing.length) return;
+  if(!(await loadSignals())){ fillLights(); return; }
+  const items=missing.map(r=>({id:r.id, lights:(r.lights=countLights(r.pts))})).filter(i=>i.lights!=null);
+  fillLights();
+  if(items.length) fetch("/api/routes/lights",{method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({items}), credentials:"include"}).catch(()=>{});
+}
 function fillLights(){ const st=$("routesstatus");
   if(SIG.error){ st.textContent="🚦 "+SIG.error+" Open Routes again to retry."; st.classList.add("warn"); }
   else if(/^🚦/.test(st.textContent)){ st.textContent=""; st.classList.remove("warn"); }
@@ -678,6 +685,7 @@ function renderSuggestions(){
   $("suglist").innerHTML=(SUG.list||[]).map(r=>`<article class="rcard"><div class="thumb" data-thumb="${r.id}">${routeSVG(r.pts)}</div>
     <div><span class="km">${r.km.toFixed(1)} km${r.up!=null?` · ↑ ${r.up} m`:""}<span class="lights" data-lights="${r.id}">${lightsText(r)}</span></span><h3>${esc(r.name)}</h3>
       <div class="btns"><button type="button" class="btn" data-suse="${r.id}">Use</button>
+        <button type="button" class="btn ghost" data-sgpx="${r.id}">GPX</button>
         ${LIB.canEdit?`<button type="button" class="btn ghost" data-ssave="${r.id}">Save to library</button>`:""}</div></div></article>`).join("");
   queueThumbs(SUG.list);
 }
@@ -715,7 +723,7 @@ function renderRoutes(){
         <div><label for="en-${r.id}">Title</label><input id="en-${r.id}" type="text" value="${esc(r.name)}" autocomplete="off"></div>
         <div><label for="ed-${r.id}">Run date</label><input id="ed-${r.id}" type="date" value="${esc(r.date)}"></div>
         <div class="btns"><button type="button" class="btn" data-save="${r.id}">Save</button><button type="button" class="btn ghost rm" data-rm="${r.id}">Remove route</button></div></div>`:""}</article>`; }).join("");
-  if(!$("tab-routes").classList.contains("hidden")){ queueThumbs(LIB.routes); if(!SIG.pts) loadSignals().then(fillLights); }
+  if(!$("tab-routes").classList.contains("hidden")){ queueThumbs(LIB.routes); fillMissingLights(); }
 }
 /* Ask before adding a route that's already in the library: replace it, keep both, or skip.
    Shows the new one, the saved one and both on top of each other to compare. */
@@ -743,7 +751,8 @@ async function addToLibrary(routes, title, date, box, status){
     let replace=null;
     if(dup){ status.textContent=""; const a=await askDuplicate(box, cand, dup); if(a==="skip"){ done.push(`skipped “${name}”`); continue; } if(a==="replace") replace=dup.id; }
     status.textContent="Saving…"; status.classList.remove("warn");
-    try{ await libCall("/api/routes/add",{...cand, gpx:gpxFor(r,name), date:date||"", replace}); done.push(replace?`replaced “${dup.name}”`:`saved “${name}”`); }
+    let lights=r.lights; if(lights==null && await loadSignals()) lights=r.lights=countLights(latlon(r));
+    try{ await libCall("/api/routes/add",{...cand, gpx:gpxFor(r,name), date:date||"", replace, lights:lights??null}); done.push(replace?`replaced “${dup.name}”`:`saved “${name}”`); }
     catch(e){ status.textContent=e.message||String(e); status.classList.add("warn"); return; }
   }
   status.textContent=done.length ? done.join(", ").replace(/^./,c=>c.toUpperCase())+"." : "";
@@ -755,7 +764,10 @@ async function downloadGpx(id){
   try{
     const res=await fetch(`/api/routes/gpx?id=${id}`, {credentials:"include"}); if(!res.ok) throw new Error("Couldn’t load the GPX file.");
     const name=(/filename="([^"]+)"/.exec(res.headers.get("content-disposition")||"")||[])[1]||"route.gpx";
-    const blob=await res.blob();
+    await shareGpx(await res.blob(), name);
+  }catch(e){ st.textContent=e.message||String(e); st.classList.add("warn"); }
+}
+async function shareGpx(blob, name){
     for(const type of ["application/gpx+xml","application/octet-stream"]){
       const f=new File([blob], name, {type});
       if(navigator.canShare && navigator.canShare({files:[f]})){
@@ -765,7 +777,6 @@ async function downloadGpx(id){
     }
     const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click();
     setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },2000);
-  }catch(e){ st.textContent=e.message||String(e); st.classList.add("warn"); }
 }
 async function useRoute(id){
   const r=(LIB.routes||[]).find(x=>x.id===id); if(!r) return;
@@ -779,6 +790,8 @@ function initSuggest(){
     $("sugkm").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); });
   $("sugbtn").addEventListener("click",suggestLoops);
   $("suglist").addEventListener("click",async e=>{
+    const g=e.target.closest("[data-sgpx]");
+    if(g){ const r=(SUG.list||[]).find(x=>x.id===g.dataset.sgpx); if(r) shareGpx(new Blob([r.gpx],{type:"application/gpx+xml"}), `mrc-${r.name.toLowerCase().replace(/[^a-z0-9]+/g,"-")}-${r.km.toFixed(1)}km.gpx`).catch(err=>{ $("sugstatus").textContent=err.message; }); return; }
     const u=e.target.closest("[data-suse]"), s=e.target.closest("[data-ssave]"); const id=(u||s)&&(u||s).dataset[u?"suse":"ssave"];
     const r=(SUG.list||[]).find(x=>x.id===id); if(!r) return;
     if(u){ document.getElementById("tabbtn-poster").click(); await loadRoute(()=>routeFromText(r.gpx, r.name)); return; }
@@ -1065,8 +1078,7 @@ function init(){
   ["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault(); drop.classList.add("over");}));
   ["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault(); drop.classList.remove("over");}));
   drop.addEventListener("drop",e=>{ const f=e.dataTransfer.files[0]; if(f) loadFile(f); });
-  $("save").addEventListener("click",saveImage);
-  $("saveclose").addEventListener("click",()=>$("saveov").classList.add("hidden"));
+  
   $("share").addEventListener("click",share);
 
   // One finger: drag the map, or the title / distance / FREE BEER! when the finger starts on it.

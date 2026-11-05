@@ -100,10 +100,6 @@ details[open] summary::after{content:" –"}
 .actions .wrap{display:flex;gap:10px}
 .actions .btn{flex:1}
 .hidden{display:none!important}
-.saveov{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
-  padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
-.saveov p{color:#fff;margin:0;text-align:center;font-size:15px}
-.saveov img{max-width:100%;max-height:72vh;border-radius:8px;-webkit-touch-callout:default;user-select:auto}
 /* tabs + schedule */
 /* bottom tab bar (thumb reach); the post's Share/Download bar sits just above it */
 :root{--tabbar:64px}
@@ -273,7 +269,6 @@ footer a{color:inherit}
     <div class="card" style="padding:12px">
       <div class="seg" id="fmt" role="group" aria-label="Format">
         <button type="button" data-v="feed" aria-pressed="true">Post 4:5</button>
-        <button type="button" data-v="story" aria-pressed="false">Story 9:16</button>
         <button type="button" data-v="square" aria-pressed="false">Square</button>
         <button type="button" data-v="route" aria-pressed="false">Route only</button>
       </div>
@@ -400,20 +395,12 @@ footer a{color:inherit}
 
 <div class="actions hidden" id="actions"><div class="wrap">
   <button type="button" class="btn" id="share">Share</button>
-  <button type="button" class="btn ghost" id="save">Save image</button>
 </div></div>
-
-<!-- phone: the post as a picture, so press-and-hold gives "Save to Photos" (a download would go to Files) -->
-<div id="saveov" class="saveov hidden" role="dialog" aria-modal="true" aria-label="Save image">
-  <p>Press and hold the picture, then tap <strong>Save to Photos</strong>.</p>
-  <img id="saveimg" alt="Your route post">
-  <button type="button" class="btn" id="saveclose">Done</button>
-</div>
 
 <!-- off-screen map used to draw the post; wrapped in a 0×0 box so its 1350 px height can't stretch the page on iPhone -->
 <div aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none"><div id="mapbox" style="position:absolute;left:0;top:0;width:1080px;height:1920px"></div><div id="thumbbox" style="position:absolute;left:0;top:0;width:288px;height:288px"></div></div>
 <script src="vendor/maplibre-gl.js"></script>
-<script src="app.js?v=lights2"></script>
+<script src="app.js?v=lights3"></script>
 <script>
 /* ⋯ menu: theme Auto / Light / Dark or a Mikkeller colour theme, remembered on this phone */
 (function(){const root=document.documentElement, btn=document.getElementById("menubtn"), m=document.getElementById("moremenu");
