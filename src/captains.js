@@ -8,6 +8,6 @@ export default [
   { name: "Felix",  emails: ["captain@example.com"],            handle: "@_nordic_by_nature" },
   { name: "Kate",   emails: ["captain@example.com"],  handle: "@kates.turn" },
   { name: "Ale",    emails: [],                            handle: "" },
-  { name: "Andrea", emails: [captain@example.com],     handle: "@abecker86" },
-  { name: "Fabio",  emails: [captain@example.com],        handle: "@vic2vic2vic" },
+  { name: "Andrea", emails: ["captain@example.com"], handle: "@abecker86" },
+  { name: "Fabio",  emails: ["captain@example.com"], handle: "@vic2vic2vic" },
 ];
