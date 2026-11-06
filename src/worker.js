@@ -139,8 +139,9 @@ export class Schedule extends DurableObject {
     for (const a of this.sql.exec("SELECT date, captain, status FROM avail").toArray()) (avail[a.date] ||= {})[a.captain] = a.status;
     const leads = {};
     for (const l of this.sql.exec("SELECT date, captain FROM leads ORDER BY captain").toArray()) (leads[l.date] ||= []).push(l.captain);
+    const isKate = viewer.email === "captain@example.com";   // only Kate sees who changed a run last
     const runs = this.sql.exec("SELECT date, time, note, cancelled, changed_by FROM runs ORDER BY date").toArray()
-      .map((r) => ({ date: r.date, time: r.time, note: r.note, cancelled: !!r.cancelled, leads: leads[r.date] || [], changedBy: r.changed_by || "", avail: avail[r.date] || {} }));
+      .map((r) => ({ date: r.date, time: r.time, note: r.note, cancelled: !!r.cancelled, leads: leads[r.date] || [], changedBy: isKate ? (r.changed_by || "") : "", avail: avail[r.date] || {} }));
     const me = this.me(viewer.name);
     return { me: { email: viewer.email, captain: me ? { id: me.id, name: me.name, handle: me.handle || "" } : null }, captains, runs };
   }

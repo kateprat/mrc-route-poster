@@ -998,7 +998,7 @@ function tapCaptain(date, id, next){
   const r=runOn(date); if(!r) return;
   r.leads=r.leads.filter(x=>x!==id); if(next==="lead") r.leads.push(id);
   r.avail[id]= next==="lead" ? "yes" : next;
-  r.changedBy=(SCH.data.me.captain||{}).name||r.changedBy;
+  if(SCH.data.me.email==="captain@example.com") r.changedBy=(SCH.data.me.captain||{}).name||r.changedBy;   // only Kate sees who changed a run last
   renderSchedule(); fillFromSchedule(false);
   capPending++;
   capQueue=capQueue.then(async()=>{
