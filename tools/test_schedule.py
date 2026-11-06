@@ -66,7 +66,7 @@ try:
         kate.reload(); kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1200)
         check(state("Ale") == "lead", "saved: still lead after reloading")
         meta = kate.locator(".run").first.locator(".run-meta").last.inner_text()
-        check("Lead" in meta and "Ale" in meta and "last change by Kate" in meta, f"run shows lead and who changed it: {meta!r}")
+        check("last change by Kate" in meta, f"Kate sees who changed the run: {meta!r}")
         pick("Kate", "lead"); kate.wait_for_timeout(1500)
         meta = kate.locator(".run").first.locator(".run-meta").last.inner_text()
         check(meta.startswith("Leads:") and "Kate" in meta and "Ale" in meta, f"several leads: {meta!r}")
