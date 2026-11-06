@@ -1,5 +1,5 @@
-# MRC ZH running profile: prefers paths, parks and quiet streets, and treats every
-# traffic light (road signal or signalled crossing) as a long detour so routes avoid them.
+# MRC ZH running profile: prefers paths, parks and quiet streets. Every traffic light counts as a
+# long detour, other street crossings as a shorter one, so loops keep crossing streets to a minimum.
 
 ---context:global
 
@@ -10,7 +10,9 @@ assign uphillcutoff 1.5
 assign turnInstructionMode = 0
 assign validForFoot 1
 
-assign signalcost = 400   # %signalcost% | Extra cost (metres) per traffic light | number
+assign signalcost   = 400   # %signalcost% | Extra cost (metres) per traffic light | number
+assign crossingcost = 120   # %crossingcost% | Extra cost (metres) per street crossing without lights (zebra, unmarked) | number
+assign railcost     = 60    # %railcost% | Extra cost (metres) per tram or rail crossing | number
 
 ---context:way
 
@@ -58,7 +60,21 @@ assign footaccess
               defaultaccess
               switch or foot=private foot=no 0 1
 
+# Crossing a main road where nothing is marked: BRouter's estimate, 1 (quiet) to 6 (busy).
+assign maincrossingcost =
+       if estimated_crossing_class=1 then 120
+       else if estimated_crossing_class=2 then 160
+       else if estimated_crossing_class=3 then 200
+       else if estimated_crossing_class=4 then 240
+       else if estimated_crossing_class=5 then 280
+       else if estimated_crossing_class=6 then 320
+       else 0
+
+assign crossingpenalty =
+       if or highway=traffic_signals crossing=traffic_signals then signalcost
+       else if or highway=crossing crossing=zebra|marked|uncontrolled|unmarked|island|yes then crossingcost
+       else if railway=level_crossing|crossing then railcost
+       else maincrossingcost
+
 assign initialcost
-       switch footaccess
-              ( if or highway=traffic_signals crossing=traffic_signals then signalcost else 0 )
-              1000000
+       switch footaccess crossingpenalty 1000000
