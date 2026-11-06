@@ -1,6 +1,6 @@
 # MRC ZH (mrc-route-poster)
 
-A phone app for the Mikkeller Run Club Zürich captains: choose a GPX file, type the title, and get a route post in the MRC style, ready to share to Instagram.
+A phone app for the Mikkeller Run Club Zurich captains: choose a GPX file, type the title, and get a route post in the MRC style, ready to share to Instagram.
 
 It replaces the old Inkscape workflow (GPX → SVG converter → Snazzy Maps screenshot → line up by hand → node editing → export).
 
@@ -53,7 +53,7 @@ It costs nothing to run: a static page plus a small Cloudflare Worker (`src/work
 
 ## Colours
 
-The app uses the Mikkeller brand book: **Blue `#3584ba`** (the blue of the Mikkeller Zürich logo at the bar) on **Paper `#eee5d2`**: plain for tbd (no answer yet), **Moss Green `#357c4f`** for coming, Blue for lead, faded and crossed out for not coming. Dark mode is **Evening Blue `#0f0f54`** with **Peach `#f0b7ad`**. Fonts: Windsor for headings, Gotham Black for labels, Gotham Book for text, MikkelWind on the posts. The colours are the variables at the top of `site/index.html`. Route lines on the posts stay Burgundy / Blue. The **⋯ menu** (top right) sets the theme: Auto (follows the phone), Light or Dark, or a Mikkeller colour theme (Moss, Burgundy, Blue, Peach, and the brand book pairings Mauve, Brown, Night), remembered per phone. The themes are the `data-theme` blocks at the end of the styles.
+The app uses the Mikkeller brand book: **Blue `#3584ba`** (the blue of the Mikkeller Zurich logo at the bar) on **Paper `#eee5d2`**: plain for tbd (no answer yet), **Moss Green `#357c4f`** for coming, Blue for lead, faded and crossed out for not coming. Dark mode is **Evening Blue `#0f0f54`** with **Peach `#f0b7ad`**. Fonts: Windsor for headings, Gotham Black for labels, Gotham Book for text, MikkelWind on the posts. The colours are the variables at the top of `site/index.html`. Route lines on the posts stay Burgundy / Blue. The **⋯ menu** (top right) sets the theme: Auto (follows the phone), Light or Dark, or a Mikkeller colour theme (Moss, Burgundy, Blue, Peach, and the brand book pairings Mauve, Brown, Night), remembered per phone. The themes are the `data-theme` blocks at the end of the styles.
 
 ## Adding a captain or an email
 

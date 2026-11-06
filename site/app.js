@@ -273,7 +273,7 @@ function fitText(text, font, maxW, size, min){
   const t=mwSplit(text).base;
   let s=size; while(s>min){ ctx.font=`${s}px ${font}`; if(ctx.measureText(t).width<=maxW) break; s-=4; } return s;
 }
-function fmtDate(v){ if(!v) return ""; const [y,m,d]=v.split("-").map(Number); return `${d}/${m}/${y}`; }
+function fmtDate(v){ if(!v) return ""; const [y,m,d]=v.split("-").map(Number); return `${d}.${m}.${y}`; }
 const kmText = r => (r.total/1000).toFixed(1);
 
 /* Title, distance and FREE BEER! can each be moved (one finger), and turned and resized (two fingers).
@@ -326,7 +326,7 @@ function drawText(F, W, H){
   const bw=ctx.measureText("FREE BEER!").width, bh=76;
   drawItem("beer", W/2, F.h*F.beer+bh/2, bw, bh, ()=>{ ctx.textBaseline="middle"; ctx.fillText("FREE BEER!", 0, 0); });
   const date=fmtDate($("date").value);
-  if(date){ ctx.textAlign="right"; ctx.textBaseline="bottom"; ctx.font=`58px "MikkelWind"`; ctx.fillText(date, W-40, H-F.dateY); }   // digits and slashes are all in the font
+  if(date){ ctx.textAlign="right"; ctx.textBaseline="bottom"; ctx.font=`58px "MikkelWind"`; ctx.fillText(date, W-40, H-F.dateY); }   // digits and full stops are all in the font
   ctx.restore();
 }
 
@@ -404,7 +404,7 @@ function renderStats(){
   const two=S.routes.length>1;
   $("distinfo").innerHTML=S.routes.map((r,i)=>`<div class="stats">${two?`<span class="statlab">${i?"Second":"Main"}</span>`:""}`+
     `<span class="stat">${kmText(r)} km</span>`+(r.up!=null?`<span class="stat" title="Climb">↑ ${r.up} m</span>`:"")+
-    (r.lights!=null?`<span class="stat" title="Traffic lights">🚦 ${r.lights}</span>`:SIG.error?"":`<span class="stat" title="Counting traffic lights">🚦 …</span>`)+`</div>`).join("");
+    (r.lights!=null?`<span class="stat" title="Traffic lights">🚦 ${r.lights}</span>`:SIG.error?`<button type="button" class="stat" data-sigretry title="${esc(SIG.error)}">🚦 Try again</button>`:`<span class="stat" title="Counting traffic lights">🚦 …</span>`)+`</div>`).join("");
 }
 /* Route post: count the lights once the list is on the phone (first time: a few seconds). */
 function lightsForPost(){
@@ -719,7 +719,7 @@ function renderSuggestions(){
     <div><span class="km">${r.km.toFixed(1)} km${r.up!=null?` · ↑ ${r.up} m`:""}<span class="lights" data-lights="${r.id}">${lightsText(r)}</span></span><h3>${esc(r.name)}</h3>
       <div class="btns"><button type="button" class="btn" data-suse="${r.id}">Use</button>
         <button type="button" class="btn ghost" data-sgpx="${r.id}">GPX</button>
-        ${LIB.canEdit?`<button type="button" class="btn ghost" data-ssave="${r.id}">Save to library</button>`:""}</div></div></article>`).join("");
+        ${LIB.canEdit?`<button type="button" class="btn ghost" data-ssave="${r.id}" aria-label="Save ${esc(r.name)} to the route library">Save</button>`:""}</div></div></article>`).join("");
   queueThumbs(SUG.list);
 }
 function queueThumbs(routes){
@@ -822,13 +822,20 @@ function initSuggest(){
   $("sugkm").addEventListener("click",e=>{ const b=e.target.closest("[data-v]"); if(!b) return; SUG.km=Number(b.dataset.v);
     $("sugkm").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); });
   $("sugbtn").addEventListener("click",suggestLoops);
+  const openSug=open=>{ $("suggest").classList.toggle("hidden",!open); $("sugopen").classList.toggle("hidden",open); $("sugopen").setAttribute("aria-expanded",String(open)); if(open) $("suggest").scrollIntoView({block:"start",behavior:"smooth"}); };
+  $("sugopen").addEventListener("click",()=>openSug(true));
+  $("sugclose").addEventListener("click",()=>openSug(false));
+  $("pickroute").addEventListener("click",()=>{ document.getElementById("tabbtn-routes").click(); window.scrollTo({top:0}); });
   $("suglist").addEventListener("click",async e=>{
     const g=e.target.closest("[data-sgpx]");
     if(g){ const r=(SUG.list||[]).find(x=>x.id===g.dataset.sgpx); if(r) shareGpx(new Blob([r.gpx],{type:"application/gpx+xml"}), `mrc-${r.name.toLowerCase().replace(/[^a-z0-9]+/g,"-")}-${r.km.toFixed(1)}km.gpx`).catch(err=>{ $("sugstatus").textContent=err.message; }); return; }
     const u=e.target.closest("[data-suse]"), s=e.target.closest("[data-ssave]"); const id=(u||s)&&(u||s).dataset[u?"suse":"ssave"];
     const r=(SUG.list||[]).find(x=>x.id===id); if(!r) return;
     if(u){ document.getElementById("tabbtn-poster").click(); await loadRoute(()=>routeFromText(r.gpx, r.name)); return; }
-    await addToLibrary([r.full], r.name, "", $("sugdup"), $("sugstatus"));
+    const st=$("sugstatus"); await addToLibrary([r.full], r.name, "", $("sugdup"), st);
+    const t=st.textContent;
+    if(/^(Saved|Replaced)/.test(t)){ s.textContent="Saved ✓"; s.disabled=true; st.textContent=""; }
+    else if(/^Skipped/.test(t)){ s.textContent="Skipped"; st.textContent=""; }
   });
 }
 function initRoutes(){
@@ -852,7 +859,8 @@ function initRoutes(){
       try{ const r=await readRoute(f); await addToLibrary([r], cleanTitle(r.name)||cleanTitle(f.name), "", $("adddup"), st); if(st.textContent) notes.push(st.textContent.replace(/\.$/,"")); }
       catch(err){ notes.push(`${f.name}: ${err.message||err}`); }
     }
-    st.textContent=notes.join(" · ")+(notes.length?".":""); st.classList.toggle("warn", notes.some(n=>/:/.test(n))); });
+    st.textContent=notes.join(" · ")+(notes.length?".":""); const bad=notes.some(n=>/:/.test(n)); st.classList.toggle("warn", bad);
+    if(!bad){ const t=st.textContent; setTimeout(()=>{ if(st.textContent===t) st.textContent=""; },5000); } });
 }
 
 /* ---------- schedule (captains' availability + lead) ---------- */
@@ -929,7 +937,7 @@ function renderSchedule(){
         Post an Instagram story (and edit the run post) saying the run is off and why, update the “next run” board in the bar, and tell the other captains. A cancelled run should stay the exception.</div>` : ""}
       <div class="who" role="group" aria-label="Captains on ${niceDate(r.date)}">${D.captains.map(c=>{ const st=stateOf(r,c.id);
         return `<button type="button" class="${st}" data-cap="${c.id}" ${editable?"":"disabled"} aria-label="${esc(c.name)}: ${STATE_TEXT[st]}${editable?". Tap to change.":""}" aria-haspopup="menu">${esc(c.name)}${st==="lead"?'<span class="leadmark">lead</span>':""}</button>`; }).join("")}</div>
-      <p class="run-meta" style="margin:2px 0 0">${r.leads.length?`Lead${r.leads.length>1?"s":""}: <strong>${esc(leadNames)}</strong>`:"No lead yet"}${r.changedBy?` · last change by ${esc(r.changedBy)}`:""}</p>
+      <p class="run-meta" style="margin:2px 0 0">${[r.leads.length?"":"No lead yet", r.changedBy?`last change by ${esc(r.changedBy)}`:""].filter(Boolean).join(" · ")}</p>
       ${editable ? `<details style="margin-top:8px"><summary>Edit run</summary>
         <div class="grid" style="margin-top:10px">
           <div><label for="t-${r.date}">Time</label><input id="t-${r.date}" type="time" value="${esc(r.time)}" data-f="time"></div>
@@ -1098,6 +1106,7 @@ function init(){
   $("gpx2").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadSecond(f); e.target.value=""; });
   $("route2remove").addEventListener("click",()=>{ S.routes=S.routes.slice(0,1); routesChanged(); });
   $("startover").addEventListener("click",startOver);
+  $("distinfo").addEventListener("click",e=>{ if(e.target.closest("[data-sigretry]")){ SIG.error=""; renderStats(); lightsForPost(); } });
   $("pastebtn").addEventListener("click",pasteGpx);
   $("pastetext").addEventListener("paste",async e=>{ const dt=e.clipboardData; if(dt && [...(dt.items||[])].some(i=>i.kind==="file")){ e.preventDefault();
       if(!(await loadFromClipboardData(dt))) $("pastestatus").textContent="That file isn’t a GPX."; } });

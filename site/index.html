@@ -176,10 +176,11 @@ footer a{color:inherit}
 .rcard .thumb{width:96px;height:96px;border-radius:10px;background:var(--paper) center/cover no-repeat;overflow:hidden}
 .rcard .thumb svg{width:96px;height:96px;display:block}
 .rcard h3{font:900 16px/1.15 var(--sub);letter-spacing:.02em;text-transform:uppercase;margin:4px 0 2px;overflow-wrap:anywhere}
-.rcard .km{font:900 13px/1 var(--sub);letter-spacing:.04em;text-transform:uppercase;color:var(--accent)}
+.rcard .km{font:900 13px/1 var(--sub);letter-spacing:.02em;color:var(--accent)}
 .rcard .meta{font-size:13px;color:var(--muted);margin:4px 0 8px}
 .rcard .btns{display:flex;flex-wrap:wrap;gap:6px}
-.filebar{display:flex;justify-content:space-between;gap:8px;margin:0 0 8px}
+.filebar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 8px}
+.linkbtn{appearance:none;background:none;border:0;padding:10px 6px;min-height:40px;font:600 14px/1 var(--body);color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .chip{appearance:none;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;
   padding:8px 14px;min-height:40px;font:900 13px/1 var(--sub);letter-spacing:.04em;cursor:pointer;display:inline-flex;align-items:center}
 .rcard .btns .btn{min-height:40px;padding:8px 12px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap}
@@ -188,6 +189,7 @@ footer a{color:inherit}
 /* Route card: distance · climb · traffic lights from the GPX, as small labels that wrap */
 #distinfo{display:grid;gap:8px;margin:2px 0 12px}
 .stats{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+button.stat{color:var(--ink);cursor:pointer}
 .stat{border:1.5px solid var(--line);border-radius:999px;padding:7px 12px;font:900 13px/1 var(--sub);letter-spacing:.04em;white-space:nowrap;background:var(--paper)}
 .statlab{font-size:13px;color:var(--muted);min-width:4.2em}
 #sugkm{margin-top:4px;flex-wrap:nowrap;display:flex}
@@ -235,7 +237,7 @@ footer a{color:inherit}
 <div class="wrap">
   <header>
     <div class="head-title"><h1>MRC <span>ZH</span></h1>
-    <p>Mikkeller Run Club Zürich</p></div>
+    <p>Mikkeller Run Club Zurich</p></div>
     <div class="more-menu"><button type="button" id="menubtn" aria-label="More options" aria-expanded="false" aria-controls="moremenu">⋯</button>
   <div id="moremenu" class="menu" hidden><p class="menu-h">Theme</p>
     <div class="menu-seg" role="group" aria-label="Theme"><button type="button" data-theme-v="auto">Auto</button><button type="button" data-theme-v="light">Light</button><button type="button" data-theme-v="dark">Dark</button></div>
@@ -259,6 +261,7 @@ footer a{color:inherit}
   </label>
   <div id="pastebox" style="text-align:center;margin-top:10px">
     <button type="button" class="btn ghost" id="pastebtn">Paste a GPX</button>
+    <button type="button" class="btn ghost" id="pickroute">Pick from Routes</button>
     <div id="pastearea" class="hidden" style="margin-top:10px;text-align:left">
       <label for="pastetext">Press and hold in the box, then tap Paste</label>
       <textarea id="pastetext" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Copy the GPX file (e.g. in Files: press and hold it → Copy), then paste it here"></textarea>
@@ -268,8 +271,8 @@ footer a{color:inherit}
 
   <section id="editor" class="hidden">
     <div class="filebar">
-      <button type="button" class="chip" id="startover" aria-label="Remove GPX and start over">✕ Remove GPX</button>
       <label class="chip" for="gpx">Change GPX</label>
+      <button type="button" class="linkbtn" id="startover" aria-label="Remove the GPX and start over">Remove</button>
     </div>
     <div class="card" style="padding:12px">
       <div class="seg" id="fmt" role="group" aria-label="Format">
@@ -311,11 +314,6 @@ footer a{color:inherit}
         <span id="route2info" class="hidden"></span>
         <button type="button" class="btn ghost" id="route2remove">Remove second route</button>
       </div>
-      <div id="libsave" class="hidden" style="margin-top:14px">
-        <button type="button" class="btn ghost" id="libsavebtn">Save to route library</button>
-        <div id="libdup" class="dup hidden" role="alert"></div>
-        <p class="status" id="libstatus" style="text-align:left"></p>
-      </div>
       <input id="gpx2" type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" class="hidden">
 
       <details id="advanced" style="margin-top:14px">
@@ -334,7 +332,13 @@ footer a{color:inherit}
       </details>
     </div>
 
-    <p class="hint" id="creditnote">When you post, add this line to the caption: <strong>Map: © OpenStreetMap contributors, OpenMapTiles</strong></p>
+    <div id="libsave" class="card hidden">
+      <h2>Route library</h2>
+      <p class="hint" style="text-align:left;margin-top:0">Done with the post? Keep the route so captains can reuse it.</p>
+      <button type="button" class="btn ghost" id="libsavebtn">Save to route library</button>
+      <div id="libdup" class="dup hidden" role="alert"></div>
+      <p class="status" id="libstatus" style="text-align:left"></p>
+    </div>
 
   </section>
   </div>
@@ -366,8 +370,9 @@ footer a{color:inherit}
   </section>
 
   <section id="tab-routes" class="hidden" role="tabpanel" aria-labelledby="tabbtn-routes">
-    <div class="card" id="suggest">
-      <h2>Suggest a loop</h2>
+    <button type="button" class="btn ghost" id="sugopen" aria-expanded="false" aria-controls="suggest" style="width:100%;margin-bottom:12px">Suggest a loop</button>
+    <div class="card hidden" id="suggest">
+      <div class="row" style="margin:0 0 8px"><h2 style="margin:0">Suggest a loop</h2><button type="button" class="linkbtn" id="sugclose">Close</button></div>
       <p class="hint" style="text-align:left;margin-top:0">Loops from the bar on paths and quiet streets, with as few traffic lights as possible.</p>
       <div class="seg" id="sugkm" role="group" aria-label="Distance">
         <button type="button" data-v="4" aria-pressed="false">4 km</button>
@@ -405,7 +410,7 @@ footer a{color:inherit}
 <!-- off-screen map used to draw the post; wrapped in a 0×0 box so its 1350 px height can't stretch the page on iPhone -->
 <div aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none"><div id="mapbox" style="position:absolute;left:0;top:0;width:1080px;height:1920px"></div><div id="thumbbox" style="position:absolute;left:0;top:0;width:288px;height:288px"></div></div>
 <script src="vendor/maplibre-gl.js"></script>
-<script src="app.js?v=smooth1"></script>
+<script src="app.js?v=ux1"></script>
 <script>
 /* ⋯ menu: theme Auto / Light / Dark or a Mikkeller colour theme, remembered on this phone */
 (function(){const root=document.documentElement, btn=document.getElementById("menubtn"), m=document.getElementById("moremenu");
