@@ -13,10 +13,11 @@ assign validForFoot 1
 assign signalcost   = 400   # %signalcost% | Extra cost (metres) per traffic light | number
 assign crossingcost = 120   # %crossingcost% | Extra cost (metres) per street crossing without lights (zebra, unmarked) | number
 assign railcost     = 60    # %railcost% | Extra cost (metres) per tram or rail crossing | number
+assign turnpenalty  = 40    # %turnpenalty% | Extra cost (metres) per 90° turn, so straighter routes win | number
 
 ---context:way
 
-assign turncost 0
+assign turncost = turnpenalty
 assign initialclassifier = 0
 assign initialcost switch route=ferry 100000 0
 

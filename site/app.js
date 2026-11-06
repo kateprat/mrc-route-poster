@@ -626,7 +626,8 @@ function fillLights(){ const st=$("routesstatus");
   const id=el.dataset.lights, r=(LIB.routes||[]).concat(SUG.list||[]).find(x=>String(x.id)===id); if(r) el.textContent=lightsText(r); }); }
 
 /* ---------- Suggest a loop (BRouter via /api/map/route) ----------
-   Six directions from the start; each loop goes start → three points on an arc → start.
+   Six directions from the start; each loop goes start → two points either side of the direction → start.
+   Out-and-back spurs are cut afterwards, and smoother loops (fewer turns) win ties.
    BRouter's running profile (src/mrc-run.brf) keeps to paths and quiet streets and avoids traffic lights.
    If a loop comes out too long or short it is scaled once and planned again. Best ones first: fewest lights. */
 const SUG={km:5, list:null, busy:false};
@@ -641,22 +642,47 @@ function startPoint(){
 }
 const dest=(p,dist,brg)=>{ const b=brg*Math.PI/180; return [p[0]+dist*Math.cos(b)/111320, p[1]+dist*Math.sin(b)/(111320*Math.cos(p[0]*Math.PI/180))]; };
 const COMPASS=["NORTH","NORTH-EAST","EAST","SOUTH-EAST","SOUTH","SOUTH-WEST","WEST","NORTH-WEST"];
+/* metres between two [lon, lat, …] points */
+const gd=(a,b)=>Math.hypot((a[1]-b[1])*111320,(a[0]-b[0])*111320*Math.cos(a[1]*Math.PI/180));
+/* Cut out-and-back spurs: where the line comes back within 12 m of where it was, less than 600 m later
+   (out ≤ 300 m and back), after going at least 25 m away, the piece in between goes. */
+function despur(co){
+  const out=[]; let i=0;
+  const cum=[0]; for(let k=1;k<co.length;k++) cum[k]=cum[k-1]+gd(co[k-1],co[k]);
+  while(i<co.length){
+    out.push(co[i]); let cut=-1;
+    for(let j=i+2;j<co.length && cum[j]-cum[i]<=600;j++){
+      if(gd(co[i],co[j])<12){ let far=0; for(let k=i+1;k<j;k++) far=Math.max(far,gd(co[i],co[k])); if(far>=25) cut=j; }
+    }
+    i = cut>0 ? cut+1 : i+1;
+  }
+  return out;
+}
+/* Turns sharper than 50°, looking at the line every 25 m (ignores GPS-size wiggles) */
+function turnsOf(co){
+  const pts=[co[0]]; let acc=0;
+  for(let k=1;k<co.length;k++){ acc+=gd(co[k-1],co[k]); if(acc>=25){ pts.push(co[k]); acc=0; } }
+  const brg=(a,b)=>Math.atan2((b[0]-a[0])*Math.cos(a[1]*Math.PI/180),b[1]-a[1])*180/Math.PI;
+  let n=0; for(let k=2;k<pts.length;k++){ let d=Math.abs(brg(pts[k-1],pts[k])-brg(pts[k-2],pts[k-1])); if(d>180) d=360-d; if(d>50) n++; }
+  return n;
+}
 async function planLoop(start, brg, d){
-  const wps=[start, dest(start,d,brg-50), dest(start,d*1.05,brg), dest(start,d,brg+50), start];
+  // two points either side of the direction: fewer forced detours than three
+  const wps=[start, dest(start,d,brg-35), dest(start,d,brg+35), start];
   const lonlats=wps.map(p=>`${p[1].toFixed(6)},${p[0].toFixed(6)}`).join("|");
   const r=await fetch(`/api/map/route?lonlats=${encodeURIComponent(lonlats).replace(/%2C/g,",")}`,{credentials:"include"});
   const j=await r.json().catch(()=>({}));
   if(!r.ok || !j.features) throw new Error(j.error||"No route.");
-  const f=j.features[0], co=f.geometry.coordinates, pr=f.properties||{};
-  const m=co.reduce((t,c,i)=>i?t+Math.hypot((c[1]-co[i-1][1])*111320,(c[0]-co[i-1][0])*111320*Math.cos(c[1]*Math.PI/180)):0,0);
-  return {co, m, brg};
+  const co=despur(j.features[0].geometry.coordinates);
+  const m=co.reduce((t,c,i)=>i?t+gd(co[i-1],c):0,0);
+  return {co, m, brg, turns:turnsOf(co)};
 }
 function loopToRoute(l, km, i){
   const name=`${COMPASS[Math.round(((l.brg%360)+360)%360/45)%8]} LOOP`;
   const gpx=`<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="MRC ZH (BRouter, OpenStreetMap)" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>${esc(name)}</name><trkseg>\n`+
     l.co.map(c=>`<trkpt lat="${c[1].toFixed(6)}" lon="${c[0].toFixed(6)}">${c.length>2?`<ele>${Number(c[2]).toFixed(1)}</ele>`:""}</trkpt>`).join("\n")+`\n</trkseg></trk></gpx>\n`;
   const full=routeFromText(gpx, name);
-  return {id:`s${Date.now()}${i}`, name, km:full.total/1000, up:full.up, pts:thin(full.pts), full, gpx};
+  return {id:`s${Date.now()}${i}`, name, km:full.total/1000, up:full.up, pts:thin(full.pts), full, gpx, turns:l.turns};
 }
 async function suggestLoops(){
   if(SUG.busy) return; SUG.busy=true;
@@ -670,7 +696,7 @@ async function suggestLoops(){
     await Promise.all([0,1].map(async w=>{
       for(let i=w;i<dirs.length;i+=2){
         try{
-          let d=D/4.6, l=await planLoop(start,dirs[i],d), len=l.m||0;
+          let d=D/3.9, l=await planLoop(start,dirs[i],d), len=l.m||0;
           if(len && Math.abs(len-D)/D>0.1){ d*=D/len; l=await planLoop(start,dirs[i],d); len=l.m||0; }
           if(len && Math.abs(len-D)/D<=0.2) found.push(l);
         }catch(e){}
@@ -679,7 +705,8 @@ async function suggestLoops(){
     }));
     let routes=found.map((l,i)=>loopToRoute(l,km,i));
     routes.forEach(r=>r.lights=countLights(r.pts));
-    routes.sort((a,b)=>(a.lights??99)-(b.lights??99) || Math.abs(a.km-km)-Math.abs(b.km-km));
+    // fewest lights first; with the same number, the smoother one (fewer turns per km), then closest to the distance
+    routes.sort((a,b)=>(a.lights??99)-(b.lights??99) || (a.turns/a.km)-(b.turns/b.km) || Math.abs(a.km-km)-Math.abs(b.km-km));
     const keep=[]; for(const r of routes) if(!keep.some(k=>sameRoute(r,k))) keep.push(r);
     SUG.list=keep.slice(0,4);
     st.textContent = SUG.list.length ? "" : "No loops found this time. Try again or pick another distance.";
