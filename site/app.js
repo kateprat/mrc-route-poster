@@ -400,12 +400,18 @@ function climb(pts){
 }
 const routeInfo = r => `${kmText(r)} km`+(r.up!=null?` · ↑ ${r.up} m`:"")+(r.lights!=null?` · 🚦 ${r.lights}`:"");
 const latlon = r => r.pts.map(p=>[p.lat,p.lon]);
+function renderStats(){
+  const two=S.routes.length>1;
+  $("distinfo").innerHTML=S.routes.map((r,i)=>`<div class="stats">${two?`<span class="statlab">${i?"Second":"Main"}</span>`:""}`+
+    `<span class="stat">${kmText(r)} km</span>`+(r.up!=null?`<span class="stat" title="Climb">↑ ${r.up} m</span>`:"")+
+    (r.lights!=null?`<span class="stat" title="Traffic lights">🚦 ${r.lights}</span>`:SIG.error?"":`<span class="stat" title="Counting traffic lights">🚦 …</span>`)+`</div>`).join("");
+}
 /* Route post: count the lights once the list is on the phone (first time: a few seconds). */
 function lightsForPost(){
   if(!S.routes.length) return;
-  loadSignals().then(ok=>{ if(!ok) return; let changed=false;
+  loadSignals().then(ok=>{ if(!ok) return renderStats(); let changed=false;
     for(const r of S.routes) if(r.lights==null){ r.lights=countLights(latlon(r)); changed=true; }
-    if(changed) $("distinfo").textContent=S.routes.map(routeInfo).join(" / "); });
+    if(changed) renderStats(); });
 }
 function routeFromText(text, fallbackName){
   const g=parseGPX(text);
@@ -416,10 +422,10 @@ async function readRoute(file){ return routeFromText(await file.text(), file.nam
 function routesChanged(){
   const maxTrim=Math.max(50, Math.round(Math.min(...S.routes.map(r=>r.total))/2/10)*10);
   ["trimS","trimE"].forEach(i=>$(i).max=String(maxTrim));
-  $("distinfo").textContent=S.routes.map(routeInfo).join(" / "); lightsForPost();
+  renderStats(); lightsForPost();
   const two=S.routes.length===2;
   $("route2none").classList.toggle("hidden", two); $("route2some").classList.toggle("hidden", !two);
-  if(two) $("route2info").textContent=`Second route: ${routeInfo(S.routes[1])}`;
+  if(two) $("route2info").textContent="Second route added";
   S.pan={x:0,y:0};
   prepareRoute(); scheduleDraw();
 }
@@ -457,7 +463,7 @@ function startOver(){
   $("width").value=S.width; $("widthv").textContent=S.width;
   $("simplify").value=S.simplify; $("simplifyv").textContent=S.simplify+" m";
   $("round").checked=false; ["trimS","trimE"].forEach(i=>{ $(i).value=0; $(i+"v").textContent="0 m"; });
-  $("title").value=""; $("distinfo").textContent="";
+  $("title").value=""; $("distinfo").innerHTML="";
   $("route2none").classList.remove("hidden"); $("route2some").classList.add("hidden");
   $("libstatus").textContent=""; $("libdup").classList.add("hidden");
   $("pastetext").value=""; $("pastestatus").textContent=""; $("pastearea").classList.add("hidden");
