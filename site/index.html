@@ -209,6 +209,15 @@ footer a{color:inherit}
 #routesstatus:empty{display:none}
 #libfilter button{flex:1;min-width:0;padding-left:4px;padding-right:4px}
 #suglist .rcard{background:var(--paper);border-style:dashed}
+#suggest .sugtop{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+#suggest .sugtop h2{margin:0}
+#suggest .sugtop .linkbtn{min-height:24px;padding:0}
+#sugsub{text-align:left;margin:4px 0 10px}
+#sugstatus:empty{display:none}
+/* while planning: grey placeholder cards */
+.skel{display:grid;grid-template-columns:96px 1fr;gap:12px;align-items:center;border:1px dashed var(--line);border-radius:14px;padding:10px;margin:10px 0;background:var(--paper)}
+.skel i{display:block;background:color-mix(in srgb,var(--line) 70%,transparent);border-radius:8px;animation:skel 1.2s ease-in-out infinite alternate}
+@keyframes skel{from{opacity:.55}to{opacity:1}}
 .btn.saved,.btn.saved:disabled{background:var(--ok);border-color:var(--ok);color:var(--ok-ink);opacity:1}
 #suglist .rcard .btns{flex-wrap:nowrap;gap:5px}
 #suglist .rcard .btns .btn{padding-left:10px;padding-right:10px}
@@ -408,18 +417,16 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
   </section>
 
   <section id="tab-routes" class="hidden" role="tabpanel" aria-labelledby="tabbtn-routes">
-    <button type="button" class="btn ghost" id="sugopen" aria-expanded="false" aria-controls="suggest" style="width:100%;margin-bottom:12px">Suggest a loop</button>
-    <div class="card hidden" id="suggest">
-      <div class="row" style="margin:0 0 8px"><h2 style="margin:0">Suggest a loop</h2><button type="button" class="linkbtn" id="sugclose">Close</button></div>
-      <p class="hint" style="text-align:left;margin-top:0">Loops from the bar on paths and quiet streets, with as few traffic lights as possible.</p>
+    <div class="card" id="suggest">
+      <div class="sugtop"><h2>Suggest a loop</h2><button type="button" class="linkbtn hidden" id="sugclear">Clear</button></div>
+      <p class="hint" id="sugsub">Tap a distance: loops from the bar with few traffic lights.</p>
       <div class="seg" id="sugkm" role="group" aria-label="Distance">
         <button type="button" data-v="4" aria-pressed="false">4 km</button>
-        <button type="button" data-v="5" aria-pressed="true">5 km</button>
+        <button type="button" data-v="5" aria-pressed="false">5 km</button>
         <button type="button" data-v="6" aria-pressed="false">6 km</button>
         <button type="button" data-v="7" aria-pressed="false">7 km</button>
         <button type="button" data-v="8" aria-pressed="false">8 km</button>
       </div>
-      <button type="button" class="btn" id="sugbtn" style="margin-top:10px">Suggest loops</button>
       <p class="status" id="sugstatus" role="status" style="text-align:left"></p>
       <div id="sugdup" class="dup hidden" role="alert"></div>
       <div id="suglist"></div>
@@ -457,7 +464,7 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
 <!-- off-screen map used to draw the post; wrapped in a 0×0 box so its 1350 px height can't stretch the page on iPhone -->
 <div aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none"><div id="mapbox" style="position:absolute;left:0;top:0;width:1080px;height:1920px"></div><div id="thumbbox" style="position:absolute;left:0;top:0;width:288px;height:288px"></div></div>
 <script src="vendor/maplibre-gl.js"></script>
-<script src="app.js?v=spur2"></script>
+<script src="app.js?v=sug2"></script>
 <script>
 /* ⋯ menu: theme Auto / Light / Dark or a Mikkeller colour theme, remembered on this phone */
 (function(){const root=document.documentElement, btn=document.getElementById("menubtn"), m=document.getElementById("moremenu");

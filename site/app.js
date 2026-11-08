@@ -718,7 +718,7 @@ function fillLights(){ const st=$("routesstatus");
    Out-and-back spurs are cut afterwards, and smoother loops (fewer turns) win ties.
    BRouter's running profile (src/mrc-run.brf) keeps to paths and quiet streets and avoids traffic lights.
    If a loop comes out too long or short it is scaled once and planned again. Best ones first: fewest lights. */
-const SUG={km:5, list:null, busy:false};
+const SUG={km:5, list:null, run:0};
 const BAR=[47.3727, 8.5199];   // Mikkeller Zürich, Zweierstrasse 124
 function startPoint(){
   const s=(LIB.routes||[]).map(r=>r.pts[0]).filter(Boolean);
@@ -784,35 +784,43 @@ function loopToRoute(l, km, i){
   const full=routeFromText(gpx, name);
   return {id:`s${Date.now()}${i}`, name, km:full.total/1000, up:full.up, pts:thin(full.pts), full, gpx, turns:l.turns};
 }
+const SKEL=`<div class="skel"><i style="width:96px;height:96px"></i><div><i style="width:60%;height:12px;margin:4px 0 10px"></i><i style="width:80%;height:16px;margin:0 0 12px"></i><i style="width:50%;height:30px;border-radius:999px"></i></div></div>`;
+/* Tap a distance → plan loops for it. Tapping another distance while planning starts over; older results are dropped. */
 async function suggestLoops(){
-  if(SUG.busy) return; SUG.busy=true;
-  const st=$("sugstatus"), btn=$("sugbtn"), km=SUG.km, D=km*1000; btn.disabled=true; st.classList.remove("warn");
-  $("suglist").innerHTML=""; SUG.list=[];
+  const run=++SUG.run, km=SUG.km, D=km*1000, st=$("sugstatus");
+  st.textContent=""; st.classList.remove("warn"); SUG.list=[];
+  $("sugsub").textContent=`Planning ${km} km loops from the bar…`;
+  $("suglist").innerHTML=SKEL+SKEL; $("sugclear").classList.add("hidden");
   try{
     if(!LIB.routes) await loadRoutes().catch(()=>{});
     const start=startPoint(); await loadSignals();
     const found=[]; const dirs=[0,60,120,180,240,300].map(b=>b+Math.round(Math.random()*30-15));
-    let done=0;
     await Promise.all([0,1].map(async w=>{
       for(let i=w;i<dirs.length;i+=2){
+        if(run!==SUG.run) return;
         try{
           let d=D/3.9, l=await planLoop(start,dirs[i],d), len=l.m||0;
           if(len && Math.abs(len-D)/D>0.1){ d*=D/len; l=await planLoop(start,dirs[i],d); len=l.m||0; }
           if(len && Math.abs(len-D)/D<=0.2) found.push(l);
         }catch(e){}
-        st.textContent=`Planning loops… ${++done}/${dirs.length}`;
       }
     }));
+    if(run!==SUG.run) return;                                  // another distance was tapped meanwhile
     let routes=found.map((l,i)=>loopToRoute(l,km,i));
     routes.forEach(r=>r.lights=countLights(r.pts));
     // fewest lights first; with the same number, the smoother one (fewer turns per km), then closest to the distance
     routes.sort((a,b)=>(a.lights??99)-(b.lights??99) || (a.turns/a.km)-(b.turns/b.km) || Math.abs(a.km-km)-Math.abs(b.km-km));
     const keep=[]; for(const r of routes) if(!keep.some(k=>sameRoute(r,k))) keep.push(r);
     SUG.list=keep.slice(0,4);
-    st.textContent = SUG.list.length ? "" : "No loops found this time. Try again or pick another distance.";
+    st.textContent = SUG.list.length ? "" : "No loops found this time. Tap the distance again to retry.";
     renderSuggestions();
-  }catch(e){ st.textContent=e.message||String(e); st.classList.add("warn"); }
-  finally{ SUG.busy=false; btn.disabled=false; }
+  }catch(e){ if(run===SUG.run){ st.textContent=e.message||String(e); st.classList.add("warn"); $("suglist").innerHTML=""; } }
+  finally{ if(run===SUG.run){ $("sugsub").textContent="Tap a distance: loops from the bar with few traffic lights."; $("sugclear").classList.toggle("hidden", !(SUG.list||[]).length && !st.textContent); } }
+}
+function clearSuggestions(){
+  SUG.run++; SUG.list=[]; $("suglist").innerHTML=""; $("sugstatus").textContent=""; $("sugdup").classList.add("hidden");
+  $("sugclear").classList.add("hidden"); $("sugkm").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed","false"));
+  $("sugsub").textContent="Tap a distance: loops from the bar with few traffic lights.";
 }
 function renderSuggestions(){
   $("suglist").innerHTML=(SUG.list||[]).map(r=>`<article class="rcard"><div class="thumb" data-thumb="${r.id}">${routeSVG(r.pts)}</div>
@@ -930,11 +938,8 @@ async function useRoute(id){
 }
 function initSuggest(){
   $("sugkm").addEventListener("click",e=>{ const b=e.target.closest("[data-v]"); if(!b) return; SUG.km=Number(b.dataset.v);
-    $("sugkm").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); });
-  $("sugbtn").addEventListener("click",suggestLoops);
-  const openSug=open=>{ $("suggest").classList.toggle("hidden",!open); $("sugopen").classList.toggle("hidden",open); $("sugopen").setAttribute("aria-expanded",String(open)); if(open) $("suggest").scrollIntoView({block:"start",behavior:"smooth"}); };
-  $("sugopen").addEventListener("click",()=>openSug(true));
-  $("sugclose").addEventListener("click",()=>openSug(false));
+    $("sugkm").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b))); suggestLoops(); });
+  $("sugclear").addEventListener("click",clearSuggestions);
   $("pickroute").addEventListener("click",()=>{ document.getElementById("tabbtn-routes").click(); window.scrollTo({top:0}); });
   $("suglist").addEventListener("click",async e=>{
     const g=e.target.closest("[data-sgpx]");
