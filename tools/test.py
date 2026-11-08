@@ -115,6 +115,10 @@ try:
             pg.click("#share")
         dl.value.save_as(os.path.join(OUT, "download.png"))
         check(dl.value.suggested_filename == "mrc-the-little-dipper-feed.png", "Share downloads the PNG where there is no share sheet")
+        # every tab still shows its content (catches broken page structure)
+        for tab, el in (("schedule", "#tab-schedule"), ("routes", "#sugopen"), ("poster", "#editor")):
+            pg.click(f"#tabbtn-{tab}"); pg.wait_for_timeout(300)
+            check(pg.is_visible(el), f"{tab} tab shows its content")
         b.close()
 finally:
     srv.terminate()
