@@ -186,18 +186,10 @@ footer a{color:inherit}
 .rcard .btns .btn{min-height:40px;padding:8px 12px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap}
 .rcard .btns .rm{color:var(--muted)}
 .lights{white-space:nowrap}
-/* Route card: choose a second route from the library (or upload one) */
-.pickbox{margin-top:10px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px}
-.pickhead{font:900 12px/1 var(--sub);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-.picklist{display:grid;gap:8px;max-height:340px;overflow:auto;overscroll-behavior:contain}
-.pick{appearance:none;display:grid;grid-template-columns:52px 1fr;align-items:center;gap:12px;width:100%;min-height:60px;padding:4px 10px 4px 4px;
-  background:var(--panel);border:1.5px solid var(--line);border-radius:12px;color:var(--ink);text-align:left;cursor:pointer}
-.pick:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
-.pick .thumb{width:52px;height:52px;border-radius:8px}
-.pick .thumb svg{width:52px;height:52px}
-.pick b{display:block;font:900 14px/1.15 var(--sub);letter-spacing:.02em;text-transform:uppercase;overflow-wrap:anywhere}
-.pick small{display:block;margin-top:3px;font:900 12px/1 var(--sub);color:var(--accent)}
-.pick[disabled]{opacity:.55;cursor:default}
+/* Route card: second route from the saved routes (dropdown) or a GPX upload */
+.second{display:flex;gap:8px;align-items:center}
+.second select{flex:1;min-width:0;min-height:44px}
+.second .btn{flex:0 0 auto}
 /* Route card: distance · climb · traffic lights from the GPX, as small labels that wrap */
 #distinfo{display:grid;gap:8px;margin:2px 0 12px}
 .stats{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
@@ -319,12 +311,13 @@ button.stat{color:var(--ink);cursor:pointer}
           <button type="button" class="swatch" data-v="#3584ba" aria-pressed="false" aria-label="Blue"><span style="background:#3584ba"></span></button>
         </div>
       </div>
-      <div id="route2none">
-        <button type="button" class="btn ghost" id="route2add" aria-expanded="false" aria-controls="route2pick" style="margin-top:6px">Add a second route</button>
-        <div id="route2pick" class="pickbox hidden">
-          <div class="row" style="margin:0 0 8px"><span class="pickhead">Saved routes</span><button type="button" class="linkbtn" id="route2cancel">Cancel</button></div>
-          <div id="route2list" class="picklist" role="list"></div>
-          <label class="btn ghost" for="gpx2" style="margin-top:10px">Upload a GPX</label>
+      <div id="route2none" style="margin-top:6px">
+        <label for="route2select">Add a second route</label>
+        <div class="second">
+          <select id="route2select" aria-label="Second route from the saved routes">
+            <option value="">Saved routes…</option>
+          </select>
+          <label class="btn ghost" for="gpx2">Upload</label>
         </div>
       </div>
       <div id="route2some" class="row hidden">
@@ -427,7 +420,7 @@ button.stat{color:var(--ink);cursor:pointer}
 <!-- off-screen map used to draw the post; wrapped in a 0×0 box so its 1350 px height can't stretch the page on iPhone -->
 <div aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none"><div id="mapbox" style="position:absolute;left:0;top:0;width:1080px;height:1920px"></div><div id="thumbbox" style="position:absolute;left:0;top:0;width:288px;height:288px"></div></div>
 <script src="vendor/maplibre-gl.js"></script>
-<script src="app.js?v=second1"></script>
+<script src="app.js?v=second2"></script>
 <script>
 /* ⋯ menu: theme Auto / Light / Dark or a Mikkeller colour theme, remembered on this phone */
 (function(){const root=document.documentElement, btn=document.getElementById("menubtn"), m=document.getElementById("moremenu");
