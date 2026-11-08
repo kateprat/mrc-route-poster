@@ -11,7 +11,8 @@ const FORMATS = {
 };
 const TEXT = "#141414";
 const COLORS = ["#882c29", "#3584ba"];                   // MRC burgundy, MRC blue
-const ADV_DEFAULTS = {width:10, simplify:8, round:false, trimS:0, trimE:0};
+const ADV_DEFAULTS = {width:10, simplify:8};
+const NO_TRIM = {round:false, trimS:0, trimE:0};          // corner rounding and end trimming were removed from the app
 /* Map data: OpenFreeMap vector tiles (OpenStreetMap, OpenMapTiles schema). No API key, no limits.
    ?source=<tilejson url> lets the offline test point at local data. */
 const params = new URLSearchParams(location.search);
@@ -21,7 +22,7 @@ const MAP_SOURCE = params.get("source") || "https://tiles.openfreemap.org/planet
 const S = {
   routes: [],        // [{name, pts:[{lat,lon}], cum:[m], total:m}] — one, or two when there are two route options
   fmt: "feed", color: COLORS[0], mapstyle: "grey",   // always the MRC grey map
-  zoom: 1, ...ADV_DEFAULTS,
+  zoom: 1, ...ADV_DEFAULTS, ...NO_TRIM,
   pan: {x:0, y:0},   // mercator units
   items: {},         // per format: {title|dist|beer: {dx,dy,scale,rot}} once someone moves, turns or resizes them
 };
@@ -467,8 +468,6 @@ function routeFromText(text, fallbackName){
 }
 async function readRoute(file){ return routeFromText(await file.text(), file.name.replace(/\.gpx$/i,"")); }
 function routesChanged(){
-  const maxTrim=Math.max(50, Math.round(Math.min(...S.routes.map(r=>r.total))/2/10)*10);
-  ["trimS","trimE"].forEach(i=>$(i).max=String(maxTrim));
   renderStats(); lightsForPost(); fillSecondSelect();
   const two=S.routes.length===2;
   $("route2none").classList.toggle("hidden", two); $("route2some").classList.toggle("hidden", !two);
@@ -509,7 +508,6 @@ function startOver(){
   $("zoom").value=100; $("zoomv").textContent="100%";
   $("width").value=S.width; $("widthv").textContent=S.width;
   $("simplify").value=S.simplify; $("simplifyv").textContent=S.simplify+" m";
-  $("round").checked=false; ["trimS","trimE"].forEach(i=>{ $(i).value=0; $(i+"v").textContent="0 m"; });
   $("title").value=""; $("distinfo").innerHTML="";
   $("route2none").classList.remove("hidden"); $("route2some").classList.add("hidden");
   $("libstatus").textContent=""; $("libdup").classList.add("hidden");
@@ -1125,8 +1123,6 @@ function resetAdvanced(){
   Object.assign(S, ADV_DEFAULTS);
   $("width").value=S.width; $("widthv").textContent=S.width;
   $("simplify").value=S.simplify; $("simplifyv").textContent=S.simplify+" m";
-  $("round").checked=false;
-  ["trimS","trimE"].forEach(i=>{ $(i).value=0; $(i+"v").textContent="0 m"; });
   prepareRoute(); scheduleDraw();
 }
 
@@ -1161,9 +1157,6 @@ function init(){
   range("zoom","zoom",v=>v+"%",v=>v/100);
   range("width","width",v=>v,Number);
   range("simplify","simplify",v=>v+" m",Number,prepareRoute);
-  range("trimS","trimS",v=>v+" m",Number,prepareRoute);
-  range("trimE","trimE",v=>v+" m",Number,prepareRoute);
-  $("round").addEventListener("change",e=>{S.round=e.target.checked; scheduleDraw();});
   $("advreset").addEventListener("click",resetAdvanced);
   $("beerreset").addEventListener("click",()=>{ delete S.items[S.fmt]; scheduleDraw(); });
   ["title","date"].forEach(i=>$(i).addEventListener("input",scheduleDraw));

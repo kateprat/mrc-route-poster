@@ -20,7 +20,7 @@ Everything here stays on your own phone; nobody else sees your edits.
 - Formats: **Post 4:5** (1080×1350), **Square** (1080×1080), and **Route only**: a transparent PNG of just the line(s), to put on a group photo.
 - Drag the map to move it, pinch or use the slider to zoom. The text you're handling gets a dashed outline (only on screen, never in the image).
 - The three sections (Route post, Schedule, Routes) are in a tab bar at the bottom, within thumb reach.
-- **Advanced settings** (folded away, with “Reset to standard”): line width, smoothing GPS wobble, round corners, trimming the ends.
+- **Advanced settings** (folded away, with “Reset to standard”): line width and smoothing GPS wobble.
 - **Share** opens the phone's share sheet (Instagram, Photos, WhatsApp…). 
 
 ### Routes tab
@@ -85,7 +85,7 @@ The Gotham and Windsor fonts are commercial fonts supplied by Mikkeller for bran
 
 ## Map tiles
 
-The map is drawn in the phone's browser from [OpenFreeMap](https://openfreemap.org) vector tiles (OpenStreetMap data in the OpenMapTiles format): no API key, no account, no usage limits. The MRC look (grey ground, white streets, no labels) is the only map style; it's defined in `mapStyle()` in `site/index.html`, with the colours in `PALETTE.grey`. The drawing library is MapLibre GL JS, bundled in `site/vendor/` (BSD licence). OpenStreetMap and OpenMapTiles require a credit. It isn't drawn on the image; the app reminds you to add “Map: © OpenStreetMap contributors, OpenMapTiles” to the post's caption, which OpenStreetMap's guidelines accept for images.
+The map is drawn in the phone's browser from [OpenFreeMap](https://openfreemap.org) vector tiles (OpenStreetMap data in the OpenMapTiles format): no API key, no account, no usage limits. The MRC look (grey ground, white streets, no labels) is the only map style; it's defined in `mapStyle()` in `site/index.html`, with the colours in `PALETTE.grey`. The drawing library is MapLibre GL JS, bundled in `site/vendor/` (BSD licence). OpenStreetMap and OpenMapTiles require a credit. It isn't drawn on the image; the credit is in the app's footer, and “Map: © OpenStreetMap contributors, OpenMapTiles” can go in a post's caption.
 
 ## Making a change
 

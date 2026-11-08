@@ -92,9 +92,9 @@ try:
 
         # advanced settings + reset
         pg.click("#advanced summary")
-        pg.fill("#width", "18"); pg.dispatch_event("#width", "input"); pg.fill("#trimS", "200"); pg.dispatch_event("#trimS", "input")
+        pg.fill("#width", "18"); pg.dispatch_event("#width", "input")
         pg.click("#advreset"); pg.wait_for_timeout(200)
-        check(pg.evaluate("S.width===10 && S.simplify===8 && S.trimS===0 && !S.round"), "advanced reset to standard")
+        check(pg.evaluate("S.width===10 && S.simplify===8"), "advanced reset to standard")
 
         # second route
         pg.set_input_files("#gpx2", os.path.join(ROOT, "test", "sample2.gpx")); pg.wait_for_timeout(2500)

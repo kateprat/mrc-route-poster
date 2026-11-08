@@ -332,12 +332,6 @@ button.stat{color:var(--ink);cursor:pointer}
         <input id="width" type="range" min="4" max="24" step="1" value="10">
         <div class="row"><label for="simplify">Smooth out GPS wobble</label><span class="val" id="simplifyv">8 m</span></div>
         <input id="simplify" type="range" min="0" max="30" step="1" value="8">
-        <label class="check"><input id="round" type="checkbox"> Round off corners</label>
-        <div class="row"><label for="trimS">Trim start</label><span class="val" id="trimSv">0 m</span></div>
-        <input id="trimS" type="range" min="0" max="1000" step="10" value="0">
-        <div class="row"><label for="trimE">Trim finish</label><span class="val" id="trimEv">0 m</span></div>
-        <input id="trimE" type="range" min="0" max="1000" step="10" value="0">
-        <p class="hint" style="text-align:left">Trim cuts the line’s ends where start and finish don’t meet. Distance stays.</p>
         <button type="button" class="btn ghost" id="advreset">Reset to standard</button>
       </details>
     </div>
@@ -420,7 +414,7 @@ button.stat{color:var(--ink);cursor:pointer}
 <!-- off-screen map used to draw the post; wrapped in a 0×0 box so its 1350 px height can't stretch the page on iPhone -->
 <div aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none"><div id="mapbox" style="position:absolute;left:0;top:0;width:1080px;height:1920px"></div><div id="thumbbox" style="position:absolute;left:0;top:0;width:288px;height:288px"></div></div>
 <script src="vendor/maplibre-gl.js"></script>
-<script src="app.js?v=second2"></script>
+<script src="app.js?v=adv1"></script>
 <script>
 /* ⋯ menu: theme Auto / Light / Dark or a Mikkeller colour theme, remembered on this phone */
 (function(){const root=document.documentElement, btn=document.getElementById("menubtn"), m=document.getElementById("moremenu");
