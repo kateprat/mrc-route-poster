@@ -504,7 +504,7 @@ async function pasteGpx(){
 }
 /* Back to the empty Route post, as if the app had just been opened. */
 function startOver(){
-  S.routes=[]; S.mpts=null; S.rpts=null; S.view=null; S.items={}; S.pan={x:0,y:0}; S.zoom=1;
+  S.routes=[]; S.mpts=null; S.rpts=null; S.view=null; S.items={}; S.pan={x:0,y:0}; S.zoom=1; openSecondPicker(false);
   Object.assign(S, ADV_DEFAULTS);
   $("zoom").value=100; $("zoomv").textContent="100%";
   $("width").value=S.width; $("widthv").textContent=S.width;
@@ -532,6 +532,29 @@ async function loadRoute(read){
     await document.fonts.load('100px "MikkelWind"'); draw();
     cv.scrollIntoView({behavior:"smooth", block:"start"});
   }catch(e){ alert(e.message||String(e)); }
+}
+/* Add a second route: pick one from the library (or upload a GPX). */
+async function openSecondPicker(open){
+  $("route2pick").classList.toggle("hidden",!open); $("route2add").classList.toggle("hidden",open);
+  $("route2add").setAttribute("aria-expanded",String(open));
+  if(!open) return;
+  const list=$("route2list");
+  if(!LIB.routes){ list.innerHTML=`<p class="hint" style="text-align:left;margin:0">Loading saved routes…</p>`; await loadRoutes(); }
+  const main=S.routes[0], rs=LIB.routes||[], mainC=main && {name:"", km:main.total/1000, pts:thin(main.pts)};
+  list.innerHTML = rs.length ? rs.map(r=>{ const same=!!mainC && sameRoute(mainC, r);
+      return `<button type="button" class="pick" role="listitem" data-second="${r.id}" ${same?"disabled":""}>
+        <span class="thumb" data-thumb="${r.id}">${routeSVG(r.pts)}</span>
+        <span><b>${esc(r.name)}</b><small>${r.km.toFixed(1)} km${r.up!=null?` · ↑ ${r.up} m`:""}${r.lights!=null?` · 🚦 ${r.lights}`:""}${same?" · this post":""}</small></span></button>`; }).join("")
+    : `<p class="hint" style="text-align:left;margin:0">No saved routes yet. Upload a GPX instead.</p>`;
+  queueThumbs(rs);
+  $("route2pick").scrollIntoView({block:"nearest",behavior:"smooth"});
+}
+async function addSecondFromLibrary(id, btn){
+  const r=(LIB.routes||[]).find(x=>x.id===id); if(!r) return;
+  btn.disabled=true;
+  try{ const res=await fetch(`/api/routes/gpx?id=${id}`,{credentials:"include"}); if(!res.ok) throw new Error("Couldn’t load that route.");
+    await loadSecond(new File([await res.blob()], `${r.name}.gpx`, {type:"application/gpx+xml"})); openSecondPicker(false); }
+  catch(e){ alert(e.message||String(e)); btn.disabled=false; }
 }
 async function loadSecond(file){
   try{ const r=await readRoute(file); S.routes=[S.routes[0], r]; routesChanged(); }
@@ -1150,7 +1173,10 @@ function init(){
   $("beerreset").addEventListener("click",()=>{ delete S.items[S.fmt]; scheduleDraw(); });
   ["title","date"].forEach(i=>$(i).addEventListener("input",scheduleDraw));
   $("gpx").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadFile(f); e.target.value=""; });
-  $("gpx2").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadSecond(f); e.target.value=""; });
+  $("gpx2").addEventListener("change",e=>{ const f=e.target.files[0]; if(f){ loadSecond(f); openSecondPicker(false); } e.target.value=""; });
+  $("route2add").addEventListener("click",()=>openSecondPicker(true));
+  $("route2cancel").addEventListener("click",()=>openSecondPicker(false));
+  $("route2list").addEventListener("click",e=>{ const b=e.target.closest("[data-second]"); if(b && !b.disabled) addSecondFromLibrary(Number(b.dataset.second), b); });
   $("route2remove").addEventListener("click",()=>{ S.routes=S.routes.slice(0,1); routesChanged(); });
   $("startover").addEventListener("click",startOver);
   $("distinfo").addEventListener("click",e=>{ if(e.target.closest("[data-sigretry]")){ SIG.error=""; renderStats(); lightsForPost(); } });
