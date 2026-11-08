@@ -100,7 +100,7 @@ function chaikin(p, n){
 }
 
 /* ---------- view ---------- */
-/* "Route only": a tight crop around the route (plus a small margin), longest side 1500 px, so it works as a sticker. */
+/* "Transparent": a tight crop around the route (plus a small margin), longest side 1500 px, so it works as a sticker. */
 function routeOnlyFormat(){
   const m=S.mpts; let minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9;
   for(const p of m){minx=Math.min(minx,p.x);maxx=Math.max(maxx,p.x);miny=Math.min(miny,p.y);maxy=Math.max(maxy,p.y);}
@@ -115,7 +115,7 @@ function computeView(F, W, H){
   for(const p of m){minx=Math.min(minx,p.x);maxx=Math.max(maxx,p.x);miny=Math.min(miny,p.y);maxy=Math.max(maxy,p.y);}
   const [bx0,by0,bx1,by1]=F.box; const bw=(bx1-bx0)*W, bh=(by1-by0)*H;
   const rw=Math.max(maxx-minx,1e-9), rh=Math.max(maxy-miny,1e-9);
-  const zoom=F.fixed?1:S.zoom, pan=F.fixed?{x:0,y:0}:S.pan;   // "Route only" is always the whole route
+  const zoom=F.fixed?1:S.zoom, pan=F.fixed?{x:0,y:0}:S.pan;   // "Transparent" is always the whole route
   const scale=Math.min(bw/rw, bh/rh)*zoom;            // px per mercator unit
   const cx=(minx+maxx)/2 - pan.x, cy=(miny+maxy)/2 - pan.y;
   const ox=(bx0+bx1)/2*W, oy=(by0+by1)/2*H;
@@ -341,7 +341,7 @@ function setItem(k, patch){
   it.rot=((it.rot+180)%360+360)%360-180;
   (S.items[S.fmt] ||= {})[k]=it; scheduleDraw();
 }
-/* Keep the invisible date field over the date on the post (none on "Route only"). */
+/* Keep the invisible date field over the date on the post (none on "Transparent"). */
 function placeDateField(){
   const el=$("date"), b=S.dateBox, show=S.fmt!=="route" && b;
   el.style.display = show ? "" : "none"; if(!show) return;
@@ -428,6 +428,7 @@ function draw(){
     if(S.guides.h){ ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke(); }
     ctx.restore(); }
   $("beerreset").classList.toggle("hidden", !viewMoved() || S.fmt==="route");
+  $("posthint").classList.toggle("hidden", S.fmt==="route");   // nothing to drag, pinch or tap on Transparent
   placeDateField();
   const st=$("status");
   if(S.fmt!=="route" && M.error && !M.ready){ st.textContent="Map couldn’t load. Check your connection and reload."; st.classList.add("warn"); }

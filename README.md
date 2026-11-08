@@ -17,7 +17,7 @@ Everything here stays on your own phone; nobody else sees your edits.
 - Draws the MRC grey street map with the route on top in **burgundy `#882c29`** or **blue `#3584ba`**.
 - Title, distance, **FREE BEER!** and date in **MikkelWind**, like the earlier route posts. Title, distance and FREE BEER! can each be dragged with one finger and turned (any angle) and resized with two; Like on Instagram, text sticks to the centre lines (with a guide line) and to straight angles when it gets close, and comes off when you move further. “Put text back in place” resets them. FREE BEER! is always there.
 - **Two route options:** add a second GPX; it's drawn in the other colour and both distances are shown, each in its route's colour.
-- Formats: **Post 4:5** (1080×1350), **Square** (1080×1080), and **Route only**: a transparent PNG of just the line(s), cropped tight around the route, to use as a sticker on a photo.
+- Formats: **Post 4:5** (1080×1350), **Square** (1080×1080), and **Transparent**: a transparent PNG of just the line(s), cropped tight around the route, to use as a sticker on a photo.
 - Drag the map to move it, pinch with two fingers to zoom. **Reset layout** appears once you move the map or the text and puts both back as they were. The text you're handling gets a dashed outline (only on screen, never in the image).
 - The three sections (Route post, Schedule, Routes) are in a tab bar at the bottom, within thumb reach.
 - **Advanced settings** (folded away, with “Reset to standard”): line width and smoothing GPS wobble.
