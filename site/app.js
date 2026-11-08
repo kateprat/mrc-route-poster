@@ -463,10 +463,13 @@ function climb(pts){
 const routeInfo = r => `${kmText(r)} km`+(r.up!=null?` · ↑ ${r.up} m`:"")+(r.lights!=null?` · 🚦 ${r.lights}`:"");
 const latlon = r => r.pts.map(p=>[p.lat,p.lon]);
 function renderStats(){
-  const two=S.routes.length>1;
-  $("distinfo").innerHTML=S.routes.map((r,i)=>`<div class="stats">${two?`<span class="statlab">${i?"Second":"Main"}</span>`:""}`+
-    `<span class="stat">${kmText(r)} km</span>`+(r.up!=null?`<span class="stat" title="Climb">↑ ${r.up} m</span>`:"")+
-    (r.lights!=null?`<span class="stat" title="Traffic lights">🚦 ${r.lights}</span>`:SIG.error?`<button type="button" class="stat" data-sigretry title="${esc(SIG.error)}">🚦 Try again</button>`:`<span class="stat" title="Counting traffic lights">🚦 …</span>`)+`</div>`).join("");
+  const two=S.routes.length>1, sep='<span class="sep"> · </span>';
+  const lights=r=> r.lights!=null ? `${sep}🚦 ${r.lights}` : SIG.error ? `${sep}<button type="button" class="retry" data-sigretry title="${esc(SIG.error)}">🚦 Try again</button>` : `${sep}🚦 …`;
+  const line=r=>`${kmText(r)} km`+(r.up!=null?`${sep}↑ ${r.up} m`:"")+lights(r);
+  $("routecard").classList.toggle("two", two);
+  $("distinfo").innerHTML=S.routes.map((r,i)=>`<div class="lg"><i style="background:${routeColor(i)}" aria-hidden="true"></i>`+
+    (two?`<span class="who">${i?"Second":"Main"}</span>`:"")+line(r)+
+    (two&&i?`<button type="button" class="rmx" id="route2remove" aria-label="Remove second route">✕</button>`:"")+`</div>`).join("");
 }
 /* Route post: count the lights once the list is on the phone (first time: a few seconds). */
 function lightsForPost(){
@@ -484,8 +487,7 @@ async function readRoute(file){ return routeFromText(await file.text(), file.nam
 function routesChanged(){
   renderStats(); lightsForPost(); fillSecondSelect();
   const two=S.routes.length===2;
-  $("route2none").classList.toggle("hidden", two); $("route2some").classList.toggle("hidden", !two);
-  if(two) $("route2info").textContent="Second route added";
+  $("route2none").classList.toggle("hidden", two);
   S.pan={x:0,y:0};
   prepareRoute(); scheduleDraw();
 }
@@ -522,7 +524,7 @@ function startOver(){
   $("width").value=S.width; $("widthv").textContent=S.width;
   $("simplify").value=S.simplify; $("simplifyv").textContent=S.simplify+" m";
   $("title").value=""; $("distinfo").innerHTML="";
-  $("route2none").classList.remove("hidden"); $("route2some").classList.add("hidden");
+  $("route2none").classList.remove("hidden"); $("routecard").classList.remove("two");
   $("libstatus").textContent=""; $("libdup").classList.add("hidden");
   $("pastetext").value=""; $("pastestatus").textContent=""; $("pastearea").classList.add("hidden");
   $("editor").classList.add("hidden"); $("actions").classList.add("hidden");
@@ -1166,7 +1168,7 @@ function init(){
   initRoutes();
   loadRoutes();
   seg("fmt","fmt");
-  seg("color","color",savePrefs);
+  seg("color","color",()=>{ savePrefs(); if(S.routes.length) renderStats(); });
   range("width","width",v=>v,Number);
   range("simplify","simplify",v=>v+" m",Number,prepareRoute);
   $("advreset").addEventListener("click",resetAdvanced);
@@ -1176,7 +1178,7 @@ function init(){
   $("gpx2").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadSecond(f); e.target.value=""; });
   $("route2select").addEventListener("change",e=>{ const id=Number(e.target.value); if(id) addSecondFromLibrary(id); });
   $("route2select").addEventListener("focus",()=>{ if(!LIB.routes) loadRoutes(); });
-  $("route2remove").addEventListener("click",()=>{ S.routes=S.routes.slice(0,1); routesChanged(); });
+  $("distinfo").addEventListener("click",e=>{ if(e.target.closest("#route2remove")){ S.routes=S.routes.slice(0,1); routesChanged(); } });
   $("startover").addEventListener("click",startOver);
   $("distinfo").addEventListener("click",e=>{ if(e.target.closest("[data-sigretry]")){ SIG.error=""; renderStats(); lightsForPost(); } });
   $("pastebtn").addEventListener("click",pasteGpx);

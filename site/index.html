@@ -192,12 +192,24 @@ footer a{color:inherit}
 .second{display:flex;gap:8px;align-items:center}
 .second select{flex:1;min-width:0;min-height:44px}
 .second .btn{flex:0 0 auto}
-/* Route card: distance · climb · traffic lights from the GPX, as small labels that wrap */
-#distinfo{display:grid;gap:8px;margin:2px 0 12px}
-.stats{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
-button.stat{color:var(--ink);cursor:pointer}
-.stat{border:1.5px solid var(--line);border-radius:999px;padding:7px 12px;font:900 13px/1 var(--sub);letter-spacing:.04em;white-space:nowrap;background:var(--paper)}
-.statlab{font-size:13px;color:var(--muted);min-width:4.2em}
+/* Route card: one card for the post's route. Distance · climb · lights as plain text with a dot in the line's colour (a key to the post) */
+#routecard .sumrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px}
+#routecard .sumrow h2{margin:0}
+#routecard.two .sumrow{display:block}
+#routecard.two #distinfo{margin-top:12px}
+#distinfo{display:grid;gap:6px}
+.lg{display:flex;align-items:center;gap:8px;font:900 14px/1.2 var(--sub);letter-spacing:.02em;color:var(--ink);white-space:nowrap}
+.lg>i{width:12px;height:12px;border-radius:50%;flex:0 0 auto}
+.lg .who{font:600 13px/1 var(--body);color:var(--muted);min-width:3.9em}
+.lg .sep{color:var(--muted);font-weight:400}
+.lg button.retry{appearance:none;border:0;background:none;padding:0;font:inherit;color:var(--accent);text-decoration:underline;cursor:pointer}
+.rmx{appearance:none;margin-left:auto;border:1.5px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;width:32px;height:32px;
+  font:600 14px/1 var(--body);cursor:pointer;display:grid;place-items:center;flex:0 0 auto}
+#routecard .field{margin:0 0 14px}
+#routecard .row{margin:0 0 12px}
+hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
+#libsave{margin:6px 0 14px}
+#libsave #libsavebtn{width:100%}
 #sugkm{margin-top:4px;flex-wrap:nowrap;display:flex}
 #sugkm button{flex:1;padding-left:4px;padding-right:4px;min-width:0}
 .rcard .komoot{grid-column:1/-1;border-top:1px solid var(--line);padding-top:8px;font-size:14px}
@@ -295,23 +307,16 @@ button.stat{color:var(--ink);cursor:pointer}
       <div style="text-align:center"><button type="button" class="btn ghost hidden" id="beerreset">Reset layout</button></div>
     </div>
 
-    <div class="card">
-      <h2>Text</h2>
-      <div class="grid">
-        <div class="full"><label for="title">Title</label><input id="title" type="text" autocomplete="off" placeholder="THE LITTLE DIPPER"></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Route</h2>
-      <div id="distinfo" aria-label="From the GPX: distance, climb and traffic lights"></div>
-      <div class="row"><label>Colour</label>
-        <div class="seg" id="color" role="group" aria-label="Route colour">
+    <div class="card" id="routecard">
+      <div class="sumrow"><h2>Route</h2><div id="distinfo" aria-label="From the GPX: distance, climb and traffic lights"></div></div>
+      <div class="field"><label for="title">Title</label><input id="title" type="text" autocomplete="off" placeholder="THE LITTLE DIPPER"></div>
+      <div class="row"><label>Line colour</label>
+        <div class="seg" id="color" role="group" aria-label="Line colour">
           <button type="button" class="swatch" data-v="#882c29" aria-pressed="true" aria-label="Burgundy"><span style="background:#882c29"></span></button>
           <button type="button" class="swatch" data-v="#3584ba" aria-pressed="false" aria-label="Blue"><span style="background:#3584ba"></span></button>
         </div>
       </div>
-      <div id="route2none" style="margin-top:6px">
+      <div id="route2none">
         <label for="route2select">Add a second route</label>
         <div class="second">
           <select id="route2select" aria-label="Second route from the saved routes">
@@ -320,13 +325,9 @@ button.stat{color:var(--ink);cursor:pointer}
           <label class="btn ghost" for="gpx2">Upload</label>
         </div>
       </div>
-      <div id="route2some" class="row hidden">
-        <span id="route2info" class="hidden"></span>
-        <button type="button" class="btn ghost" id="route2remove">Remove second route</button>
-      </div>
       <input id="gpx2" type="file" accept=".gpx,application/gpx+xml,application/xml,text/xml" class="hidden">
-
-      <details id="advanced" style="margin-top:14px">
+      <hr class="divider">
+      <details id="advanced">
         <summary>Advanced settings</summary>
         <div class="row"><label for="width">Line width</label><span class="val" id="widthv">10</span></div>
         <input id="width" type="range" min="4" max="24" step="1" value="10">
@@ -336,16 +337,11 @@ button.stat{color:var(--ink);cursor:pointer}
       </details>
     </div>
 
-    <div id="libsave" class="card hidden">
-      <h2>Route library</h2>
-      <p class="hint" style="text-align:left;margin-top:0">Done with the post? Keep the route so captains can reuse it.</p>
+    <div id="libsave" class="hidden">
       <button type="button" class="btn ghost" id="libsavebtn">Save to route library</button>
       <div id="libdup" class="dup hidden" role="alert"></div>
       <p class="status" id="libstatus" style="text-align:left"></p>
     </div>
-
-  </section>
-  </div>
 
   <section id="tab-schedule" class="hidden" role="tabpanel" aria-labelledby="tabbtn-schedule">
     <div class="card hidden" id="unlinked">
@@ -414,7 +410,7 @@ button.stat{color:var(--ink);cursor:pointer}
 <!-- off-screen map used to draw the post; wrapped in a 0×0 box so its 1350 px height can't stretch the page on iPhone -->
 <div aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none"><div id="mapbox" style="position:absolute;left:0;top:0;width:1080px;height:1920px"></div><div id="thumbbox" style="position:absolute;left:0;top:0;width:288px;height:288px"></div></div>
 <script src="vendor/maplibre-gl.js"></script>
-<script src="app.js?v=date2"></script>
+<script src="app.js?v=card1"></script>
 <script>
 /* ⋯ menu: theme Auto / Light / Dark or a Mikkeller colour theme, remembered on this phone */
 (function(){const root=document.documentElement, btn=document.getElementById("menubtn"), m=document.getElementById("moremenu");
