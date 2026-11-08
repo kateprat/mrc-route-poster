@@ -732,15 +732,23 @@ const dest=(p,dist,brg)=>{ const b=brg*Math.PI/180; return [p[0]+dist*Math.cos(b
 const COMPASS=["NORTH","NORTH-EAST","EAST","SOUTH-EAST","SOUTH","SOUTH-WEST","WEST","NORTH-WEST"];
 /* metres between two [lon, lat, …] points */
 const gd=(a,b)=>Math.hypot((a[1]-b[1])*111320,(a[0]-b[0])*111320*Math.cos(a[1]*Math.PI/180));
-/* Cut out-and-back spurs: where the line comes back within 12 m of where it was, less than 600 m later
-   (out ≤ 300 m and back), after going at least 25 m away, the piece in between goes. */
+/* Cut out-and-back stretches, whatever their length: where the line comes back to (within 20 m of) a point it
+   already passed, and the piece in between is just "there and back" (it encloses almost no area: thinner than
+   30 m on average), that piece goes. A detour that loops around something (a block, a park) encloses area and stays. */
 function despur(co){
+  const n=co.length, cum=[0]; for(let k=1;k<n;k++) cum[k]=cum[k-1]+gd(co[k-1],co[k]);
+  const thin=(i,j)=>{   // average width of the piece i..j, from its enclosed area (shoelace, in metres)
+    const lat0=co[i][1], k=111320*Math.cos(lat0*Math.PI/180); let a=0;
+    for(let t=i;t<j;t++){ const x1=(co[t][0]-co[i][0])*k, y1=(co[t][1]-lat0)*111320, x2=(co[t+1][0]-co[i][0])*k, y2=(co[t+1][1]-lat0)*111320; a+=x1*y2-x2*y1; }
+    return Math.abs(a)/2/((cum[j]-cum[i])/2||1) < 30;
+  };
   const out=[]; let i=0;
-  const cum=[0]; for(let k=1;k<co.length;k++) cum[k]=cum[k-1]+gd(co[k-1],co[k]);
-  while(i<co.length){
+  while(i<n){
     out.push(co[i]); let cut=-1;
-    for(let j=i+2;j<co.length && cum[j]-cum[i]<=600;j++){
-      if(gd(co[i],co[j])<12){ let far=0; for(let k=i+1;k<j;k++) far=Math.max(far,gd(co[i],co[k])); if(far>=25) cut=j; }
+    for(let j=n-2;j>i+2;j--){                                      // farthest return first: cut the whole there-and-back
+      if(cum[j]-cum[i]<50 || cum[j]-cum[i]>cum[n-1]*0.5 || gd(co[i],co[j])>=20) continue;   // more than half the loop: not a detour
+      let far=0; for(let t=i+1;t<j;t++) far=Math.max(far,gd(co[i],co[t]));
+      if(far>=25 && thin(i,j)){ cut=j; break; }
     }
     i = cut>0 ? cut+1 : i+1;
   }
@@ -763,6 +771,10 @@ async function planLoop(start, brg, d){
   if(!r.ok || !j.features) throw new Error(j.error||"No route.");
   const co=despur(j.features[0].geometry.coordinates);
   const m=co.reduce((t,c,i)=>i?t+gd(co[i-1],c):0,0);
+  // the whole loop must go round something: average width (area ÷ half its length) of at least 60 m
+  const lat0=co[0][1], k=111320*Math.cos(lat0*Math.PI/180); let area=0;
+  for(let t=0;t<co.length-1;t++){ const x1=(co[t][0]-co[0][0])*k, y1=(co[t][1]-lat0)*111320, x2=(co[t+1][0]-co[0][0])*k, y2=(co[t+1][1]-lat0)*111320; area+=x1*y2-x2*y1; }
+  if(Math.abs(area)/2/(m/2||1) < 60) throw new Error("Out and back, not a loop.");
   return {co, m, brg, turns:turnsOf(co)};
 }
 function loopToRoute(l, km, i){
