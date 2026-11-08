@@ -315,7 +315,7 @@ function fitText(text, font, maxW, size, min){
   const t=mwSplit(text).base;
   let s=size; while(s>min){ ctx.font=`${s}px ${font}`; if(ctx.measureText(t).width<=maxW) break; s-=4; } return s;
 }
-function fmtDate(v){ if(!v) return ""; const [y,m,d]=v.split("-").map(Number); return `${d}.${m}.${y}`; }
+function fmtDate(v){ if(!v) return ""; const [y,m,d]=v.split("-").map(Number); return `${d}/${m}/${y}`; }
 const kmText = r => (r.total/1000).toFixed(1);
 
 /* Title, distance and FREE BEER! can each be moved (one finger), and turned and resized (two fingers).
@@ -378,7 +378,7 @@ function drawText(F, W, H){
   drawItem("beer", W/2, F.h*F.beer+bh/2, bw, bh, ()=>{ ctx.textBaseline="middle"; ctx.fillText("FREE BEER!", 0, 0); });
   const date=fmtDate($("date").value);
   ctx.textAlign="right"; ctx.textBaseline="bottom"; ctx.font=`58px "MikkelWind"`;
-  if(date) ctx.fillText(date, W-40, H-F.dateY);   // digits and full stops are all in the font
+  if(date) ctx.fillText(date, W-40, H-F.dateY);   // digits and slashes are all in the font
   // where the date is, so the invisible date field can sit on top of it (also when it's empty)
   const dw=ctx.measureText(date||"11.11.2026").width, pad=24;
   S.dateBox={x:W-40-dw-pad, y:H-F.dateY-58-pad, w:dw+2*pad, h:58+2*pad, W, H};
