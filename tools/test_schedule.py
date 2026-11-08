@@ -38,7 +38,7 @@ try:
         b = p.chromium.launch(args=["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
         kate = page_for(b, "captain@example.com")
         kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1500)
-        check(not kate.is_visible("#unlinked") and kate.is_visible("#taphint"), "Kate is recognised from her email; tap hint shown")
+        check(kate.is_visible("#taphint"), "Kate is recognised from her email; tap hint shown")
         first = kate.locator(".run").first
         date = first.get_attribute("data-date")
         names = [n.split()[0] for n in first.locator(".who button[data-cap]").all_inner_texts()]
@@ -179,7 +179,7 @@ try:
         # An email that isn't in src/captains.js can look but not change anything
         guest = page_for(b, "someone@example.com")
         guest.click("#tabbtn-schedule"); guest.wait_for_timeout(1500)
-        check(guest.is_visible("#unlinked") and "VIEW ONLY" in guest.inner_text("#unlinked").upper(), "guest email gets the 'View only' note")
+        check(guest.locator("#unlinked").count() == 0, "no 'View only' note for guests")
         check(guest.locator(".who button[data-cap]").first.is_disabled() and not guest.is_visible("#taphint"), "unlinked email can't change anything")
         r = guest.evaluate("fetch('/api/captain',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({date:'%s',captain:1,state:'yes'})}).then(r=>r.status)" % date)
         check(r == 403, f"API refuses changes from an unlinked email ({r})")

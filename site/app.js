@@ -1048,8 +1048,6 @@ const stateOf=(r,id)=> r.leads.includes(id) ? "lead" : (r.avail[id]||"tbd");
 function renderSchedule(){
   const D=SCH.data; if(!D) return;
   const me=D.me.captain;
-  $("unlinked").classList.toggle("hidden", !!me);
-  $("unlinkedemail").textContent=D.me.email;
   $("taphint").classList.toggle("hidden", !me || SCH.view==="history" || tappedBefore());
   const shown=D.runs.filter(r=>r.date>=SCH.today).slice(0,16);
   renderHistory();
