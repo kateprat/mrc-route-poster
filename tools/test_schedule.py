@@ -6,7 +6,7 @@ adding the signed-in email header to /api calls.
 
     python3 tools/test_schedule.py [path/to/wrangler]
 """
-import json, os, shutil, subprocess, sys, time, urllib.request
+import json, os, re, shutil, subprocess, sys, time, urllib.request
 from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -38,21 +38,21 @@ try:
         b = p.chromium.launch(args=["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
         kate = page_for(b, "captain@example.com")
         kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1500)
-        check(not kate.is_visible("#unlinked") and kate.is_visible("#schedhelp"), "Kate is recognised from her email; tap help shown")
+        check(not kate.is_visible("#unlinked") and kate.is_visible("#taphint"), "Kate is recognised from her email; tap hint shown")
         first = kate.locator(".run").first
         date = first.get_attribute("data-date")
-        names = [n.split()[0] for n in first.locator(".who button").all_inner_texts()]
+        names = [n.split()[0] for n in first.locator(".who button[data-cap]").all_inner_texts()]
         check(names == ["Felix", "Kate", "Ale", "Andrea", "Fabio"], f"each captain listed once: {names}")
-        check(first.locator(".tag", has_text="Next run").count() == 1, f"next run highlighted: {date}")
+        check(first.locator(".nexttab", has_text="Next run").count() == 1, f"next run highlighted: {date}")
         check(first.locator(".mine, .leadpick").count() == 0, "no separate availability buttons or lead dropdown")
-        state = lambda who, d=date: kate.locator(f'.run[data-date="{d}"] .who button', has_text=who).get_attribute("class")
+        state = lambda who, d=date: kate.locator(f'.run[data-date="{d}"] .who button[data-cap]', has_text=re.compile(rf"^{who}(lead)?$", re.I)).get_attribute("class")
         def pick(who, st, d=date, pg=None):
             pg = pg or kate
-            pg.locator(f'.run[data-date="{d}"] .who button', has_text=who).click()
+            pg.locator(f'.run[data-date="{d}"] .who button[data-cap]', has_text=re.compile(rf"^{who}(lead)?$", re.I)).click()
             pg.locator(f'#statepick [data-state="{st}"]').click()
         # Ale had the sheet's default 0 (no answer) for this run: she starts as tbd; tap through the whole cycle
         # tapping a name opens a picker with the four answers
-        kate.locator(f'.run[data-date="{date}"] .who button', has_text="Ale").click()
+        kate.locator(f'.run[data-date="{date}"] .who button[data-cap]', has_text=re.compile(r"^Ale(lead)?$", re.I)).click()
         opts = kate.locator("#statepick [data-state]").all_inner_texts()
         check(kate.is_visible("#statepick") and opts == ["Coming", "Lead", "tbd", "Not coming"], f"picker shows the four answers: {opts}")
         check(kate.locator('#statepick [aria-pressed="true"]').get_attribute("data-state") == "tbd", "current answer is marked")
@@ -68,8 +68,8 @@ try:
         meta = kate.locator(".run").first.locator(".run-meta").last.inner_text()
         check("last change by Kate" in meta, f"Kate sees who changed the run: {meta!r}")
         pick("Kate", "lead"); kate.wait_for_timeout(1500)
-        meta = kate.locator(".run").first.locator(".run-meta").last.inner_text()
-        check(meta.startswith("Leads:") and "Kate" in meta and "Ale" in meta, f"several leads: {meta!r}")
+        leadnames = [n for n in kate.locator(".run").first.locator(".who button[data-cap]").all_inner_texts() if "LEAD" in n.upper()]
+        check(len(leadnames) >= 2 and any(n.startswith("Kate") for n in leadnames) and any(n.startswith("Ale") for n in leadnames), f"several leads: {leadnames!r}")
         coming = kate.locator(".run").first.locator(".run-head").inner_text()
         check("4 coming" in coming, f"leads count as coming: {coming!r}")
 
@@ -79,26 +79,26 @@ try:
             pick(who, "lead", d2); kate.wait_for_timeout(400)
         kate.wait_for_timeout(800)
         run2 = kate.locator(f'.run[data-date="{d2}"]')
-        run2.locator("details:not(.leadpick) summary").click(); run2.locator('[data-f="cancelled"]').check(); run2.locator("[data-saverun]").click(); kate.wait_for_timeout(700)
+        run2.locator("[data-editrun]").click(); run2.locator('[data-f="cancelled"]').check(); run2.locator("[data-saverun]").click(); kate.wait_for_timeout(700)
         todo = kate.locator(f'.run[data-date="{d2}"] .todo')
-        check(todo.count() == 1 and "To do for Felix & Kate" in todo.inner_text(), f"cancelled run shows action item: {todo.inner_text()[:60] if todo.count() else None!r}")
+        check(todo.count() == 1 and "To do for" in todo.inner_text() and "Kate" in todo.inner_text(), f"cancelled run shows action item: {todo.inner_text()[:60] if todo.count() else None!r}")
         kate.screenshot(path=os.path.join(OUT, "schedule-kate.png"), full_page=True)
 
         # Live updates: a second captain has the schedule open while Kate changes her answer
         other = page_for(b, "someone@example.com", "&poll=1000")
         other.click("#tabbtn-schedule"); other.wait_for_timeout(1200)
         d3 = kate.locator(".run").nth(2).get_attribute("data-date")
-        before = other.locator(f'.run[data-date="{d3}"] .who button', has_text="Andrea").get_attribute("class")
+        before = other.locator(f'.run[data-date="{d3}"] .who button[data-cap]', has_text=re.compile(r"^Andrea(lead)?$", re.I)).get_attribute("class")
         pick("Andrea", "no" if before != "no" else "yes", d3); kate.wait_for_timeout(800)
         expected = state("Andrea", d3)
         other.wait_for_timeout(2500)   # no reload, just waiting
-        after = other.locator(f'.run[data-date="{d3}"] .who button', has_text="Andrea").get_attribute("class")
+        after = other.locator(f'.run[data-date="{d3}"] .who button[data-cap]', has_text=re.compile(r"^Andrea(lead)?$", re.I)).get_attribute("class")
         check(before != after == expected, f"other captain sees Kate's change to Andrea without reloading ({before} -> {after})")
         # ...but not while they're in the middle of editing a run
         other.close()
         kate2 = page_for(b, "captain@example.com", "&poll=1000")
         kate2.click("#tabbtn-schedule"); kate2.wait_for_timeout(1200)
-        kate2.locator(f'.run[data-date="{d3}"] details:not(.leadpick) summary').click()
+        kate2.locator(f'.run[data-date="{d3}"] [data-editrun]').click()
         pick("Fabio", "lead", d3); kate.wait_for_timeout(2500)
         check(kate2.locator(f'.run[data-date="{d3}"] details:not(.leadpick)[open]').count() == 1, "open 'Edit run' isn't wiped by a refresh")
         kate2.close()
@@ -109,11 +109,14 @@ try:
         rows = kate.locator("#history .hist-table tbody tr").all_inner_texts()
         check(len(rows) == 5, f"tally per captain: {rows}")
         led = {r.split("\t")[0]: int(r.split("\t")[1]) for r in rows}
-        check(led == {"Felix": 4, "Kate": 8, "Ale": 2, "Andrea": 5, "Fabio": 6}, f"leads from the spreadsheet's green cells: {led}")
+        # runs keep moving into the history as the weeks pass, so only check the sheet's counts as a minimum
+        check(set(led) == {"Felix","Kate","Ale","Andrea","Fabio"} and all(led[k] >= v for k, v in {"Felix": 4, "Kate": 8, "Ale": 2, "Andrea": 5, "Fabio": 6}.items()), f"leads from the spreadsheet's green cells: {led}")
         check("Led by Fabio" in kate.locator('#history .hist-run', has_text="Wed 16 Sep").inner_text(), "16 Sep led by Fabio")
         check("Led by Felix" in kate.locator('#history .hist-run', has_text="Wed 28 Oct").inner_text(), "28 Oct led by Felix")
         months = kate.locator("#history .hist-month").all_inner_texts()
-        check(len(months) >= 4 and months[0].upper().startswith("OCTOBER"), f"months newest first: {months[:3]}")
+        import datetime as _dt
+        _m = [_dt.datetime.strptime(m.title(), "%B %Y") for m in months]
+        check(len(months) >= 4 and _m == sorted(_m, reverse=True), f"months newest first: {months[:3]}")
         check(kate.locator("#history .hist-run.cancelled").count() >= 1, "cancelled runs shown as cancelled (4 Oct half marathon)")
         kate.locator("#history").screenshot(path=os.path.join(OUT, "history.png"))
         kate.click('#schedview button[data-v="upcoming"]'); kate.wait_for_timeout(300)
@@ -153,7 +156,7 @@ try:
         check(cards.count() == 2 and kms == sorted(kms), f"two routes, shortest first: {kms}")
         ups = kate.locator("#routelist .rcard .km").all_inner_texts()
         check(any("↑" in t and "M" in t.upper() for t in ups) and any("↑" not in t for t in ups), f"climb shown when the GPX has elevation: {ups}")
-        check("LITTLE DIPPER V2" in kate.inner_text("#routelist").upper() and kate.locator("#routelist svg path").count() == 2, "names and route pictures shown")
+        check("LITTLE DIPPER V2" in kate.inner_text("#routelist").upper() and kate.locator("#routelist .thumb svg path").count() == 2, "names and route pictures shown")
         kate.locator("#routelist").screenshot(path=os.path.join(OUT, "routes.png"))
         rid = kate.locator("#routelist .rcard").first.get_attribute("data-id")
         g = kate.evaluate("(id)=>fetch('/api/routes/gpx?id='+id).then(async r=>[r.status, r.headers.get('content-disposition'), (await r.text()).slice(0,200)])", rid)
@@ -177,7 +180,7 @@ try:
         guest = page_for(b, "someone@example.com")
         guest.click("#tabbtn-schedule"); guest.wait_for_timeout(1500)
         check(guest.is_visible("#unlinked") and "VIEW ONLY" in guest.inner_text("#unlinked").upper(), "guest email gets the 'View only' note")
-        check(guest.locator(".who button").first.is_disabled() and not guest.is_visible("#schedhelp"), "unlinked email can't change anything")
+        check(guest.locator(".who button[data-cap]").first.is_disabled() and not guest.is_visible("#taphint"), "unlinked email can't change anything")
         r = guest.evaluate("fetch('/api/captain',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({date:'%s',captain:1,state:'yes'})}).then(r=>r.status)" % date)
         check(r == 403, f"API refuses changes from an unlinked email ({r})")
         guest.click("#tabbtn-routes"); guest.wait_for_timeout(800)

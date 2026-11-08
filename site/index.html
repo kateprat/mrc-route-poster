@@ -41,6 +41,7 @@ body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:
 .wrap{max-width:640px;margin:0 auto}
 header{padding:20px 0 8px;display:flex;align-items:center;gap:12px}
 .head-title{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 14px;min-width:0}
+.titlerow{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;min-width:0}
 h1{font-family:var(--display);font-weight:700;font-size:32px;line-height:1.05;margin:0;letter-spacing:-.01em}
 h1 span{color:var(--accent)}
 header p{margin:0;color:var(--muted);font-size:14px}
@@ -115,6 +116,16 @@ details[open] summary::after{content:" –"}
 .tabs button[aria-selected="true"] svg{background:var(--accent);color:var(--accent-ink)}
 .run{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:12px 0}
 .run.next{border:2px solid var(--accent)}
+/* next run: a tab on the top-right of the border, so the date line keeps "x coming" like every run */
+.run{position:relative}
+.run .nexttab{position:absolute;top:-10px;right:14px;background:var(--accent);color:var(--accent-ink);font:900 10px/1 var(--sub);letter-spacing:.12em;text-transform:uppercase;padding:5px 8px;border-radius:999px}
+/* ✎ Edit sits at the end of the names (bottom right); it opens the run's edit form */
+.run details.runedit>summary{display:none}
+.who .editbtn{appearance:none;margin-left:auto;align-self:center;display:inline-flex;align-items:center;gap:6px;background:none!important;border:0!important;
+  padding:10px 4px;min-height:44px;font:900 13px/1 var(--sub);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)!important;cursor:pointer}
+/* small line icons next to button words (same style as the tab bar) */
+.ico{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+.btn .ico{margin-right:-2px}
 .run.cancelled{opacity:.55}
 .run-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
 .run-date{font-family:var(--display);font-weight:700;font-size:22px;line-height:1.1}
@@ -249,9 +260,11 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
 .more-menu .menu{min-width:270px}
 .onlyyou{margin:4px 0 0;padding-left:18px;font-size:13px;line-height:1.35;color:var(--ink);max-width:250px}
 .onlyyou li{margin:0 0 4px}
-.viewbanner{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0 0;padding:6px 6px 6px 12px;
-  background:var(--note);border:1.5px solid var(--note-line);border-radius:12px;font-size:14px;color:var(--ink)}
-.viewbanner .linkbtn{min-height:32px;padding:4px 6px;color:var(--ink)}
+/* Kate only: which view she's looking at, next to the logo; tap to go back to her own view */
+.viewpill{appearance:none;align-self:center;display:inline-flex;align-items:center;gap:6px;padding:5px 8px 5px 10px;border-radius:999px;cursor:pointer;
+  background:var(--note);border:1.5px solid var(--note-line);color:var(--ink);font:900 11px/1 var(--sub);letter-spacing:.08em;text-transform:uppercase}
+.viewpill .x{font:600 12px/1 var(--body);opacity:.7;margin-left:2px}
+.viewpill .ico{width:15px;height:15px}
 .more-menu .menu-seg[aria-label="Mikkeller colours"]{flex-wrap:wrap}
 .more-menu .menu-seg[aria-label="Mikkeller colours"] button{flex:0 0 calc(50% - 2px)}
 .more-menu .menu-seg i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px;box-shadow:0 0 0 1.5px var(--muted)}
@@ -270,7 +283,8 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
 <body>
 <div class="wrap">
   <header>
-    <div class="head-title"><h1>MRC <span>ZH</span></h1>
+    <div class="head-title"><div class="titlerow"><h1>MRC <span>ZH</span></h1>
+    <button type="button" id="viewpill" class="viewpill hidden" aria-label="Back to my view"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span id="viewpilltext"></span><span class="x" aria-hidden="true">✕</span></button></div>
     <p>Mikkeller Run Club Zurich</p></div>
     <div class="more-menu"><button type="button" id="menubtn" aria-label="More options" aria-expanded="false" aria-controls="moremenu">⋯</button>
   <div id="moremenu" class="menu" hidden><p class="menu-h">Theme</p>
@@ -285,7 +299,6 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
     </div></div></div>
   </header>
 
-  <div id="viewbanner" class="viewbanner hidden" role="status"><span id="viewbannertext"></span><button type="button" class="linkbtn" id="viewback">Back to my view</button></div>
   <nav class="tabs" role="tablist" aria-label="Sections">
     <button type="button" role="tab" id="tabbtn-poster" aria-selected="true" aria-controls="tab-poster"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 15c2-5 4 1 6-3s2-2 2-2"/></svg><span>Route post</span></button>
     <button type="button" role="tab" id="tabbtn-schedule" aria-selected="false" aria-controls="tab-schedule"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>Schedule</span></button>
@@ -374,7 +387,7 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
       <p style="margin:0">You can see who’s coming and leading, and make route posts. Changes to the schedule are made by the captains.</p>
       <span id="unlinkedemail" hidden></span>
     </div>
-    <div class="legend hidden" id="schedhelp" aria-hidden="true"><span class="k" style="background:var(--ok);border-color:var(--ok);color:var(--ok-ink)">coming</span><span class="k" style="background:var(--lead);border-color:var(--lead);color:var(--lead-ink)">lead</span><span class="k" style="background:var(--panel);color:var(--ink)">tbd</span><span class="k" style="text-decoration:line-through;border-style:dashed;opacity:.7">not coming</span><span>· tap a name</span></div>
+    <p class="hint hidden" id="taphint" style="text-align:left;margin:0 2px 10px">Tap a name to set coming, lead, tbd or not coming.</p>
     <div class="seg" id="schedview" role="group" aria-label="Schedule view" style="margin:12px 0 0">
       <button type="button" data-v="upcoming" aria-pressed="true">Upcoming</button>
       <button type="button" data-v="history" aria-pressed="false">History (12 months)</button>
@@ -438,13 +451,13 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
 <div id="statepick" class="statepick hidden" role="menu"></div>
 
 <div class="actions hidden" id="actions"><div class="wrap">
-  <button type="button" class="btn" id="share">Share</button>
+  <button type="button" class="btn" id="share"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M6 12v7h12v-7"/></svg><span>Share</span></button>
 </div></div>
 
 <!-- off-screen map used to draw the post; wrapped in a 0×0 box so its 1350 px height can't stretch the page on iPhone -->
 <div aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none"><div id="mapbox" style="position:absolute;left:0;top:0;width:1080px;height:1920px"></div><div id="thumbbox" style="position:absolute;left:0;top:0;width:288px;height:288px"></div></div>
 <script src="vendor/maplibre-gl.js"></script>
-<script src="app.js?v=owner1"></script>
+<script src="app.js?v=sched2"></script>
 <script>
 /* ⋯ menu: theme Auto / Light / Dark or a Mikkeller colour theme, remembered on this phone */
 (function(){const root=document.documentElement, btn=document.getElementById("menubtn"), m=document.getElementById("moremenu");

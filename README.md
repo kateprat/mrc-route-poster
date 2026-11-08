@@ -39,6 +39,11 @@ Every route we've run, shortest first, each with a picture of the line on the ma
 - **Suggest a loop**: pick 4–8 km and tap **Suggest loops**. The app plans loops from the bar (where most saved routes start) in six directions with BRouter (brouter.de) and our running profile `src/mrc-run.brf`: paths, parks and quiet streets first, big roads avoided, each traffic light counted as a 400 m detour, and other street crossings as shorter ones: 120 m for a zebra or unmarked crossing, 60 m for tram or rail tracks, 120–320 m for crossing a main road where nothing is marked (BRouter's estimate of how busy it is). The numbers are at the top of `src/mrc-run.brf`. Each loop goes through two points either side of its direction; every 90° turn costs 40 m so straighter routes win, and out-and-back spurs (where the line returns to the same spot within 600 m) are cut. Loops off by more than 10 % are rescaled once. Ties on lights go to the smoother loop (fewer turns per km). The four with the fewest lights are shown; **Use** opens one in Route post, **GPX** downloads it to check first, **Save to library** adds it to the routes.
 - Overpass and BRouter are free community services, so the app only asks them when someone taps. Check a suggested loop before posting it: the data doesn't know about lighting, building sites or how busy a path is.
 
+### Only for Kate
+
+- The ⋯ menu has **View as: Me · Captain · Guest**, to see the app the way others do (on Kate's phone only; nothing changes for anyone else). A small tag next to the logo shows which view is on; tap it to go back.
+- The menu also lists **what only Kate sees** (who last changed a run; anyone hidden from upcoming runs in her view, set with `OWNER_HIDES` in `src/worker.js`).
+
 ### Schedule tab
 
 Replaces the old `MRC-leads.xlsx` availability sheet (its rows up to January 2027 were imported).

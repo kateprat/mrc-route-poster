@@ -795,7 +795,7 @@ function renderSuggestions(){
   $("suglist").innerHTML=(SUG.list||[]).map(r=>`<article class="rcard"><div class="thumb" data-thumb="${r.id}">${routeSVG(r.pts)}</div>
     <div><span class="km">${r.km.toFixed(1)} km${r.up!=null?` · ↑ ${r.up} m`:""}<span class="lights" data-lights="${r.id}">${lightsText(r)}</span></span><h3>${esc(r.name)}</h3>
       <div class="btns"><button type="button" class="btn" data-suse="${r.id}">Use</button>
-        <button type="button" class="btn ghost" data-sgpx="${r.id}">GPX</button>
+        <button type="button" class="btn ghost" data-sgpx="${r.id}" aria-label="Download GPX"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg><span>GPX</span></button>
         ${LIB.canEdit?`<button type="button" class="btn ghost" data-ssave="${r.id}" aria-label="Save ${esc(r.name)} to the route library">Save</button>`:""}</div></div></article>`).join("");
   queueThumbs(SUG.list);
 }
@@ -837,8 +837,8 @@ function renderRoutes(){
       <div><span class="km">${r.km.toFixed(1)} km${r.up!=null?` · ↑ ${r.up} m`:""}<span class="lights" data-lights="${r.id}">${lightsText(r)}</span></span><h3>${esc(r.name)}</h3>
         <p class="meta">${[when, r.addedBy?`added by ${esc(r.addedBy)}`:""].filter(Boolean).join(" · ")}</p>
         <div class="btns"><button type="button" class="btn" data-use="${r.id}" aria-label="Use ${esc(r.name)} for a route post">Use</button>
-          <button type="button" class="btn ghost" data-gpx="${r.id}">GPX</button>
-          ${LIB.canEdit?`<button type="button" class="btn ghost" data-edit="${r.id}">Edit</button>`:""}</div></div>
+          <button type="button" class="btn ghost" data-gpx="${r.id}" aria-label="Download GPX"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg><span>GPX</span></button>
+          ${LIB.canEdit?`<button type="button" class="btn ghost" data-edit="${r.id}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M14 6l4 4"/></svg><span>Edit</span></button>`:""}</div></div>
       ${LIB.canEdit?`<div class="edit hidden" id="edit-${r.id}">
         <div><label for="en-${r.id}">Title</label><input id="en-${r.id}" type="text" value="${esc(r.name)}" autocomplete="off"></div>
         <div><label for="ed-${r.id}">Run date</label><input id="ed-${r.id}" type="date" value="${esc(r.date)}"></div>
@@ -964,13 +964,14 @@ function runOn(date){ return SCH.data ? SCH.data.runs.find(r=>r.date===date) : n
    "Captain" and "Guest" strip those here, on her phone only; "Guest" also turns off editing. */
 const OWNER_ONLY = [
   "Who last changed a run (Schedule)",
-  "Ale left out of upcoming runs while she’s away (shown if she’s coming or leading)",
   "This View as switch",
 ];
+let OWNER_HIDDEN=[];   // names left out of upcoming runs in Kate's view (set in src/worker.js, OWNER_HIDES)
 let IS_OWNER=false;
 const viewAs = () => { try{ return localStorage.getItem("mrc-view")||"me"; }catch(e){ return "me"; } };   // only Kate can set it
 function asViewed(j){
   IS_OWNER = !!(j.me && j.me.owner);
+  if(IS_OWNER) OWNER_HIDDEN=(j.me.hide||[]).map(id=>(j.captains.find(c=>c.id===id)||{}).name).filter(Boolean);
   const v=viewAs(); if(v==="me") return j;
   const c=JSON.parse(JSON.stringify(j));
   c.me.owner=false; c.me.hide=[]; c.runs.forEach(r=>r.changedBy="");
@@ -981,9 +982,10 @@ function renderOwnerMenu(){
   $("ownermenu").hidden=!IS_OWNER; if(!IS_OWNER) return;
   const v=viewAs();
   $("ownermenu").querySelectorAll("[data-view]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.view===v)));
-  $("onlyyou").innerHTML=OWNER_ONLY.map(t=>`<li>${esc(t)}</li>`).join("");
-  $("viewbanner").classList.toggle("hidden", v==="me");
-  $("viewbannertext").textContent = v==="guest" ? "Guest view (read only)" : "Captain view";
+  const items=[...OWNER_ONLY]; if(OWNER_HIDDEN.length) items.splice(1,0,`${OWNER_HIDDEN.join(", ")} left out of upcoming runs (shown if coming or leading)`);
+  $("onlyyou").innerHTML=items.map(t=>`<li>${esc(t)}</li>`).join("");
+  $("viewpill").classList.toggle("hidden", v==="me");
+  $("viewpilltext").textContent = v==="guest" ? "Guest view" : "Captain view";
 }
 function setView(v){
   try{ localStorage.setItem("mrc-view", v); }catch(e){}
@@ -1037,7 +1039,7 @@ function renderSchedule(){
   const me=D.me.captain;
   $("unlinked").classList.toggle("hidden", !!me);
   $("unlinkedemail").textContent=D.me.email;
-  $("schedhelp").classList.toggle("hidden", !me || SCH.view==="history");
+  $("taphint").classList.toggle("hidden", !me || SCH.view==="history" || tappedBefore());
   const shown=D.runs.filter(r=>r.date>=SCH.today).slice(0,16);
   renderHistory();
   const nxt=nextRun();
@@ -1045,18 +1047,18 @@ function renderSchedule(){
     const coming=D.captains.filter(c=>["yes","lead"].includes(stateOf(r,c.id)));
     const leadNames=names(r.leads);
     const past=r.date<SCH.today, editable=!!me && !past;
-    return `<article class="run ${r===nxt?"next":""} ${r.cancelled?"cancelled":""}" data-date="${r.date}">
+    return `<article class="run ${r===nxt?"next":""} ${r.cancelled?"cancelled":""}" data-date="${r.date}">${r===nxt?'<span class="nexttab">Next run</span>':""}
       <div class="run-head">
         <div><span class="run-date">${niceDate(r.date)}</span> <span class="run-meta">${esc(r.time)}</span></div>
-        <div>${r===nxt?'<span class="tag">Next run</span> ':""}${r.cancelled?'<span class="tag muted">Cancelled</span>':`<span class="run-meta">${coming.length} coming</span>`}</div>
+        <div>${r.cancelled?'<span class="tag muted">Cancelled</span>':`<span class="run-meta">${coming.length} coming</span>`}</div>
       </div>
       ${r.note?`<p class="run-note">${esc(r.note)}</p>`:""}
       ${r.cancelled && !past ? `<div class="todo"><strong>To do for ${leadNames?esc(leadNames):"the captain who was going to lead"}:</strong>
         Post an Instagram story (and edit the run post) saying the run is off and why, update the “next run” board in the bar, and tell the other captains. A cancelled run should stay the exception.</div>` : ""}
       <div class="who" role="group" aria-label="Captains on ${niceDate(r.date)}">${D.captains.filter(c=>!(D.me.hide||[]).includes(c.id) || ["yes","lead"].includes(stateOf(r,c.id))).map(c=>{ const st=stateOf(r,c.id);
-        return `<button type="button" class="${st}" data-cap="${c.id}" ${editable?"":"disabled"} aria-label="${esc(c.name)}: ${STATE_TEXT[st]}${editable?". Tap to change.":""}" aria-haspopup="menu">${esc(c.name)}${st==="lead"?'<span class="leadmark">lead</span>':""}</button>`; }).join("")}</div>
-      <p class="run-meta" style="margin:2px 0 0">${[r.leads.length?"":"No lead yet", r.changedBy?`last change by ${esc(r.changedBy)}`:""].filter(Boolean).join(" · ")}</p>
-      ${editable ? `<details style="margin-top:8px"><summary>Edit run</summary>
+        return `<button type="button" class="${st}" data-cap="${c.id}" ${editable?"":"disabled"} aria-label="${esc(c.name)}: ${STATE_TEXT[st]}${editable?". Tap to change.":""}" aria-haspopup="menu">${esc(c.name)}${st==="lead"?'<span class="leadmark">lead</span>':""}</button>`; }).join("")}${editable?`<button type="button" class="editbtn" data-editrun aria-expanded="false"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M14 6l4 4"/></svg><span>Edit</span></button>`:""}</div>
+      ${(()=>{ const m=[r.leads.length?"":"No lead yet", r.changedBy?`last change by ${esc(r.changedBy)}`:""].filter(Boolean).join(" · "); return m?`<p class="run-meta" style="margin:2px 0 0">${m}</p>`:""; })()}
+      ${editable ? `<details class="runedit" style="margin-top:8px"><summary>Edit run</summary>
         <div class="grid" style="margin-top:10px">
           <div><label for="t-${r.date}">Time</label><input id="t-${r.date}" type="time" value="${esc(r.time)}" data-f="time"></div>
           <div style="align-self:end"><label class="check"><input type="checkbox" data-f="cancelled" ${r.cancelled?"checked":""}> Cancelled</label></div>
@@ -1099,7 +1101,10 @@ function renderHistory(){
 let capQueue=Promise.resolve(), capPending=0;
 /* Tapping a name opens a small picker with the four answers. */
 const PICK=[["yes","Coming"],["lead","Lead"],["tbd","tbd"],["no","Not coming"]];
+/* the "Tap a name…" hint shows until a captain has tapped a name once (remembered on this phone) */
+const tappedBefore = () => { try{ return localStorage.getItem("mrc-tapped")==="1"; }catch(e){ return false; } };
 function openPicker(btn, date, id){
+  try{ localStorage.setItem("mrc-tapped","1"); }catch(e){} $("taphint").classList.add("hidden");
   const r=runOn(date), c=captain(id), box=$("statepick"); if(!r||!c) return;
   const cur=stateOf(r,id);
   box.innerHTML=`<p class="sp-h">${esc(c.name)} · ${niceDate(date)}</p><div class="sp-opts">`+
@@ -1136,6 +1141,8 @@ function initSchedule(){
   document.addEventListener("keydown",e=>{ if(e.key==="Escape") closePicker(); });
   $("runs").addEventListener("click",e=>{
     const art=e.target.closest(".run"); if(!art) return;
+    const ed=e.target.closest("[data-editrun]");
+    if(ed){ const d=art.querySelector("details.runedit"); if(d){ d.open=!d.open; ed.setAttribute("aria-expanded",String(d.open)); } return; }
     const cap=e.target.closest(".who button[data-cap]");
     if(cap && !cap.disabled){ e.stopPropagation(); openPicker(cap, art.dataset.date, Number(cap.dataset.cap)); return; }
     if(e.target.closest("[data-saverun]")){
@@ -1147,7 +1154,7 @@ function initSchedule(){
   $("schedview").addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return;
     SCH.view=b.dataset.v; $("schedview").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
     const hist=SCH.view==="history";
-    $("history").classList.toggle("hidden",!hist); ["runs","addrun","schedhelp"].forEach(id=>$(id).classList.toggle("hidden",hist || (id==="schedhelp" && !(SCH.data&&SCH.data.me.captain))));
+    $("history").classList.toggle("hidden",!hist); ["runs","addrun","taphint"].forEach(id=>$(id).classList.toggle("hidden",hist || (id==="taphint" && (!(SCH.data&&SCH.data.me.captain) || tappedBefore()))));
     renderSchedule(); });
   $("newsave").addEventListener("click",async()=>{ if(await schedCall("/api/run",{date:$("newdate").value, time:$("newtime").value, note:$("newnote").value, cancelled:false})){ $("newnote").value=""; $("addrun").open=false; } });
   const tabs={poster:$("tabbtn-poster"), schedule:$("tabbtn-schedule"), routes:$("tabbtn-routes")};
@@ -1201,7 +1208,7 @@ async function signOut(e){
 
 function initOwnerMenu(){
   $("ownermenu").addEventListener("click",e=>{ const b=e.target.closest("[data-view]"); if(b) setView(b.dataset.view); });
-  $("viewback").addEventListener("click",()=>setView("me"));
+  $("viewpill").addEventListener("click",()=>setView("me"));
 }
 function init(){
   initOwnerMenu();
