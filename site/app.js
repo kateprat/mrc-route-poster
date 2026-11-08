@@ -331,6 +331,8 @@ function setItem(k, patch){
   (S.items[S.fmt] ||= {})[k]=it; scheduleDraw();
 }
 function textMoved(){ return !!S.items[S.fmt]; }
+/* anything moved from where the app first put it: text in this format, or the map zoomed / dragged */
+function viewMoved(){ return textMoved() || Math.abs(S.zoom-1)>0.005 || Math.hypot(S.pan.x,S.pan.y)>1e-9; }
 /* Draw one item around its centre (cx,cy) with its offset, angle and size; remember where it is for touches. */
 function drawItem(k, cx, cy, w, h, paint){
   const it=itemOf(k), X=cx+it.dx, Y=cy+it.dy;
@@ -403,7 +405,7 @@ function draw(){
     if(S.guides.v){ ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke(); }
     if(S.guides.h){ ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke(); }
     ctx.restore(); }
-  $("beerreset").classList.toggle("hidden", !textMoved() || S.fmt==="route");
+  $("beerreset").classList.toggle("hidden", !viewMoved());
   const st=$("status");
   if(S.fmt!=="route" && M.error && !M.ready){ st.textContent="Map couldn’t load. Check your connection and reload."; st.classList.add("warn"); }
   else if(S.fmt!=="route" && !mapOk){ st.textContent="Loading map…"; st.classList.remove("warn"); }
@@ -505,7 +507,6 @@ async function pasteGpx(){
 function startOver(){
   S.routes=[]; S.mpts=null; S.rpts=null; S.view=null; S.items={}; S.pan={x:0,y:0}; S.zoom=1;
   Object.assign(S, ADV_DEFAULTS);
-  $("zoom").value=100; $("zoomv").textContent="100%";
   $("width").value=S.width; $("widthv").textContent=S.width;
   $("simplify").value=S.simplify; $("simplifyv").textContent=S.simplify+" m";
   $("title").value=""; $("distinfo").innerHTML="";
@@ -521,7 +522,7 @@ async function loadRoute(read){
   try{
     const r=await read();
     $("libstatus").textContent=""; $("libdup").classList.add("hidden");
-    S.routes=[r]; S.zoom=1; $("zoom").value=100; $("zoomv").textContent="100%"; S.items={};
+    S.routes=[r]; S.zoom=1; S.items={};
     $("title").value=cleanTitle(r.name);
     fillFromSchedule(true);
     if(!$("date").value) $("date").value=nextWednesday();
@@ -1154,11 +1155,10 @@ function init(){
   loadRoutes();
   seg("fmt","fmt");
   seg("color","color",savePrefs);
-  range("zoom","zoom",v=>v+"%",v=>v/100);
   range("width","width",v=>v,Number);
   range("simplify","simplify",v=>v+" m",Number,prepareRoute);
   $("advreset").addEventListener("click",resetAdvanced);
-  $("beerreset").addEventListener("click",()=>{ delete S.items[S.fmt]; scheduleDraw(); });
+  $("beerreset").addEventListener("click",()=>{ delete S.items[S.fmt]; S.zoom=1; S.pan={x:0,y:0}; scheduleDraw(); });
   ["title","date"].forEach(i=>$(i).addEventListener("input",scheduleDraw));
   $("gpx").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadFile(f); e.target.value=""; });
   $("gpx2").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadSecond(f); e.target.value=""; });
@@ -1212,7 +1212,7 @@ function init(){
     if(ptrs.size===2 && g0){ const t=twoFinger();
       if(key){ setItem(key,{scale:g0.scale*t.d/g0.d, rot:straight(g0.rot+(t.ang-g0.ang)*180/Math.PI)}); return; }
       const z=Math.max(.5,Math.min(2,g0.zoom*t.d/g0.d));
-      S.zoom=z; $("zoom").value=Math.round(z*100); $("zoomv").textContent=Math.round(z*100)+"%"; scheduleDraw(); return; }
+      S.zoom=z; scheduleDraw(); return; }
     if(ptrs.size===1 && last){
       const dx=(e.clientX-last.x)*k, dy=(e.clientY-last.y)*k; last={x:e.clientX,y:e.clientY};
       if(key){ raw.dx+=dx; raw.dy+=dy; setItem(key, sticky(key, raw.dx, raw.dy)); }
