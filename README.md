@@ -11,6 +11,7 @@ It replaces the old Inkscape workflow (GPX → SVG converter → Snazzy Maps scr
 Everything here stays on your own phone; nobody else sees your edits.
 
 - Shows distance, climb and 🚦 traffic lights for the GPX.
+- Two routes (Add a second route): where they share streets they run side by side, the shorter one on the inside, each at its normal width; the shared stretch of the shorter route is snapped onto the longer one so GPS wobble doesn't show.
 - Load a GPX file, or tap **Paste a GPX** to paste a copied GPX file (in Files: press and hold → Copy; on a laptop, Cmd+V anywhere works; GPX text works too). **✕ Remove GPX** at the top clears everything; **Change GPX** loads another.
 - Reads the GPX on the phone (nothing is uploaded unless you save it to the route library): the **distance** comes straight from the GPX, the **title** from its name (`261014_MRC_LITTLE-DIPPER` becomes LITTLE DIPPER, editable), the **date** from the next run in the schedule.
 - Draws the MRC grey street map with the route on top in **burgundy `#882c29`** or **blue `#3584ba`**.

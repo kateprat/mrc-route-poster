@@ -186,6 +186,47 @@ function mapSettled(timeout=8000){
 /* ---------- drawing ---------- */
 const otherColor = c => c===COLORS[0] ? COLORS[1] : COLORS[0];
 const routeColor = i => i===0 ? S.color : otherColor(S.color);
+/* Two routes on the same streets: draw them side by side, like lines on a metro map.
+   The shorter route's shared stretches are snapped onto the longer one (so GPS wobble doesn't matter)
+   and both lines are moved half a line width apart, the shorter one to the inside of the longer loop.
+   Where they meet or split, the lines ease apart over a few line widths. Both keep their normal width. */
+function sideBySide(pa, pb, w, tol){
+  const dense=(pts,step)=>{ const out=[]; for(let i=1;i<pts.length;i++){ const a=pts[i-1], b=pts[i], n=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)/step));
+      for(let k=0;k<n;k++) out.push({x:a.x+(b.x-a.x)*k/n, y:a.y+(b.y-a.y)*k/n}); } out.push(pts[pts.length-1]); return out; };
+  const step=Math.max(2,w/4), A=dense(pa,step), B=dense(pb,step), cell=Math.max(tol*2,8);
+  // grid of segments for fast "nearest point on the other line"
+  const grid=line=>{ const g=new Map(); for(let i=1;i<line.length;i++){ const a=line[i-1], b=line[i];
+      const k=Math.floor((a.x+b.x)/2/cell)+":"+Math.floor((a.y+b.y)/2/cell); (g.get(k)||g.set(k,[]).get(k)).push(i); } return g; };
+  const near=(p,line,g)=>{ let best=null; const cx=Math.floor(p.x/cell), cy=Math.floor(p.y/cell);
+    for(let dx=-1;dx<=1;dx++) for(let dy=-1;dy<=1;dy++) for(const i of g.get((cx+dx)+":"+(cy+dy))||[]){
+      const a=line[i-1], b=line[i], vx=b.x-a.x, vy=b.y-a.y, L2=vx*vx+vy*vy||1, t=Math.max(0,Math.min(1,((p.x-a.x)*vx+(p.y-a.y)*vy)/L2));
+      const q={x:a.x+t*vx, y:a.y+t*vy}, d=Math.hypot(p.x-q.x,p.y-q.y);
+      if(!best||d<best.d) best={d, q, i}; }
+    return best; };
+  // direction along the longer line, looked at over a few line widths (no kinks from single GPS points)
+  const K=Math.max(2,Math.ceil(w*1.5/step));
+  const dirA=i=>{ const a=A[Math.max(0,i-K)], b=A[Math.min(A.length-1,i+K)], L=Math.hypot(b.x-a.x,b.y-a.y)||1; return {ux:(b.x-a.x)/L, uy:(b.y-a.y)/L}; };
+  const gA=grid(A), gB=grid(B);
+  // on the same street = within tol of the other line; short gaps (GPS drifting apart for a moment) are bridged
+  const shared=(line,other,g)=>{ const f=line.map(p=>{ const n=near(p,other,g); return !!n && n.d<tol; });
+    const gap=Math.ceil(w*3/step); let i=0;
+    while(i<f.length){ if(f[i]){ i++; continue; } let j=i; while(j<f.length && !f[j]) j++;
+      if(i>0 && j<f.length && j-i<=gap) for(let k=i;k<j;k++) f[k]=true; i=j; }
+    return f; };
+  const ease=(line,flags)=>{ const cum=[0]; for(let i=1;i<line.length;i++) cum.push(cum[i-1]+Math.hypot(line[i].x-line[i-1].x,line[i].y-line[i-1].y));
+    const R=w*3, out=new Array(line.length).fill(0); let last=-Infinity;
+    for(let i=0;i<line.length;i++){ if(!flags[i]) last=cum[i]; out[i]=flags[i]?cum[i]-last:0; }
+    last=Infinity; for(let i=line.length-1;i>=0;i--){ if(!flags[i]) last=cum[i]; if(flags[i]) out[i]=Math.min(out[i], last-cum[i]); }
+    return out.map(d=>{ const x=Math.min(1,d/R); return x*x*(3-2*x); }); };
+  let area=0; for(let i=1;i<pa.length;i++) area+=pa[i-1].x*pa[i].y-pa[i].x*pa[i-1].y;
+  const out=area>0?-1:1, h=w/2;                       // which side is outside the longer loop
+  const sa=ease(A,shared(A,B,gB)), sb=ease(B,shared(B,A,gA));
+  const A2=A.map((p,i)=>{ if(!sa[i]) return p; const d=dirA(i); return {x:p.x-d.uy*out*h*sa[i], y:p.y+d.ux*out*h*sa[i]}; });
+  const B2=B.map((p,i)=>{ if(!sb[i]) return p; const n=near(p,A,gA); if(!n) return p; const d=dirA(n.i);
+    const tx=n.q.x+d.uy*out*h, ty=n.q.y-d.ux*out*h; return {x:p.x+(tx-p.x)*sb[i], y:p.y+(ty-p.y)*sb[i]}; });
+  const smooth=(l,k)=>{ for(let r=0;r<k;r++) l=[l[0], ...l.slice(1,-1).map((p,i)=>({x:(l[i].x+2*p.x+l[i+2].x)/4, y:(l[i].y+2*p.y+l[i+2].y)/4})), l[l.length-1]]; return l; };
+  return [smooth(A2,3), smooth(B2,3)];
+}
 function strokeRoute(px, w, color){
   ctx.save(); ctx.lineJoin="round"; ctx.lineCap="round"; ctx.lineWidth=w; ctx.strokeStyle=color;
   ctx.beginPath(); px.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke(); ctx.restore();
@@ -347,8 +388,14 @@ function draw(){
   let mapOk=true;
   if(S.fmt==="route"){ ctx.clearRect(0,0,W,H); S.hits={}; }
   else mapOk=drawMap(V,W,H);
-  // second route first, so the main route sits on top where they share streets
-  for(let i=S.rpts.length-1;i>=0;i--){ let px=S.rpts[i].map(V.toPx); if(S.round) px=chaikin(px,3); strokeRoute(px, S.width, routeColor(i)); }
+  const lines=S.rpts.map(r=>{ let px=r.map(V.toPx); if(S.round) px=chaikin(px,3); return px; });
+  if(lines.length===2){
+    // two routes: side by side where they share streets (the longer one keeps its line, the shorter goes inside)
+    const long=S.routes[0].total>=S.routes[1].total?0:1, short=1-long;
+    const tol=Math.max(S.width*1.3, 15*V.scale/metresPerUnit(S.routes[0].pts[0].lat));
+    const [a,b]=sideBySide(lines[long], lines[short], S.width, tol);
+    strokeRoute(a, S.width, routeColor(long)); strokeRoute(b, S.width, routeColor(short));
+  } else lines.forEach((px,i)=>strokeRoute(px, S.width, routeColor(i)));
   if(S.fmt!=="route") drawText(F,W,H);
   if(S.guides && S.fmt!=="route"){ // centre guide lines while text sticks to them (preview only)
     ctx.save(); ctx.strokeStyle="#3584ba"; ctx.lineWidth=3; ctx.setLineDash([16,12]);
