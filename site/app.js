@@ -330,6 +330,13 @@ function setItem(k, patch){
   it.rot=((it.rot+180)%360+360)%360-180;
   (S.items[S.fmt] ||= {})[k]=it; scheduleDraw();
 }
+/* Keep the invisible date field over the date on the post (none on "Route only"). */
+function placeDateField(){
+  const el=$("date"), b=S.dateBox, show=S.fmt!=="route" && b;
+  el.style.display = show ? "" : "none"; if(!show) return;
+  el.style.left=(b.x/b.W*100)+"%"; el.style.top=(b.y/b.H*100)+"%";
+  el.style.width=(b.w/b.W*100)+"%"; el.style.height=(b.h/b.H*100)+"%";
+}
 function textMoved(){ return !!S.items[S.fmt]; }
 /* anything moved from where the app first put it: text in this format, or the map zoomed / dragged */
 function viewMoved(){ return textMoved() || Math.abs(S.zoom-1)>0.005 || Math.hypot(S.pan.x,S.pan.y)>1e-9; }
@@ -370,7 +377,11 @@ function drawText(F, W, H){
   const bw=ctx.measureText("FREE BEER!").width, bh=76;
   drawItem("beer", W/2, F.h*F.beer+bh/2, bw, bh, ()=>{ ctx.textBaseline="middle"; ctx.fillText("FREE BEER!", 0, 0); });
   const date=fmtDate($("date").value);
-  if(date){ ctx.textAlign="right"; ctx.textBaseline="bottom"; ctx.font=`58px "MikkelWind"`; ctx.fillText(date, W-40, H-F.dateY); }   // digits and full stops are all in the font
+  ctx.textAlign="right"; ctx.textBaseline="bottom"; ctx.font=`58px "MikkelWind"`;
+  if(date) ctx.fillText(date, W-40, H-F.dateY);   // digits and full stops are all in the font
+  // where the date is, so the invisible date field can sit on top of it (also when it's empty)
+  const dw=ctx.measureText(date||"11.11.2026").width, pad=24;
+  S.dateBox={x:W-40-dw-pad, y:H-F.dateY-58-pad, w:dw+2*pad, h:58+2*pad, W, H};
   ctx.restore();
 }
 
@@ -406,6 +417,7 @@ function draw(){
     if(S.guides.h){ ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke(); }
     ctx.restore(); }
   $("beerreset").classList.toggle("hidden", !viewMoved());
+  placeDateField();
   const st=$("status");
   if(S.fmt!=="route" && M.error && !M.ready){ st.textContent="Map couldn’t load. Check your connection and reload."; st.classList.add("warn"); }
   else if(S.fmt!=="route" && !mapOk){ st.textContent="Loading map…"; st.classList.remove("warn"); }

@@ -10,7 +10,7 @@ It replaces the old Inkscape workflow (GPX → SVG converter → Snazzy Maps scr
 
 Everything here stays on your own phone; nobody else sees your edits.
 
-- Shows distance, climb and 🚦 traffic lights for the GPX.
+- Shows distance, climb and 🚦 traffic lights for the GPX. The run date comes from the schedule; tap the date on the post to change it.
 - Two routes (**Add a second route**: choose from the saved routes dropdown, or Upload a GPX): where they share streets they run side by side, the shorter one on the inside, each at its normal width; the shared stretch of the shorter route is snapped onto the longer one so GPS wobble doesn't show.
 - Load a GPX file, or tap **Paste a GPX** to paste a copied GPX file (in Files: press and hold → Copy; on a laptop, Cmd+V anywhere works; GPX text works too). **✕ Remove GPX** at the top clears everything; **Change GPX** loads another.
 - Reads the GPX on the phone (nothing is uploaded unless you save it to the route library): the **distance** comes straight from the GPX, the **title** from its name (`261014_MRC_LITTLE-DIPPER` becomes LITTLE DIPPER, editable), the **date** from the next run in the schedule.
@@ -18,7 +18,7 @@ Everything here stays on your own phone; nobody else sees your edits.
 - Title, distance, **FREE BEER!** and date in **MikkelWind**, like the earlier route posts. Title, distance and FREE BEER! can each be dragged with one finger and turned (any angle) and resized with two; Like on Instagram, text sticks to the centre lines (with a guide line) and to straight angles when it gets close, and comes off when you move further. “Put text back in place” resets them. FREE BEER! is always there.
 - **Two route options:** add a second GPX; it's drawn in the other colour and both distances are shown, each in its route's colour.
 - Formats: **Post 4:5** (1080×1350), **Square** (1080×1080), and **Route only**: a transparent PNG of just the line(s), to put on a group photo.
-- Drag the map to move it, pinch with two fingers to zoom. **Put back in place** appears once you move the map or the text and puts everything back. The text you're handling gets a dashed outline (only on screen, never in the image).
+- Drag the map to move it, pinch with two fingers to zoom. **Reset layout** appears once you move the map or the text and puts both back as they were. The text you're handling gets a dashed outline (only on screen, never in the image).
 - The three sections (Route post, Schedule, Routes) are in a tab bar at the bottom, within thumb reach.
 - **Advanced settings** (folded away, with “Reset to standard”): line width and smoothing GPS wobble.
 - **Share** opens the phone's share sheet (Instagram, Photos, WhatsApp…). 
