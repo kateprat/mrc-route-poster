@@ -822,8 +822,17 @@ function renderRoutes(){
   $("routeadd").classList.toggle("hidden", !LIB.canEdit);
   $("libsave").classList.toggle("hidden", !LIB.canEdit);
   const list=$("routelist"); if(!LIB.routes) return;
-  if(!LIB.routes.length){ list.innerHTML=`<p class="empty">No routes yet. Make a route post and tap “Save to route library”.</p>`; return; }
-  list.innerHTML=LIB.routes.map(r=>{ const when=r.date?`Run on ${niceDate(r.date)} ${r.date.slice(0,4)}`:"";
+  const all=LIB.routes;
+  $("libhead").classList.toggle("hidden", !all.length);
+  $("libtitle").textContent=`Saved routes · ${all.length}`;
+  $("libfilter").classList.toggle("hidden", all.length<6);           // filters only once the list is long
+  if(all.length<6) LIB.filter="all";
+  $("libfilter").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===(LIB.filter||"all"))));
+  const km=r=>Number(r.km.toFixed(1)), inRange={all:()=>true, short:r=>km(r)<=5, mid:r=>km(r)>5&&km(r)<=7, long:r=>km(r)>7};
+  const rs=all.filter(inRange[LIB.filter||"all"]);
+  if(!all.length){ list.innerHTML=`<p class="empty">No routes yet. Make a route post and tap “Save to route library”.</p>`; return; }
+  if(!rs.length){ list.innerHTML=`<p class="empty">No saved routes in this range.</p>`; return; }
+  list.innerHTML=rs.map(r=>{ const when=r.date?`Run on ${niceDate(r.date)} ${r.date.slice(0,4)}`:"";
     return `<article class="rcard" data-id="${r.id}"><div class="thumb" data-thumb="${r.id}">${routeSVG(r.pts)}</div>
       <div><span class="km">${r.km.toFixed(1)} km${r.up!=null?` · ↑ ${r.up} m`:""}<span class="lights" data-lights="${r.id}">${lightsText(r)}</span></span><h3>${esc(r.name)}</h3>
         <p class="meta">${[when, r.addedBy?`added by ${esc(r.addedBy)}`:""].filter(Boolean).join(" · ")}</p>
@@ -912,11 +921,12 @@ function initSuggest(){
     if(u){ document.getElementById("tabbtn-poster").click(); await loadRoute(()=>routeFromText(r.gpx, r.name)); return; }
     const st=$("sugstatus"); await addToLibrary([r.full], r.name, "", $("sugdup"), st);
     const t=st.textContent;
-    if(/^(Saved|Replaced)/.test(t)){ s.textContent="Saved ✓"; s.disabled=true; st.textContent=""; }
+    if(/^(Saved|Replaced)/.test(t)){ s.textContent="Saved ✓"; s.disabled=true; s.classList.add("saved"); st.textContent=""; }
     else if(/^Skipped/.test(t)){ s.textContent="Skipped"; st.textContent=""; }
   });
 }
 function initRoutes(){
+  $("libfilter").addEventListener("click",e=>{ const b=e.target.closest("[data-v]"); if(!b) return; LIB.filter=b.dataset.v; renderRoutes(); });
   initSuggest();
   $("routelist").addEventListener("click", async e=>{
     const u=e.target.closest("[data-use]"); if(u) return useRoute(Number(u.dataset.use));

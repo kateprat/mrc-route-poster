@@ -188,6 +188,17 @@ footer a{color:inherit}
 .rcard .btns .btn{min-height:40px;padding:8px 12px;font-size:13px;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap}
 .rcard .btns .rm{color:var(--muted)}
 .lights{white-space:nowrap}
+/* Routes tab: saved-routes heading + distance filter; suggestions look like drafts (dashed) until saved */
+#libfilter{flex-wrap:nowrap;margin:0 0 4px}
+#routesstatus:empty{display:none}
+#libfilter button{flex:1;min-width:0;padding-left:4px;padding-right:4px}
+#suglist .rcard{background:var(--paper);border-style:dashed}
+.btn.saved,.btn.saved:disabled{background:var(--ok);border-color:var(--ok);color:var(--ok-ink);opacity:1}
+#suglist .rcard .btns{flex-wrap:nowrap;gap:5px}
+#suglist .rcard .btns .btn{padding-left:10px;padding-right:10px}
+/* dark themes: dim the light map pictures so they don't glare (app only; the post image is unchanged) */
+@media (prefers-color-scheme:dark){ :root:not([data-theme]) .thumb, :root[data-theme="auto"] .thumb{filter:brightness(.78)} }
+:root[data-theme="dark"] .thumb, :root[data-theme="night"] .thumb, :root[data-theme="burgundy"] .thumb, :root[data-theme="brown"] .thumb{filter:brightness(.78)}
 /* Route card: second route from the saved routes (dropdown) or a GPX upload */
 .second{display:flex;gap:8px;align-items:center}
 .second select{flex:1;min-width:0;min-height:44px}
@@ -302,7 +313,7 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
         <!-- invisible date field laid over the date on the post: tapping the date opens the phone's date picker -->
         <input id="date" type="date" class="datehit" aria-label="Run date">
       </div>
-      <p class="hint">Drag to move. Two fingers: zoom the map, or turn and resize text. Tap the date to change it.</p>
+      <p class="hint">Drag · pinch · tap the date to change it</p>
       <p class="status" id="status" role="status"></p>
       <div style="text-align:center"><button type="button" class="btn ghost hidden" id="beerreset">Reset layout</button></div>
     </div>
@@ -389,6 +400,15 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
       <div id="suglist"></div>
     </div>
     <p class="status" id="routesstatus" role="status"></p>
+    <div id="libhead" class="hidden">
+      <h2 id="libtitle" style="margin:6px 2px 10px">Saved routes</h2>
+      <div class="seg hidden" id="libfilter" role="group" aria-label="Filter by distance">
+        <button type="button" data-v="all" aria-pressed="true">All</button>
+        <button type="button" data-v="short" aria-pressed="false">≤5 km</button>
+        <button type="button" data-v="mid" aria-pressed="false">5–7 km</button>
+        <button type="button" data-v="long" aria-pressed="false">7+ km</button>
+      </div>
+    </div>
     <div id="routelist"></div>
     <div id="routeadd" class="card hidden">
       <h2>Add a route</h2>
@@ -399,7 +419,7 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
     </div>
   </section>
 
-  <footer>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors, map tiles by <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> and <a href="https://openmaptiles.org" target="_blank" rel="noopener">OpenMapTiles</a>. Your GPX file stays on your phone unless you save it to the route library.
+  <footer>Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · <a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> · <a href="https://openmaptiles.org" target="_blank" rel="noopener">OpenMapTiles</a>
     <span id="whoami" class="hidden"><br>Signed in as <strong id="whoemail"></strong> · <a href="/cdn-cgi/access/logout" id="signout">Sign out</a></span></footer>
 </div>
 
@@ -412,7 +432,7 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
 <!-- off-screen map used to draw the post; wrapped in a 0×0 box so its 1350 px height can't stretch the page on iPhone -->
 <div aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none"><div id="mapbox" style="position:absolute;left:0;top:0;width:1080px;height:1920px"></div><div id="thumbbox" style="position:absolute;left:0;top:0;width:288px;height:288px"></div></div>
 <script src="vendor/maplibre-gl.js"></script>
-<script src="app.js?v=card2"></script>
+<script src="app.js?v=rev2"></script>
 <script>
 /* ⋯ menu: theme Auto / Light / Dark or a Mikkeller colour theme, remembered on this phone */
 (function(){const root=document.documentElement, btn=document.getElementById("menubtn"), m=document.getElementById("moremenu");
