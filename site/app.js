@@ -100,13 +100,24 @@ function chaikin(p, n){
 }
 
 /* ---------- view ---------- */
+/* "Route only": a tight crop around the route (plus a small margin), longest side 1500 px, so it works as a sticker. */
+function routeOnlyFormat(){
+  const m=S.mpts; let minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9;
+  for(const p of m){minx=Math.min(minx,p.x);maxx=Math.max(maxx,p.x);miny=Math.min(miny,p.y);maxy=Math.max(maxy,p.y);}
+  const L=1500, a=Math.max(maxx-minx,1e-9)/Math.max(maxy-miny,1e-9);
+  let w=a>=1?L:Math.round(L*a), h=a>=1?Math.round(L/a):L;
+  w=Math.max(w,420); h=Math.max(h,420);                      // very thin routes still get some room
+  const pad=48+S.width;                                       // margin so the line's ends and corners aren't cut
+  return {w, h, box:[pad/w, pad/h, 1-pad/w, 1-pad/h], fixed:true, title:null};
+}
 function computeView(F, W, H){
   const m=S.mpts; let minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9;
   for(const p of m){minx=Math.min(minx,p.x);maxx=Math.max(maxx,p.x);miny=Math.min(miny,p.y);maxy=Math.max(maxy,p.y);}
   const [bx0,by0,bx1,by1]=F.box; const bw=(bx1-bx0)*W, bh=(by1-by0)*H;
   const rw=Math.max(maxx-minx,1e-9), rh=Math.max(maxy-miny,1e-9);
-  const scale=Math.min(bw/rw, bh/rh)*S.zoom;            // px per mercator unit
-  const cx=(minx+maxx)/2 - S.pan.x, cy=(miny+maxy)/2 - S.pan.y;
+  const zoom=F.fixed?1:S.zoom, pan=F.fixed?{x:0,y:0}:S.pan;   // "Route only" is always the whole route
+  const scale=Math.min(bw/rw, bh/rh)*zoom;            // px per mercator unit
+  const cx=(minx+maxx)/2 - pan.x, cy=(miny+maxy)/2 - pan.y;
   const ox=(bx0+bx1)/2*W, oy=(by0+by1)/2*H;
   return {scale, cx, cy, ox, oy, toPx:(p)=>({x:ox+(p.x-cx)*scale, y:oy+(p.y-cy)*scale})};
 }
@@ -396,7 +407,7 @@ function prepareRoute(){
 }
 function draw(){
   if(!S.mpts) return;
-  const F=FORMATS[S.fmt]; const W=F.w, H=F.h;
+  const F=S.fmt==="route" ? routeOnlyFormat() : FORMATS[S.fmt]; const W=F.w, H=F.h;
   if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
   const V=computeView(F,W,H); S.view=V;
   let mapOk=true;
@@ -416,12 +427,12 @@ function draw(){
     if(S.guides.v){ ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke(); }
     if(S.guides.h){ ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke(); }
     ctx.restore(); }
-  $("beerreset").classList.toggle("hidden", !viewMoved());
+  $("beerreset").classList.toggle("hidden", !viewMoved() || S.fmt==="route");
   placeDateField();
   const st=$("status");
   if(S.fmt!=="route" && M.error && !M.ready){ st.textContent="Map couldn’t load. Check your connection and reload."; st.classList.add("warn"); }
   else if(S.fmt!=="route" && !mapOk){ st.textContent="Loading map…"; st.classList.remove("warn"); }
-  else { st.textContent = S.fmt==="route" ? "Transparent PNG of just the route, for stickers on photos." : ""; st.classList.remove("warn"); }
+  else { st.textContent = ""; st.classList.remove("warn"); }
   cv.style.background = S.fmt==="route" ? "repeating-conic-gradient(#ddd 0 25%, #fff 0 50%) 0 0/24px 24px" : "#e6e6e6";
 }
 
@@ -985,7 +996,7 @@ function renderOwnerMenu(){
   const items=[...OWNER_ONLY]; if(OWNER_HIDDEN.length) items.splice(1,0,`${OWNER_HIDDEN.join(", ")} left out of upcoming runs (shown if coming or leading)`);
   $("onlyyou").innerHTML=items.map(t=>`<li>${esc(t)}</li>`).join("");
   $("viewpill").classList.toggle("hidden", v==="me");
-  $("viewpilltext").textContent = v==="guest" ? "Guest view" : "Captain view";
+  $("viewpilltext").textContent = v==="guest" ? "Guest" : "Captain";
 }
 function setView(v){
   try{ localStorage.setItem("mrc-view", v); }catch(e){}
@@ -1273,7 +1284,7 @@ function init(){
     if(ptrs.size===1){ key=hitAt(e.clientX,e.clientY); clearTimeout(S.selT); S.sel=key; if(key){ const it=itemOf(key); raw={dx:it.dx, dy:it.dy}; scheduleDraw(); } }
     if(ptrs.size===2){ const t=twoFinger(); const it=key?itemOf(key):ITEM0; g0={d:t.d, ang:t.ang, zoom:S.zoom, scale:it.scale, rot:it.rot}; }
     last={x:e.clientX,y:e.clientY}; });
-  cv.addEventListener("pointermove",e=>{ if(!ptrs.has(e.pointerId)||!S.view) return; ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  cv.addEventListener("pointermove",e=>{ if(!ptrs.has(e.pointerId)||!S.view||S.fmt==="route") return; ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
     const k=cv.width/cv.getBoundingClientRect().width;
     if(ptrs.size===2 && g0){ const t=twoFinger();
       if(key){ setItem(key,{scale:g0.scale*t.d/g0.d, rot:straight(g0.rot+(t.ang-g0.ang)*180/Math.PI)}); return; }
