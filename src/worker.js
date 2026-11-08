@@ -19,6 +19,9 @@ function captainFor(email) {
 }
 
 const STATUSES = ["yes", "no", "tbd"];
+/* Kate (who runs the app) sees a few things nobody else does. The app lists them in her ⋯ menu. */
+const OWNER = "captain@example.com";
+const OWNER_HIDES = ["Ale"];   // away for a few months: hidden from upcoming runs in Kate's view only (shown if coming or leading)
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || "");
 const isTime = (s) => /^\d{2}:\d{2}$/.test(s || "");
 const clean = (s, n = 200) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, n);
@@ -139,11 +142,13 @@ export class Schedule extends DurableObject {
     for (const a of this.sql.exec("SELECT date, captain, status FROM avail").toArray()) (avail[a.date] ||= {})[a.captain] = a.status;
     const leads = {};
     for (const l of this.sql.exec("SELECT date, captain FROM leads ORDER BY captain").toArray()) (leads[l.date] ||= []).push(l.captain);
-    const isKate = viewer.email === "captain@example.com";   // only Kate sees who changed a run last
+    const isKate = viewer.email === OWNER;   // only Kate sees who changed a run last
     const runs = this.sql.exec("SELECT date, time, note, cancelled, changed_by FROM runs ORDER BY date").toArray()
       .map((r) => ({ date: r.date, time: r.time, note: r.note, cancelled: !!r.cancelled, leads: leads[r.date] || [], changedBy: isKate ? (r.changed_by || "") : "", avail: avail[r.date] || {} }));
     const me = this.me(viewer.name);
-    return { me: { email: viewer.email, captain: me ? { id: me.id, name: me.name, handle: me.handle || "" } : null }, captains, runs };
+    // Kate only: captains to leave out of upcoming runs in her view (OWNER_HIDES); everyone else sees all captains
+    const hide = isKate ? captains.filter((c) => OWNER_HIDES.includes(c.name)).map((c) => c.id) : [];
+    return { me: { email: viewer.email, owner: isKate, hide, captain: me ? { id: me.id, name: me.name, handle: me.handle || "" } : null }, captains, runs };
   }
 
   // Any captain can set any captain's state for a run: no / tbd / yes / lead (lead = coming and leading).

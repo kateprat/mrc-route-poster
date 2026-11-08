@@ -810,7 +810,7 @@ async function libCall(path, body){
   const r=await fetch(path, body ? {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(body), credentials:"include"} : {credentials:"include", cache:"no-store"});
   const j=await r.json().catch(()=>({error:"The route library isn’t available here."}));
   if(!r.ok) throw new Error(j.error||"Something went wrong.");
-  LIB.routes=j.routes; LIB.canEdit=j.canEdit; renderRoutes(); return j;
+  LIB.routes=j.routes; LIB.canEdit=j.canEdit && viewAs()!=="guest"; renderRoutes(); return j;
 }
 async function loadRoutes(){
   const st=$("routesstatus");
@@ -959,6 +959,36 @@ function localISO(d=new Date()){ const z=n=>String(n).padStart(2,"0"); return `$
 function niceDate(iso){ const d=new Date(iso+"T12:00:00"); return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`; }
 function nextRun(){ return SCH.data ? SCH.data.runs.find(r=>r.date>=SCH.today && !r.cancelled) : null; }
 function runOn(date){ return SCH.data ? SCH.data.runs.find(r=>r.date===date) : null; }
+/* ---------- Kate's view switch (⋯ menu): see the app as a captain or a guest does ----------
+   The server sends Kate a few extra things (me.owner, me.hide, who last changed a run).
+   "Captain" and "Guest" strip those here, on her phone only; "Guest" also turns off editing. */
+const OWNER_ONLY = [
+  "Who last changed a run (Schedule)",
+  "Ale left out of upcoming runs while she’s away (shown if she’s coming or leading)",
+  "This View as switch",
+];
+let IS_OWNER=false;
+const viewAs = () => { try{ return localStorage.getItem("mrc-view")||"me"; }catch(e){ return "me"; } };   // only Kate can set it
+function asViewed(j){
+  IS_OWNER = !!(j.me && j.me.owner);
+  const v=viewAs(); if(v==="me") return j;
+  const c=JSON.parse(JSON.stringify(j));
+  c.me.owner=false; c.me.hide=[]; c.runs.forEach(r=>r.changedBy="");
+  if(v==="guest") c.me.captain=null;
+  return c;
+}
+function renderOwnerMenu(){
+  $("ownermenu").hidden=!IS_OWNER; if(!IS_OWNER) return;
+  const v=viewAs();
+  $("ownermenu").querySelectorAll("[data-view]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.view===v)));
+  $("onlyyou").innerHTML=OWNER_ONLY.map(t=>`<li>${esc(t)}</li>`).join("");
+  $("viewbanner").classList.toggle("hidden", v==="me");
+  $("viewbannertext").textContent = v==="guest" ? "Guest view (read only)" : "Captain view";
+}
+function setView(v){
+  try{ localStorage.setItem("mrc-view", v); }catch(e){}
+  renderOwnerMenu(); loadSchedule(); loadRoutes();
+}
 function captain(id){ return SCH.data ? SCH.data.captains.find(c=>c.id===id) : null; }
 const statusText = st => st==="yes" ? "coming" : st==="tbd" ? "doesn’t know yet" : "not coming";
 /* "Kate", "Kate & Felix", "Kate, Felix & Ale" */
@@ -970,7 +1000,7 @@ async function schedCall(path, body){
     const r=await fetch(path, body ? {method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(body), credentials:"include"} : {credentials:"include", cache:"no-store"});
     const j=await r.json().catch(()=>({error:"The schedule isn’t available here."}));
     if(!r.ok) throw new Error(j.error||"Something went wrong.");
-    SCH.data=j; st.textContent=""; renderSchedule(); fillFromSchedule(false);
+    SCH.data=asViewed(j); st.textContent=""; renderSchedule(); fillFromSchedule(false); renderOwnerMenu();
     return true;
   }catch(e){ st.textContent=e.message||String(e); st.classList.add("warn"); return false; }
 }
@@ -991,7 +1021,7 @@ async function refreshSchedule(){
   SCH.loading=true;
   try{
     const r=await fetch("/api/state",{credentials:"include",cache:"no-store"});
-    if(r.ok){ const j=await r.json(); if(!busyEditing() && !capPending){ SCH.today=localISO(); SCH.data=j; renderSchedule(); fillFromSchedule(false); } }
+    if(r.ok){ const j=await r.json(); if(!busyEditing() && !capPending){ SCH.today=localISO(); SCH.data=asViewed(j); renderSchedule(); fillFromSchedule(false); } }
   }catch(e){}
   SCH.loading=false;
 }
@@ -1023,7 +1053,7 @@ function renderSchedule(){
       ${r.note?`<p class="run-note">${esc(r.note)}</p>`:""}
       ${r.cancelled && !past ? `<div class="todo"><strong>To do for ${leadNames?esc(leadNames):"the captain who was going to lead"}:</strong>
         Post an Instagram story (and edit the run post) saying the run is off and why, update the “next run” board in the bar, and tell the other captains. A cancelled run should stay the exception.</div>` : ""}
-      <div class="who" role="group" aria-label="Captains on ${niceDate(r.date)}">${D.captains.map(c=>{ const st=stateOf(r,c.id);
+      <div class="who" role="group" aria-label="Captains on ${niceDate(r.date)}">${D.captains.filter(c=>!(D.me.hide||[]).includes(c.id) || ["yes","lead"].includes(stateOf(r,c.id))).map(c=>{ const st=stateOf(r,c.id);
         return `<button type="button" class="${st}" data-cap="${c.id}" ${editable?"":"disabled"} aria-label="${esc(c.name)}: ${STATE_TEXT[st]}${editable?". Tap to change.":""}" aria-haspopup="menu">${esc(c.name)}${st==="lead"?'<span class="leadmark">lead</span>':""}</button>`; }).join("")}</div>
       <p class="run-meta" style="margin:2px 0 0">${[r.leads.length?"":"No lead yet", r.changedBy?`last change by ${esc(r.changedBy)}`:""].filter(Boolean).join(" · ")}</p>
       ${editable ? `<details style="margin-top:8px"><summary>Edit run</summary>
@@ -1086,7 +1116,7 @@ function tapCaptain(date, id, next){
   const r=runOn(date); if(!r) return;
   r.leads=r.leads.filter(x=>x!==id); if(next==="lead") r.leads.push(id);
   r.avail[id]= next==="lead" ? "yes" : next;
-  if(SCH.data.me.email==="captain@example.com") r.changedBy=(SCH.data.me.captain||{}).name||r.changedBy;   // only Kate sees who changed a run last
+  if(SCH.data.me.owner) r.changedBy=(SCH.data.me.captain||{}).name||r.changedBy;   // only Kate sees who changed a run last
   renderSchedule(); fillFromSchedule(false);
   capPending++;
   capQueue=capQueue.then(async()=>{
@@ -1094,7 +1124,7 @@ function tapCaptain(date, id, next){
       const res=await fetch("/api/captain",{method:"POST",headers:{"content-type":"application/json"},credentials:"include",body:JSON.stringify({date, captain:id, state:next})});
       const j=await res.json().catch(()=>({error:"Couldn’t save."}));
       if(!res.ok) throw new Error(j.error||"Couldn’t save.");
-      if(--capPending===0){ SCH.data=j; renderSchedule(); fillFromSchedule(false); $("schedstatus").textContent=""; }
+      if(--capPending===0){ SCH.data=asViewed(j); renderSchedule(); fillFromSchedule(false); $("schedstatus").textContent=""; }
     }catch(e){ capPending=0; $("schedstatus").textContent=(e.message||String(e))+" Reloading…"; $("schedstatus").classList.add("warn"); loadSchedule(); }
   });
 }
@@ -1169,7 +1199,12 @@ async function signOut(e){
   location.replace("/?signedout=" + Date.now());
 }
 
+function initOwnerMenu(){
+  $("ownermenu").addEventListener("click",e=>{ const b=e.target.closest("[data-view]"); if(b) setView(b.dataset.view); });
+  $("viewback").addEventListener("click",()=>setView("me"));
+}
 function init(){
+  initOwnerMenu();
   loadPrefs();
   $("signout").addEventListener("click",signOut);
   showWhoAmI();
