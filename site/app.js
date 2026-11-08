@@ -1058,6 +1058,9 @@ function renderSchedule(){
     const coming=D.captains.filter(c=>["yes","lead"].includes(stateOf(r,c.id)));
     const leadNames=names(r.leads);
     const past=r.date<SCH.today, editable=!!me && !past;
+    // bottom line (no lead yet / last change by); ✎ Edit sits at its right, or after the names when there's no bottom line
+    const meta=[r.leads.length?"":"No lead yet", r.changedBy?`last change by ${esc(r.changedBy)}`:""].filter(Boolean).join(" · ");
+    const EDIT=`<button type="button" class="editbtn" data-editrun aria-expanded="false"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M14 6l4 4"/></svg><span>Edit</span></button>`;
     return `<article class="run ${r===nxt?"next":""} ${r.cancelled?"cancelled":""}" data-date="${r.date}">${r===nxt?'<span class="nexttab">Next run</span>':""}
       <div class="run-head">
         <div><span class="run-date">${niceDate(r.date)}</span> <span class="run-meta">${esc(r.time)}</span></div>
@@ -1067,8 +1070,8 @@ function renderSchedule(){
       ${r.cancelled && !past ? `<div class="todo"><strong>To do for ${leadNames?esc(leadNames):"the captain who was going to lead"}:</strong>
         Post an Instagram story (and edit the run post) saying the run is off and why, update the “next run” board in the bar, and tell the other captains. A cancelled run should stay the exception.</div>` : ""}
       <div class="who" role="group" aria-label="Captains on ${niceDate(r.date)}">${D.captains.filter(c=>!(D.me.hide||[]).includes(c.id) || ["yes","lead"].includes(stateOf(r,c.id))).map(c=>{ const st=stateOf(r,c.id);
-        return `<button type="button" class="${st}" data-cap="${c.id}" ${editable?"":"disabled"} aria-label="${esc(c.name)}: ${STATE_TEXT[st]}${editable?". Tap to change.":""}" aria-haspopup="menu">${esc(c.name)}${st==="lead"?'<span class="leadmark">lead</span>':""}</button>`; }).join("")}${editable?`<button type="button" class="editbtn" data-editrun aria-expanded="false"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M14 6l4 4"/></svg><span>Edit</span></button>`:""}</div>
-      ${(()=>{ const m=[r.leads.length?"":"No lead yet", r.changedBy?`last change by ${esc(r.changedBy)}`:""].filter(Boolean).join(" · "); return m?`<p class="run-meta" style="margin:2px 0 0">${m}</p>`:""; })()}
+        return `<button type="button" class="${st}" data-cap="${c.id}" ${editable?"":"disabled"} aria-label="${esc(c.name)}: ${STATE_TEXT[st]}${editable?". Tap to change.":""}" aria-haspopup="menu">${esc(c.name)}${st==="lead"?'<span class="leadmark">lead</span>':""}</button>`; }).join("")}${editable && !meta?EDIT:""}</div>
+      ${meta?`<div class="runfoot"><p class="run-meta">${meta}</p>${editable?EDIT:""}</div>`:""}
       ${editable ? `<details class="runedit" style="margin-top:8px"><summary>Edit run</summary>
         <div class="grid" style="margin-top:10px">
           <div><label for="t-${r.date}">Time</label><input id="t-${r.date}" type="time" value="${esc(r.time)}" data-f="time"></div>
