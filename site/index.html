@@ -7,7 +7,7 @@
 <meta name="description" content="Turn a GPX file into a Mikkeller Run Club route post.">
 <meta name="theme-color" content="#eee5d2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f0f54" media="(prefers-color-scheme: dark)">
-<script>try{var t=localStorage.getItem("theme");t={blue:"light",night:"dark",mauve:"peach",burgundy:"dark",brown:"moss"}[t]||t;if(t&&t!=="auto")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem("theme");t={blue:"light",night:"dark",mauve:"light",burgundy:"dark",brown:"light",moss:"light",peach:"light"}[t]||t;if(t&&t!=="auto")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MRC ZH">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -148,7 +148,7 @@ details[open] summary::after{content:" –"}
 .who button.no{text-decoration:line-through;background:transparent;border-style:dashed;color:var(--muted);opacity:.7}
 .who button.tbd{}
 .who button.yes{background:var(--ok);border-color:var(--ok);color:var(--ok-ink)}
-.who button.lead{background:var(--ok);border-color:var(--ok);color:var(--ok-ink);box-shadow:0 0 0 2.5px var(--panel),0 0 0 5px var(--lead-ring,var(--accent))}
+.who button.lead{background:var(--ok);border-color:var(--ok);color:var(--ok-ink);box-shadow:0 0 0 2.5px var(--panel),0 0 0 5px var(--accent)}
 .who button.lead .leadmark{display:none}
 /* Alternative: ★ instead of the hidden LEAD tag. To use it, delete the line above and uncomment this one.
 .who button.lead .leadmark{font-size:0;border:0;padding:0} .who button.lead .leadmark::before{content:"★";font-size:15px} */
@@ -288,8 +288,6 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
 .more-menu .menu-seg button{font-size:13px;padding:8px 6px;white-space:nowrap}
 
 /* Mikkeller colour themes (⋯ menu) */
-:root[data-theme="moss"]{--title:#357c4f; --paper:#dfe6d6; --panel:#f6f8f1; --ink:#1a1714; --muted:#5a6352; --line:#c5d0b9; --accent:#357c4f; --accent-ink:#ffffff; --ok:#8f5c35; --ok-ink:#ffffff; --lead:#8f5c35; --lead-ink:#ffffff; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
-:root[data-theme="peach"]{--title:#882c29; --paper:#f0b7ad; --panel:#fbeee9; --ink:#0f0f54; --muted:#5c4a66; --line:#e39d92; --accent:#0f0f54; --accent-ink:#f0b7ad; --ok:#882c29; --ok-ink:#ffffff; --lead:#0f0f54; --lead-ink:#f0b7ad; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
 </style>
 </head>
 <body>
@@ -301,8 +299,6 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
     <div class="more-menu"><button type="button" id="menubtn" aria-label="More options" aria-expanded="false" aria-controls="moremenu">⋯</button>
   <div id="moremenu" class="menu" hidden><p class="menu-h">Theme</p>
     <div class="menu-seg" role="group" aria-label="Theme"><button type="button" data-theme-v="auto">Auto</button><button type="button" data-theme-v="light">Light</button><button type="button" data-theme-v="dark">Dark</button></div>
-    <p class="menu-h">Mikkeller colours</p>
-    <div class="menu-seg" role="group" aria-label="Mikkeller colours"><button type="button" data-theme-v="moss"><i style="background:#357c4f"></i>Moss</button><button type="button" data-theme-v="peach"><i style="background:#f0b7ad"></i>Peach</button></div>
     <div id="ownermenu" hidden>
       <p class="menu-h">View as</p>
       <div class="menu-seg" role="group" aria-label="View as"><button type="button" data-view="me">Me</button><button type="button" data-view="captain">Captain</button><button type="button" data-view="guest">Guest</button></div>
@@ -466,7 +462,7 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
 <script>
 /* ⋯ menu: theme Auto / Light / Dark or a Mikkeller colour theme, remembered on this phone */
 (function(){const root=document.documentElement, btn=document.getElementById("menubtn"), m=document.getElementById("moremenu");
-  const OLD={blue:"light",night:"dark",mauve:"peach",burgundy:"dark",brown:"moss"};   // removed themes → nearest kept one
+  const OLD={blue:"light",night:"dark",mauve:"light",burgundy:"dark",brown:"light",moss:"light",peach:"light"};   // removed themes → nearest kept one
   const get=()=>{try{const t=localStorage.getItem("theme")||"auto"; return OLD[t]||t}catch(e){return "auto"}};
   const metas=[...document.querySelectorAll('meta[name="theme-color"]')]; metas.forEach(x=>x.dataset.orig=x.content);
   const apply=v=>{ if(v==="auto") root.removeAttribute("data-theme"); else root.setAttribute("data-theme",v);
