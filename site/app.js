@@ -351,6 +351,18 @@ function placeDateField(){
   el.style.left=(b.x/b.W*100)+"%"; el.style.top=(b.y/b.H*100)+"%";
   el.style.width=(b.w/b.W*100)+"%"; el.style.height=(b.h/b.H*100)+"%";
 }
+/* Keep the invisible title field over the title on the post (or where the title goes when it's empty). */
+function placeTitleField(F){
+  const el=$("title"), show=S.fmt!=="route"; el.style.display = show ? "" : "none"; if(!show) return;
+  const h=(S.hits||{}).title, W=cv.width, H=cv.height;
+  const b = h ? {x:h.cx-h.w*h.scale/2, y:h.cy-h.h*h.scale/2, w:h.w*h.scale, h:h.h*h.scale} : {x:W*0.1, y:F.title, w:W*0.8, h:140};
+  el.style.left=(b.x/W*100)+"%"; el.style.top=(b.y/H*100)+"%"; el.style.width=(b.w/W*100)+"%"; el.style.height=(b.h/H*100)+"%";
+}
+/* Distance (canvas pixels) from a point to a drawn route line */
+function distToLine(p, px){ let best=Infinity;
+  for(let i=1;i<px.length;i++){ const ax=px[i-1].x, ay=px[i-1].y, bx=px[i].x, by=px[i].y, dx=bx-ax, dy=by-ay, L=dx*dx+dy*dy;
+    const t=L?Math.max(0,Math.min(1,((p.x-ax)*dx+(p.y-ay)*dy)/L)):0; best=Math.min(best, Math.hypot(p.x-ax-t*dx, p.y-ay-t*dy)); }
+  return best; }
 function textMoved(){ return !!S.items[S.fmt]; }
 /* anything moved from where the app first put it: text in this format, or the map zoomed / dragged */
 function viewMoved(){ return textMoved() || Math.abs(S.zoom-1)>0.005 || Math.hypot(S.pan.x,S.pan.y)>1e-9; }
@@ -422,8 +434,8 @@ function draw(){
     const long=S.routes[0].total>=S.routes[1].total?0:1, short=1-long;
     const tol=Math.max(S.width*1.3, 15*V.scale/metresPerUnit(S.routes[0].pts[0].lat));
     const [a,b]=sideBySide(lines[long], lines[short], S.width, tol);
-    strokeRoute(a, S.width, routeColor(long)); strokeRoute(b, S.width, routeColor(short));
-  } else lines.forEach((px,i)=>strokeRoute(px, S.width, routeColor(i)));
+    strokeRoute(a, S.width, routeColor(long)); strokeRoute(b, S.width, routeColor(short)); S.drawn=[a,b];
+  } else { lines.forEach((px,i)=>strokeRoute(px, S.width, routeColor(i))); S.drawn=lines; }
   if(S.fmt!=="route") drawText(F,W,H);
   if(S.guides && S.fmt!=="route"){ // centre guide lines while text sticks to them (preview only)
     ctx.save(); ctx.strokeStyle="#3584ba"; ctx.lineWidth=3; ctx.setLineDash([16,12]);
@@ -432,7 +444,7 @@ function draw(){
     ctx.restore(); }
   $("beerreset").classList.toggle("hidden", !viewMoved() || S.fmt==="route");
   $("posthint").classList.toggle("hidden", S.fmt==="route");   // nothing to drag, pinch or tap on Transparent
-  placeDateField();
+  placeDateField(); placeTitleField(F);
   const st=$("status");
   if(S.fmt!=="route" && M.error && !M.ready){ st.textContent="Map couldn’t load. Check your connection and reload."; st.classList.add("warn"); }
   else if(S.fmt!=="route" && !mapOk){ st.textContent="Loading map…"; st.classList.remove("warn"); }
@@ -536,8 +548,6 @@ async function pasteGpx(){
 function startOver(){
   S.routes=[]; S.mpts=null; S.rpts=null; S.view=null; S.items={}; S.pan={x:0,y:0}; S.zoom=1;
   Object.assign(S, ADV_DEFAULTS);
-  $("width").value=S.width; $("widthv").textContent=S.width;
-  $("simplify").value=S.simplify; $("simplifyv").textContent=S.simplify+" m";
   $("title").value=""; $("distinfo").innerHTML="";
   $("route2none").classList.remove("hidden"); $("routecard").classList.remove("two");
   $("libstatus").textContent=""; $("libdup").classList.add("hidden");
@@ -1217,12 +1227,6 @@ function range(id, key, fmt, conv, after){
   el.addEventListener("input", ()=>{ upd(); after&&after(); scheduleDraw(); }); upd();
   return upd;
 }
-function resetAdvanced(){
-  Object.assign(S, ADV_DEFAULTS);
-  $("width").value=S.width; $("widthv").textContent=S.width;
-  $("simplify").value=S.simplify; $("simplifyv").textContent=S.simplify+" m";
-  prepareRoute(); scheduleDraw();
-}
 
 /* Cloudflare Access tells a page who is signed in at /cdn-cgi/access/get-identity. */
 async function showWhoAmI(){
@@ -1256,10 +1260,10 @@ function init(){
   initRoutes();
   loadRoutes();
   seg("fmt","fmt");
-  seg("color","color",()=>{ savePrefs(); if(S.routes.length) renderStats(); });
-  range("width","width",v=>v,Number);
-  range("simplify","simplify",v=>v+" m",Number,prepareRoute);
-  $("advreset").addEventListener("click",resetAdvanced);
+  // the title field sits invisibly over the title on the post: show the dashed outline while typing
+  $("title").addEventListener("focus",()=>{ clearTimeout(S.selT); S.sel="title"; scheduleDraw(); });
+  $("title").addEventListener("blur",()=>{ S.sel=null; scheduleDraw(); });
+  $("title").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); e.target.blur(); } });
   $("beerreset").addEventListener("click",()=>{ delete S.items[S.fmt]; S.zoom=1; S.pan={x:0,y:0}; scheduleDraw(); });
   ["title","date"].forEach(i=>$(i).addEventListener("input",scheduleDraw));
   $("gpx").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadFile(f); e.target.value=""; });
@@ -1323,6 +1327,15 @@ function init(){
   const up=e=>{ ptrs.delete(e.pointerId); if(ptrs.size<2) g0=null; if(!ptrs.size){ last=null; key=null; S.guides=null; scheduleDraw(); cv.classList.remove("dragging");
     clearTimeout(S.selT); if(S.sel) S.selT=setTimeout(()=>{ S.sel=null; scheduleDraw(); },1200); } else { const v=[...ptrs.values()][0]; last={x:v.x,y:v.y}; if(key){ const it=itemOf(key); raw={dx:it.dx, dy:it.dy}; } } };
   cv.addEventListener("pointerup",up); cv.addEventListener("pointercancel",up);
+  // A tap (no drag): on the title → type a new one; on a route → burgundy ⇄ blue (two routes swap colours)
+  let downAt=null, moved=false;
+  cv.addEventListener("pointerdown",e=>{ if(ptrs.size===1){ downAt={x:e.clientX,y:e.clientY,t:Date.now()}; moved=false; } else moved=true; });
+  cv.addEventListener("pointermove",e=>{ if(downAt && Math.hypot(e.clientX-downAt.x,e.clientY-downAt.y)>8) moved=true; });
+  cv.addEventListener("click",e=>{ if(moved || !downAt || Date.now()-downAt.t>600) return;
+    if(S.fmt!=="route" && hitAt(e.clientX,e.clientY)==="title"){ $("title").focus(); return; }
+    const c=toCanvas(e.clientX,e.clientY), near=Math.max(48, S.width*3);
+    if((S.drawn||[]).some(px=>px.length>1 && distToLine(c,px)<near)){ S.color=otherColor(S.color); savePrefs(); if(S.routes.length) renderStats(); scheduleDraw(); }
+    else if(S.fmt!=="route" && !S.hits?.title && c.y<cv.height*0.3){ $("title").focus(); } });
   document.fonts.load('60px "MikkelWind"');
 }
 

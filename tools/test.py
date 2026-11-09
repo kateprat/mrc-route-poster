@@ -37,7 +37,7 @@ try:
         check(pg.evaluate("M.ready") and not pg.evaluate("M.error"), "map loads")
         check(pg.inner_text("#distinfo").startswith("4.6 km"), f"distance read from GPX: {pg.inner_text('#distinfo')}")
         check(pg.locator("#dist, #cropB, #beer, #capcard, #cap, #marker, #mapstyle").count() == 0, "removed: distance box, crop, FREE BEER switch, caption, marker, map style")
-        check(not pg.is_visible("#width"), "advanced settings folded away")
+        check(pg.locator("#width, #simplify, #advanced, #color").count() == 0, "no line width / wobble sliders or colour buttons")
         check(pg.input_value("#title") == "THE LITTLE DIPPER" and pg.input_value("#date") >= "2026-11-04", f"title and date filled: {pg.input_value('#date')}")
         check("Signed in as captain@example.com" in pg.inner_text("#whoami"), "signed-in line")
         for fmt in ["feed", "square", "route"]:
@@ -76,8 +76,10 @@ try:
         h = pg.evaluate("S.hits.title"); box = pg.locator("#cv").bounding_box(); k = box["width"] / 1080
         pg.mouse.move(box["x"] + h["cx"] * k, box["y"] + h["cy"] * k); pg.mouse.down(); pg.wait_for_timeout(100)
         check(pg.evaluate("S.sel") == "title", "touched text gets an outline")
-        pg.mouse.up(); pg.wait_for_timeout(1500)
-        check(pg.evaluate("S.sel") is None, "outline fades after letting go")
+        pg.mouse.up(); pg.wait_for_timeout(300)
+        check(pg.evaluate("document.activeElement.id") == "title" and pg.evaluate("S.sel") == "title", "a tap on the title edits it (outline stays while typing)")
+        pg.evaluate("document.getElementById('title').blur()"); pg.wait_for_timeout(300)
+        check(pg.evaluate("S.sel") is None, "outline gone when done typing")
         check(pg.evaluate("S.pan.x === 0 && S.pan.y === 0 && S.zoom === 1"), "map didn't move or zoom while handling text")
         check(pg.is_visible("#beerreset"), "'Reset layout' appears")
         save(pg, "feed-text-moved.png")
@@ -94,11 +96,19 @@ try:
         pg.mouse.move(box["x"] + 60, box["y"] + 260); pg.mouse.down(); pg.mouse.move(box["x"] + 100, box["y"] + 230, steps=5); pg.mouse.up()
         check(pg.evaluate("S.pan.x !== 0"), "map drag still works")
 
-        # advanced settings + reset
-        pg.click("#advanced summary")
-        pg.fill("#width", "18"); pg.dispatch_event("#width", "input")
-        pg.click("#advreset"); pg.wait_for_timeout(200)
-        check(pg.evaluate("S.width===10 && S.simplify===8"), "advanced reset to standard")
+        # tap the route: burgundy ⇄ blue; tap the title: type it straight onto the post
+        pg.locator("#cv").scroll_into_view_if_needed(); pg.wait_for_timeout(200)
+        box = pg.locator("#cv").bounding_box(); k = box["width"] / pg.evaluate("cv.width")
+        pt = pg.evaluate("(()=>{ const l=S.drawn[0]; return l[Math.floor(l.length/2)]; })()")
+        c0 = pg.evaluate("S.color"); pg.mouse.click(box["x"] + pt["x"] * k, box["y"] + pt["y"] * k); pg.wait_for_timeout(300)
+        check(pg.evaluate("S.color") != c0, f"tapping the route switches its colour ({c0} → {pg.evaluate('S.color')})")
+        pg.mouse.click(box["x"] + pt["x"] * k, box["y"] + pt["y"] * k); pg.wait_for_timeout(300)
+        check(pg.evaluate("S.color") == c0, "tapping again switches back")
+        h = pg.evaluate("S.hits.title"); pg.mouse.click(box["x"] + h["cx"] * k, box["y"] + h["cy"] * k); pg.wait_for_timeout(300)
+        check(pg.evaluate("document.activeElement.id") == "title", "tapping the title opens it for typing")
+        pg.keyboard.press("End"); pg.keyboard.type(" X"); pg.keyboard.press("Enter"); pg.wait_for_timeout(300)
+        check(pg.input_value("#title").endswith(" X") and pg.evaluate("document.activeElement.id") != "title", f"typed onto the post, Enter closes: {pg.input_value('#title')}")
+        pg.fill("#title", "THE LITTLE DIPPER"); pg.dispatch_event("#title", "input")
 
         # second route
         pg.set_input_files("#gpx2", os.path.join(ROOT, "test", "sample2.gpx")); pg.wait_for_timeout(2500)

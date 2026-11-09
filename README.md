@@ -20,7 +20,7 @@ Everything here stays on your own phone; nobody else sees your edits.
 - Formats: **Post 4:5** (1080×1350), **Square** (1080×1080), and **Transparent**: a transparent PNG of just the line(s), cropped tight around the route, to use as a sticker on a photo.
 - Drag the map to move it, pinch with two fingers to zoom. **Reset layout** appears once you move the map or the text and puts both back as they were. The text you're handling gets a dashed outline (only on screen, never in the image).
 - The three sections (Route post, Schedule, Routes) are in a tab bar at the bottom, within thumb reach.
-- **Advanced settings** (folded away, with “Reset to standard”): line width and smoothing GPS wobble.
+- **Tap to edit, right on the post** (hint under it: “Tap · drag · pinch”): tap the **title** and type (the post changes as you type, Enter/Done closes the keyboard), tap the **route** to switch burgundy ⇄ blue (with two routes they swap), tap the **date** to pick another. Line width (10) and GPS-wobble smoothing (8 m) are fixed; there are no sliders.
 - **Share** opens the phone's share sheet (Instagram, Photos, WhatsApp…). 
 
 ### Routes tab
