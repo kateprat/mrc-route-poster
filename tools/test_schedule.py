@@ -40,13 +40,13 @@ try:
         kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1500)
         check(kate.is_visible("#taphint"), "Kate is recognised from her email; tap hint shown")
         own = [n.split()[0] for n in kate.locator(".run").first.locator(".who button[data-cap]").all_inner_texts()]
-        check(own == ["Felix", "Kate", "Andrea", "Fabio"], f"Kate's own view leaves Ale out (OWNER_HIDES): {own}")
+        check(own == ["Andrea", "Fabio", "Felix", "Kate"], f"Kate's own view leaves Ale out (OWNER_HIDES): {own}")
         # the rest of the test runs as "View as: Captain", which shows every captain
         kate.evaluate("localStorage.setItem('mrc-view','captain')"); kate.reload(); kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1500)
         first = kate.locator(".run").first
         date = first.get_attribute("data-date")
         names = [n.split()[0] for n in first.locator(".who button[data-cap]").all_inner_texts()]
-        check(names == ["Felix", "Kate", "Ale", "Andrea", "Fabio"], f"each captain listed once: {names}")
+        check(names == ["Ale", "Andrea", "Fabio", "Felix", "Kate"], f"each captain listed once, A–Z: {names}")
         check(first.locator(".nexttab", has_text="Next run").count() == 1, f"next run highlighted: {date}")
         check(first.locator(".mine, .leadpick").count() == 0, "no separate availability buttons or lead dropdown")
         state = lambda who, d=date: kate.locator(f'.run[data-date="{d}"] .who button[data-cap]', has_text=re.compile(rf"^{who}(lead)?$", re.I)).get_attribute("class")

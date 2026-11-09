@@ -136,12 +136,12 @@ export class Schedule extends DurableObject {
   state(viewer, today) {
     this.syncRoster();
     this.ensureRegularRuns(today);
-    const captains = this.sql.exec("SELECT id, name, handle FROM captains ORDER BY id").toArray()
+    const captains = this.sql.exec("SELECT id, name, handle FROM captains ORDER BY name COLLATE NOCASE").toArray()
       .map((c) => ({ id: c.id, name: c.name, handle: c.handle || "" }));
     const avail = {};
     for (const a of this.sql.exec("SELECT date, captain, status FROM avail").toArray()) (avail[a.date] ||= {})[a.captain] = a.status;
     const leads = {};
-    for (const l of this.sql.exec("SELECT date, captain FROM leads ORDER BY captain").toArray()) (leads[l.date] ||= []).push(l.captain);
+    for (const l of this.sql.exec("SELECT l.date, l.captain FROM leads l JOIN captains c ON c.id = l.captain ORDER BY c.name COLLATE NOCASE").toArray()) (leads[l.date] ||= []).push(l.captain);
     const isKate = viewer.email === OWNER;   // only Kate sees who changed a run last
     const runs = this.sql.exec("SELECT date, time, note, cancelled, changed_by FROM runs ORDER BY date").toArray()
       .map((r) => ({ date: r.date, time: r.time, note: r.note, cancelled: !!r.cancelled, leads: leads[r.date] || [], changedBy: isKate ? (r.changed_by || "") : "", avail: avail[r.date] || {} }));
