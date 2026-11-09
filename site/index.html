@@ -29,8 +29,10 @@
   --display:"Windsor",Georgia,serif; --sub:"Gotham","Helvetica Neue",Arial,sans-serif; --body:"Gotham","Helvetica Neue",Arial,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme]){
-  --ok:#357c4f; --ok-ink:#ffffff; --title:#3584ba; --paper:#0d1117; --panel:#161b22; --ink:#e6edf3; --muted:#8b949e; --line:#30363d; --accent:#3584ba; --accent-ink:#ffffff; --ring:#f0b7ad; --next:#f0b7ad; --next-ink:#0d1117; --lead:#357c4f; --lead-ink:#ffffff; --note:#161b22; --note-line:#f5e14b; color-scheme:dark}}
-:root[data-theme="dark"]{--ok:#357c4f; --ok-ink:#ffffff; --title:#3584ba; --paper:#0d1117; --panel:#161b22; --ink:#e6edf3; --muted:#8b949e; --line:#30363d; --accent:#3584ba; --accent-ink:#ffffff; --ring:#f0b7ad; --next:#f0b7ad; --next-ink:#0d1117; --lead:#357c4f; --lead-ink:#ffffff; --note:#161b22; --note-line:#f5e14b; color-scheme:dark}
+  --ok:#357c4f; --ok-ink:#ffffff; --title:#3584ba; --paper:#0d1117; --panel:#161b22; --ink:#e6edf3; --muted:#8b949e; --line:#30363d; --accent:#3584ba; --accent-ink:#ffffff; --ring:#f0b7ad; --lead:#357c4f; --lead-ink:#ffffff; --note:#161b22; --note-line:#f5e14b; color-scheme:dark}}
+:root[data-theme="dark"]{--ok:#357c4f; --ok-ink:#ffffff; --title:#3584ba; --paper:#0d1117; --panel:#161b22; --ink:#e6edf3; --muted:#8b949e; --line:#30363d; --accent:#3584ba; --accent-ink:#ffffff; --ring:#f0b7ad; --lead:#357c4f; --lead-ink:#ffffff; --note:#161b22; --note-line:#f5e14b; color-scheme:dark}
+/* Trial: Dark with warmer greys, offered next to Dark to compare */
+:root[data-theme="darkwarm"]{--ok:#357c4f; --ok-ink:#ffffff; --title:#3584ba; --paper:#14120f; --panel:#1f1c18; --ink:#efe8dc; --muted:#a39a8c; --line:#3a342d; --accent:#3584ba; --accent-ink:#ffffff; --ring:#f0b7ad; --lead:#357c4f; --lead-ink:#ffffff; --note:#1f1c18; --note-line:#f5e14b; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0}
 /* every tab at least a full screen tall: on iPhone a short page (Route post before a GPX is loaded) lifted the fixed tab bar */
@@ -197,7 +199,7 @@ footer a{color:inherit}
 .rcard .thumb{width:96px;height:96px;border-radius:10px;background:var(--paper) center/cover no-repeat;overflow:hidden}
 .rcard .thumb svg{width:96px;height:96px;display:block}
 .rcard h3{font:900 16px/1.15 var(--sub);letter-spacing:.02em;text-transform:uppercase;margin:4px 0 2px;overflow-wrap:anywhere}
-.rcard .km{font:900 13px/1 var(--sub);letter-spacing:.02em;color:var(--km,var(--accent))}
+.rcard .km{font:900 13px/1 var(--sub);letter-spacing:.02em;color:var(--ink)}
 .rcard .meta{font-size:13px;color:var(--muted);margin:4px 0 8px}
 .rcard .btns{display:flex;flex-wrap:wrap;gap:6px}
 .filebar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 8px}
@@ -225,8 +227,6 @@ footer a{color:inherit}
 #suglist .rcard .btns{flex-wrap:nowrap;gap:5px}
 #suglist .rcard .btns .btn{padding-left:10px;padding-right:10px}
 /* dark themes: dim the light map pictures so they don't glare (app only; the post image is unchanged) */
-@media (prefers-color-scheme:dark){ :root:not([data-theme]) .thumb, :root[data-theme="auto"] .thumb{filter:brightness(.78)} }
-:root[data-theme="dark"] .thumb{filter:brightness(.78)}
 /* Route card: second route from the saved routes (dropdown) or a GPX upload */
 .second{display:flex;gap:8px;align-items:center}
 .second select{flex:1;min-width:0;min-height:44px}
@@ -298,7 +298,7 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
     <p>Mikkeller Run Club Zurich</p></div>
     <div class="more-menu"><button type="button" id="menubtn" aria-label="More options" aria-expanded="false" aria-controls="moremenu">⋯</button>
   <div id="moremenu" class="menu" hidden><p class="menu-h">Theme</p>
-    <div class="menu-seg" role="group" aria-label="Theme"><button type="button" data-theme-v="auto">Auto</button><button type="button" data-theme-v="light">Light</button><button type="button" data-theme-v="dark">Dark</button></div>
+    <div class="menu-seg" role="group" aria-label="Theme"><button type="button" data-theme-v="auto">Auto</button><button type="button" data-theme-v="light">Light</button><button type="button" data-theme-v="dark">Dark</button><button type="button" data-theme-v="darkwarm">Dark warm</button></div>
     <div id="ownermenu" hidden>
       <p class="menu-h">View as</p>
       <div class="menu-seg" role="group" aria-label="View as"><button type="button" data-view="me">Me</button><button type="button" data-view="captain">Captain</button><button type="button" data-view="guest">Guest</button></div>
@@ -458,7 +458,7 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
 <!-- off-screen map used to draw the post; wrapped in a 0×0 box so its 1350 px height can't stretch the page on iPhone -->
 <div aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none"><div id="mapbox" style="position:absolute;left:0;top:0;width:1080px;height:1920px"></div><div id="thumbbox" style="position:absolute;left:0;top:0;width:288px;height:288px"></div></div>
 <script src="vendor/maplibre-gl.js"></script>
-<script src="app.js?v=tr1"></script>
+<script src="app.js?v=dm1"></script>
 <script>
 /* ⋯ menu: theme Auto / Light / Dark or a Mikkeller colour theme, remembered on this phone */
 (function(){const root=document.documentElement, btn=document.getElementById("menubtn"), m=document.getElementById("moremenu");
@@ -472,7 +472,7 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
   btn.addEventListener("click",e=>{e.stopPropagation(); m.hidden=!m.hidden; btn.setAttribute("aria-expanded",String(!m.hidden))});
   document.addEventListener("click",e=>{ if(!m.hidden && !m.contains(e.target)) close(); });
   document.addEventListener("keydown",e=>{ if(e.key==="Escape" && !m.hidden){ close(); btn.focus(); } });
-  m.addEventListener("click",e=>{ const b=e.target.closest("[data-theme-v]"); if(!b) return; try{localStorage.setItem("theme",b.dataset.themeV)}catch(err){} apply(b.dataset.themeV); });
+  m.addEventListener("click",e=>{ const b=e.target.closest("[data-theme-v]"); if(!b) return; try{localStorage.setItem("theme",b.dataset.themeV)}catch(err){} apply(b.dataset.themeV); document.dispatchEvent(new Event("mrc-theme")); });
   apply(get());
 })();
 </script>

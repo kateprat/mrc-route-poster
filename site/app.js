@@ -124,8 +124,11 @@ function computeView(F, W, H){
 
 /* ---------- map (MapLibre, drawn off-screen, copied into the post) ---------- */
 const PALETTE = {
-  grey:  {bg:"#e6e6e6", park:"#dedede", water:"#cfd3d4", building:"#dadada", road:"#ffffff", minor:"#fbfbfb", rail:"#d2d2d2"}
+  grey:  {bg:"#e6e6e6", park:"#dedede", water:"#cfd3d4", building:"#dadada", road:"#ffffff", minor:"#fbfbfb", rail:"#d2d2d2"},
+  night: {bg:"#23262b", park:"#262b28", water:"#1c2430", building:"#2b2e33", road:"#3c4047", minor:"#33373d", rail:"#2e3237"}   // map pictures in the dark themes
 };
+/* Dark themes get dark map pictures and a peach route line on them */
+function darkUI(){ const t=document.documentElement.getAttribute("data-theme"); return t ? t.startsWith("dark") : matchMedia("(prefers-color-scheme: dark)").matches; }
 function mapStyle(name){
   const c=PALETTE[name]||PALETTE.grey;
   const w=(base)=>["interpolate",["exponential",1.6],["zoom"],10,base*0.25,14,base,18,base*9];
@@ -616,12 +619,12 @@ function routesSVG(lines){
   const paths=all.map(([xy,c],j)=>`<path d="${xy.map(([x,y],i)=>`${i?"L":"M"}${(ox+(x-x0)*sc).toFixed(1)} ${(oy+(y-y0)*sc).toFixed(1)}`).join("")}" fill="none" stroke="${c}" stroke-width="${lines.length>1?(j?2:6):3}" stroke-linejoin="round" stroke-linecap="round"/>`).join("");
   return `<svg viewBox="0 0 100 100" aria-hidden="true">${paths}</svg>`;
 }
-const routeSVG=(pts, color="#882c29")=>routesSVG([[pts,color]]);
+const routeSVG=(pts, color=darkUI()?"#f0b7ad":"#882c29")=>routesSVG([[pts,color]]);
 
 /* Map behind each route picture in Routes: a small separate map, one route at a time, framed exactly like
    routesSVG() (same centre, line fills 84 % of the square). Pictures are kept on this phone so it's done once per route. */
-const TH={map:null, ready:null, queue:[], busy:false, mem:new Map(), size:288};
-const thumbKey=r=>`mrc-thumb-v1-${r.id}-${r.km.toFixed(3)}-${r.pts.length}`;
+const TH={map:null, ready:null, mode:null, queue:[], busy:false, mem:new Map(), size:288};
+const thumbKey=r=>`mrc-thumb-v1-${darkUI()?"night-":""}${r.id}-${r.km.toFixed(3)}-${r.pts.length}`;
 function thumbFrame(pts){
   const k=Math.cos(pts[0][0]*Math.PI/180), xs=pts.map(p=>p[1]*k), ys=pts.map(p=>-p[0]);
   const x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys);
@@ -630,10 +633,13 @@ function thumbFrame(pts){
   return {center:[(x0+x1)/2/k, lat], zoom:Math.log2(78271.517*Math.cos(lat*Math.PI/180)/mpp)};
 }
 function thumbMap(){
-  if(TH.ready) return TH.ready;
+  const mode=darkUI()?"night":"grey";
+  if(TH.ready && TH.mode===mode) return TH.ready;
+  if(TH.map){ try{ TH.map.remove(); }catch(e){} TH.map=null; }
+  TH.mode=mode;
   TH.ready=new Promise(res=>{
     if(typeof maplibregl==="undefined") return res(null);
-    TH.map=new maplibregl.Map({container:"thumbbox", style:mapStyle("grey"), interactive:false, attributionControl:false,
+    TH.map=new maplibregl.Map({container:"thumbbox", style:mapStyle(mode), interactive:false, attributionControl:false,
       pixelRatio:1, preserveDrawingBuffer:true, fadeDuration:0, center:[8.53,47.37], zoom:13});
     TH.map.on("load",()=>res(TH.map)); TH.map.on("error",()=>{}); setTimeout(()=>res(TH.map.loaded()?TH.map:null),15000);
   });
@@ -1329,3 +1335,8 @@ function fillFromSchedule(onLoad){
 }
 
 init();
+
+/* Theme switched (⋯ menu or phone setting): redraw route pictures in the matching map style */
+function themeChanged(){ try{ if(typeof renderRoutes==="function") renderRoutes(); if(typeof renderSuggestions==="function" && SUG.list && SUG.list.length) renderSuggestions(); }catch(e){} }
+document.addEventListener("mrc-theme", themeChanged);
+try{ matchMedia("(prefers-color-scheme: dark)").addEventListener("change", themeChanged); }catch(e){}
