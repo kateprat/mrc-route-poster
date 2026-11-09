@@ -125,9 +125,9 @@ function computeView(F, W, H){
 /* ---------- map (MapLibre, drawn off-screen, copied into the post) ---------- */
 const PALETTE = {
   grey:  {bg:"#e6e6e6", park:"#dedede", water:"#cfd3d4", building:"#dadada", road:"#ffffff", minor:"#fbfbfb", rail:"#d2d2d2"},
-  night: {bg:"#23262b", park:"#262b28", water:"#1c2430", building:"#2b2e33", road:"#3c4047", minor:"#33373d", rail:"#2e3237"}   // map pictures in the dark themes
+  night: {bg:"#2a2622", park:"#2b2a22", water:"#24262a", building:"#312c27", road:"#463f37", minor:"#3a342e", rail:"#352f29"}   // map pictures in the dark themes
 };
-/* Dark themes get dark map pictures and a peach route line on them */
+/* The dark theme gets dark (warm) map pictures */
 function darkUI(){ const t=document.documentElement.getAttribute("data-theme"); return t ? t.startsWith("dark") : matchMedia("(prefers-color-scheme: dark)").matches; }
 function mapStyle(name){
   const c=PALETTE[name]||PALETTE.grey;
@@ -619,7 +619,7 @@ function routesSVG(lines){
   const paths=all.map(([xy,c],j)=>`<path d="${xy.map(([x,y],i)=>`${i?"L":"M"}${(ox+(x-x0)*sc).toFixed(1)} ${(oy+(y-y0)*sc).toFixed(1)}`).join("")}" fill="none" stroke="${c}" stroke-width="${lines.length>1?(j?2:6):3}" stroke-linejoin="round" stroke-linecap="round"/>`).join("");
   return `<svg viewBox="0 0 100 100" aria-hidden="true">${paths}</svg>`;
 }
-const routeSVG=(pts, color=darkUI()?"#f0b7ad":"#882c29")=>routesSVG([[pts,color]]);
+const routeSVG=(pts, color="#882c29")=>routesSVG([[pts,color]]);
 
 /* Map behind each route picture in Routes: a small separate map, one route at a time, framed exactly like
    routesSVG() (same centre, line fills 84 % of the square). Pictures are kept on this phone so it's done once per route. */
