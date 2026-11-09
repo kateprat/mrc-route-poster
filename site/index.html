@@ -23,14 +23,14 @@
 /* Layout: phone-first single column — preview on top, controls in cards below, sticky share bar */
 :root{
   --paper:#eee5d2; --panel:#fbf7ef; --ink:#1a1714; --muted:#6b6358; --line:#ddd2bd;
-  /* Mikkeller brand book: Paper ground, Blue (the bar logo blue) as the main colour, Moss Green for coming */
-  --burgundy:#882c29; --blue:#3584ba; --accent:#3584ba; --accent-ink:#ffffff;
-  --ok:#0f0f54; --ok-ink:#ffffff; --lead:#3584ba; --lead-ink:#ffffff; --note:#f6efc0; --note-line:#e0cf5a;
+  /* Mikkeller brand book: Paper ground, Moss Green for selected things and the lead ring, Peach for coming, ZH in Zurich blue (the bar logo blue) */
+  --burgundy:#882c29; --blue:#3584ba; --accent:#357c4f; --accent-ink:#ffffff; --title:#3584ba;
+  --ok:#f0b7ad; --ok-ink:#0f0f54; --lead:#357c4f; --lead-ink:#ffffff; --note:#f6efc0; --note-line:#e0cf5a;
   --display:"Windsor",Georgia,serif; --sub:"Gotham","Helvetica Neue",Arial,sans-serif; --body:"Gotham","Helvetica Neue",Arial,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme]){
-  --ok:#eee5d2; --ok-ink:#0f0f54; --paper:#0f0f54; --panel:#18186a; --ink:#eee5d2; --muted:#c7bfd6; --line:#2e2e86; --accent:#f0b7ad; --accent-ink:#0f0f54; --lead:#f0b7ad; --lead-ink:#0f0f54; --note:#2a2a7a; --note-line:#f5e14b; color-scheme:dark}}
-:root[data-theme="dark"]{--ok:#eee5d2; --ok-ink:#0f0f54; --paper:#0f0f54; --panel:#18186a; --ink:#eee5d2; --muted:#c7bfd6; --line:#2e2e86; --accent:#f0b7ad; --accent-ink:#0f0f54; --lead:#f0b7ad; --lead-ink:#0f0f54; --note:#2a2a7a; --note-line:#f5e14b; color-scheme:dark}
+  --ok:#357c4f; --ok-ink:#ffffff; --title:#f0b7ad; --paper:#0f0f54; --panel:#18186a; --ink:#eee5d2; --muted:#c7bfd6; --line:#2e2e86; --accent:#f0b7ad; --accent-ink:#0f0f54; --lead:#f0b7ad; --lead-ink:#0f0f54; --note:#2a2a7a; --note-line:#f5e14b; color-scheme:dark}}
+:root[data-theme="dark"]{--ok:#357c4f; --ok-ink:#ffffff; --title:#f0b7ad; --paper:#0f0f54; --panel:#18186a; --ink:#eee5d2; --muted:#c7bfd6; --line:#2e2e86; --accent:#f0b7ad; --accent-ink:#0f0f54; --lead:#f0b7ad; --lead-ink:#0f0f54; --note:#2a2a7a; --note-line:#f5e14b; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0}
 /* every tab at least a full screen tall: on iPhone a short page (Route post before a GPX is loaded) lifted the fixed tab bar */
@@ -288,7 +288,7 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
 .more-menu .menu-seg button{font-size:13px;padding:8px 6px;white-space:nowrap}
 
 /* Mikkeller colour themes (⋯ menu) */
-:root[data-theme="moss"]{--paper:#dfe6d6; --panel:#f6f8f1; --ink:#1a1714; --muted:#5a6352; --line:#c5d0b9; --accent:#357c4f; --accent-ink:#ffffff; --ok:#8f5c35; --ok-ink:#ffffff; --lead:#8f5c35; --lead-ink:#ffffff; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
+:root[data-theme="moss"]{--title:#357c4f; --paper:#dfe6d6; --panel:#f6f8f1; --ink:#1a1714; --muted:#5a6352; --line:#c5d0b9; --accent:#357c4f; --accent-ink:#ffffff; --ok:#8f5c35; --ok-ink:#ffffff; --lead:#8f5c35; --lead-ink:#ffffff; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
 :root[data-theme="peach"]{--title:#882c29; --paper:#f0b7ad; --panel:#fbeee9; --ink:#0f0f54; --muted:#5c4a66; --line:#e39d92; --accent:#0f0f54; --accent-ink:#f0b7ad; --ok:#882c29; --ok-ink:#ffffff; --lead:#0f0f54; --lead-ink:#f0b7ad; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
 </style>
 </head>
