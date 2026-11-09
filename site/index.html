@@ -23,14 +23,14 @@
 /* Layout: phone-first single column — preview on top, controls in cards below, sticky share bar */
 :root{
   --paper:#eee5d2; --panel:#fbf7ef; --ink:#1a1714; --muted:#6b6358; --line:#ddd2bd;
-  /* Light: Paper ground, Zurich blue (the bar logo blue) for ZH and buttons, Peach for coming, Moss Green lead ring. Dark: near-black ground, Zurich blue buttons, Burgundy for coming, Peach for the lead ring, fine lines, headings and Next run */
+  /* Light: Paper ground, Zurich blue (the bar logo blue) for ZH and buttons, Peach for coming, Moss Green lead ring. Dark: near-black ground, Zurich blue buttons, Moss Green for coming, Peach for the lead ring, fine lines, headings and Next run */
   --burgundy:#882c29; --blue:#3584ba; --accent:#3584ba; --accent-ink:#ffffff; --title:#3584ba; --ring:#357c4f;
   --ok:#f0b7ad; --ok-ink:#0f0f54; --lead:#357c4f; --lead-ink:#ffffff; --note:#f6efc0; --note-line:#e0cf5a;
   --display:"Windsor",Georgia,serif; --sub:"Gotham","Helvetica Neue",Arial,sans-serif; --body:"Gotham","Helvetica Neue",Arial,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme]){
-  --ok:#882c29; --ok-ink:#f6ece4; --title:#3584ba; --paper:#0d1117; --panel:#161b22; --ink:#e6edf3; --muted:#8b949e; --line:#30363d; --accent:#3584ba; --accent-ink:#ffffff; --ring:#f0b7ad; --next:#f0b7ad; --next-ink:#0d1117; --h2:#f0b7ad; --km:#f0b7ad; --lead:#882c29; --lead-ink:#f6ece4; --note:#161b22; --note-line:#f5e14b; color-scheme:dark}}
-:root[data-theme="dark"]{--ok:#882c29; --ok-ink:#f6ece4; --title:#3584ba; --paper:#0d1117; --panel:#161b22; --ink:#e6edf3; --muted:#8b949e; --line:#30363d; --accent:#3584ba; --accent-ink:#ffffff; --ring:#f0b7ad; --next:#f0b7ad; --next-ink:#0d1117; --h2:#f0b7ad; --km:#f0b7ad; --lead:#882c29; --lead-ink:#f6ece4; --note:#161b22; --note-line:#f5e14b; color-scheme:dark}
+  --ok:#357c4f; --ok-ink:#ffffff; --title:#3584ba; --paper:#0d1117; --panel:#161b22; --ink:#e6edf3; --muted:#8b949e; --line:#30363d; --accent:#3584ba; --accent-ink:#ffffff; --ring:#f0b7ad; --next:#f0b7ad; --next-ink:#0d1117; --h2:#f0b7ad; --km:#f0b7ad; --lead:#357c4f; --lead-ink:#ffffff; --note:#161b22; --note-line:#f5e14b; color-scheme:dark}}
+:root[data-theme="dark"]{--ok:#357c4f; --ok-ink:#ffffff; --title:#3584ba; --paper:#0d1117; --panel:#161b22; --ink:#e6edf3; --muted:#8b949e; --line:#30363d; --accent:#3584ba; --accent-ink:#ffffff; --ring:#f0b7ad; --next:#f0b7ad; --next-ink:#0d1117; --h2:#f0b7ad; --km:#f0b7ad; --lead:#357c4f; --lead-ink:#ffffff; --note:#161b22; --note-line:#f5e14b; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0}
 /* every tab at least a full screen tall: on iPhone a short page (Route post before a GPX is loaded) lifted the fixed tab bar */
