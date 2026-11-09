@@ -21,7 +21,7 @@ function captainFor(email) {
 const STATUSES = ["yes", "no", "tbd"];
 /* Kate (who runs the app) sees a few things nobody else does. The app lists them in her ⋯ menu. */
 const OWNER = "captain@example.com";
-const OWNER_HIDES = [];   // names hidden from upcoming runs in Kate's view only (shown if coming or leading), e.g. ["Ale"]
+const OWNER_HIDES = ["Ale"];   // names hidden from upcoming runs in Kate's view only (shown if coming or leading), e.g. ["Ale"]
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || "");
 const isTime = (s) => /^\d{2}:\d{2}$/.test(s || "");
 const clean = (s, n = 200) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, n);

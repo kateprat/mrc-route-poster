@@ -39,6 +39,10 @@ try:
         kate = page_for(b, "captain@example.com")
         kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1500)
         check(kate.is_visible("#taphint"), "Kate is recognised from her email; tap hint shown")
+        own = [n.split()[0] for n in kate.locator(".run").first.locator(".who button[data-cap]").all_inner_texts()]
+        check(own == ["Felix", "Kate", "Andrea", "Fabio"], f"Kate's own view leaves Ale out (OWNER_HIDES): {own}")
+        # the rest of the test runs as "View as: Captain", which shows every captain
+        kate.evaluate("localStorage.setItem('mrc-view','captain')"); kate.reload(); kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1500)
         first = kate.locator(".run").first
         date = first.get_attribute("data-date")
         names = [n.split()[0] for n in first.locator(".who button[data-cap]").all_inner_texts()]
@@ -66,9 +70,14 @@ try:
         kate.reload(); kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1200)
         check(state("Ale") == "lead", "saved: still lead after reloading")
         meta = kate.locator(".run").first.locator(".run-meta").last.inner_text()
+        check("last change by" not in meta, f"View as Captain hides who changed the run: {meta!r}")
+        kate.evaluate("localStorage.setItem('mrc-view','me')"); kate.reload(); kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1200)
+        meta = kate.locator(".run").first.locator(".run-meta").last.inner_text()
         check("last change by Kate" in meta, f"Kate sees who changed the run: {meta!r}")
+        check(state("Ale") == "lead", "Ale still shown in Kate's view when she leads")
+        kate.evaluate("localStorage.setItem('mrc-view','captain')"); kate.reload(); kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1200)
         pick("Kate", "lead"); kate.wait_for_timeout(1500)
-        leadnames = [n for n in kate.locator(".run").first.locator(".who button[data-cap]").all_inner_texts() if "LEAD" in n.upper()]
+        leadnames = [n for n in kate.locator(".run").first.locator(".who button[data-cap]").evaluate_all("bs=>bs.filter(b=>b.classList.contains('lead')).map(b=>b.textContent.trim())")]
         check(len(leadnames) >= 2 and any(n.startswith("Kate") for n in leadnames) and any(n.startswith("Ale") for n in leadnames), f"several leads: {leadnames!r}")
         coming = kate.locator(".run").first.locator(".run-head").inner_text()
         check("4 coming" in coming, f"leads count as coming: {coming!r}")

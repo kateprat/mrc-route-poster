@@ -148,7 +148,10 @@ details[open] summary::after{content:" –"}
 .who button.no{text-decoration:line-through;background:transparent;border-style:dashed;color:var(--muted);opacity:.7}
 .who button.tbd{}
 .who button.yes{background:var(--ok);border-color:var(--ok);color:var(--ok-ink)}
-.who button.lead{background:var(--lead);border-color:var(--lead);color:var(--lead-ink)}
+.who button.lead{background:var(--ok);border-color:var(--ok);color:var(--ok-ink);box-shadow:0 0 0 2.5px var(--panel),0 0 0 5px var(--lead-ring,var(--accent))}
+.who button.lead .leadmark{display:none}
+/* Alternative: ★ instead of the hidden LEAD tag. To use it, delete the line above and uncomment this one.
+.who button.lead .leadmark{font-size:0;border:0;padding:0} .who button.lead .leadmark::before{content:"★";font-size:15px} */
 .who button:disabled{cursor:default}
 .leadmark{font:900 10px/1 var(--sub);letter-spacing:.1em;text-transform:uppercase;border:1px solid currentColor;border-radius:999px;padding:3px 5px}
 .legend{display:flex;flex-wrap:wrap;gap:6px 4px;align-items:center;font-size:12px;color:var(--muted);margin:14px 2px 0;white-space:nowrap}
@@ -285,7 +288,7 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
 .more-menu .menu-seg button{font-size:13px;padding:8px 6px;white-space:nowrap}
 
 /* Mikkeller colour themes (⋯ menu) */
-:root[data-theme="moss"]{--paper:#dfe6d6; --panel:#f6f8f1; --ink:#1a1714; --muted:#5a6352; --line:#c5d0b9; --accent:#357c4f; --accent-ink:#ffffff; --ok:#357c4f; --ok-ink:#ffffff; --lead:#8f5c35; --lead-ink:#ffffff; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
+:root[data-theme="moss"]{--lead-ring:#8f5c35; --paper:#dfe6d6; --panel:#f6f8f1; --ink:#1a1714; --muted:#5a6352; --line:#c5d0b9; --accent:#357c4f; --accent-ink:#ffffff; --ok:#357c4f; --ok-ink:#ffffff; --lead:#8f5c35; --lead-ink:#ffffff; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
 :root[data-theme="burgundy"]{--paper:#4a1a18; --panel:#5e2421; --ink:#eee5d2; --muted:#d9bdb5; --line:#7a3a35; --accent:#f0b7ad; --accent-ink:#4a1a18; --ok:#357c4f; --ok-ink:#ffffff; --lead:#f0b7ad; --lead-ink:#4a1a18; --note:#5e2421; --note-line:#f5e14b; color-scheme:dark}
 :root[data-theme="blue"]{--paper:#d3e4f0; --panel:#f4f8fb; --ink:#1a1714; --muted:#4f5d68; --line:#b3cde0; --accent:#3584ba; --accent-ink:#ffffff; --ok:#357c4f; --ok-ink:#ffffff; --lead:#f5e14b; --lead-ink:#1a1714; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
 :root[data-theme="mauve"]{--paper:#cfb5bc; --panel:#f3ebed; --ink:#0f0f54; --muted:#4f4766; --line:#b99ca5; --accent:#0f0f54; --accent-ink:#eee5d2; --ok:#357c4f; --ok-ink:#ffffff; --lead:#0f0f54; --lead-ink:#eee5d2; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
