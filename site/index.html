@@ -7,7 +7,7 @@
 <meta name="description" content="Turn a GPX file into a Mikkeller Run Club route post.">
 <meta name="theme-color" content="#eee5d2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0f0f54" media="(prefers-color-scheme: dark)">
-<script>try{var t=localStorage.getItem("theme");if(t&&t!=="auto")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+<script>try{var t=localStorage.getItem("theme");t={blue:"light",night:"dark",mauve:"peach",burgundy:"dark",brown:"moss"}[t]||t;if(t&&t!=="auto")document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MRC ZH">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -43,7 +43,7 @@ header{padding:20px 0 8px;display:flex;align-items:center;gap:12px}
 .head-title{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 14px;min-width:0}
 .titlerow{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;min-width:0}
 h1{font-family:var(--display);font-weight:700;font-size:32px;line-height:1.05;margin:0;letter-spacing:-.01em}
-h1 span{color:var(--accent)}
+h1 span{color:var(--title,var(--accent))}
 header p{margin:0;color:var(--muted);font-size:14px}
 h2{font-family:var(--sub);font-weight:900;font-size:13px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 12px;color:var(--muted)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
@@ -226,7 +226,7 @@ footer a{color:inherit}
 #suglist .rcard .btns .btn{padding-left:10px;padding-right:10px}
 /* dark themes: dim the light map pictures so they don't glare (app only; the post image is unchanged) */
 @media (prefers-color-scheme:dark){ :root:not([data-theme]) .thumb, :root[data-theme="auto"] .thumb{filter:brightness(.78)} }
-:root[data-theme="dark"] .thumb, :root[data-theme="night"] .thumb, :root[data-theme="burgundy"] .thumb, :root[data-theme="brown"] .thumb{filter:brightness(.78)}
+:root[data-theme="dark"] .thumb{filter:brightness(.78)}
 /* Route card: second route from the saved routes (dropdown) or a GPX upload */
 .second{display:flex;gap:8px;align-items:center}
 .second select{flex:1;min-width:0;min-height:44px}
@@ -289,12 +289,7 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
 
 /* Mikkeller colour themes (⋯ menu) */
 :root[data-theme="moss"]{--paper:#dfe6d6; --panel:#f6f8f1; --ink:#1a1714; --muted:#5a6352; --line:#c5d0b9; --accent:#357c4f; --accent-ink:#ffffff; --ok:#8f5c35; --ok-ink:#ffffff; --lead:#8f5c35; --lead-ink:#ffffff; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
-:root[data-theme="burgundy"]{--paper:#4a1a18; --panel:#5e2421; --ink:#eee5d2; --muted:#d9bdb5; --line:#7a3a35; --accent:#f0b7ad; --accent-ink:#4a1a18; --ok:#eee5d2; --ok-ink:#4a1a18; --lead:#f0b7ad; --lead-ink:#4a1a18; --note:#5e2421; --note-line:#f5e14b; color-scheme:dark}
-:root[data-theme="blue"]{--paper:#d3e4f0; --panel:#f4f8fb; --ink:#1a1714; --muted:#4f5d68; --line:#b3cde0; --accent:#3584ba; --accent-ink:#ffffff; --ok:#0f0f54; --ok-ink:#ffffff; --lead:#f5e14b; --lead-ink:#1a1714; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
-:root[data-theme="mauve"]{--paper:#cfb5bc; --panel:#f3ebed; --ink:#0f0f54; --muted:#4f4766; --line:#b99ca5; --accent:#0f0f54; --accent-ink:#eee5d2; --ok:#882c29; --ok-ink:#ffffff; --lead:#0f0f54; --lead-ink:#eee5d2; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
-:root[data-theme="brown"]{--paper:#8f5c35; --panel:#6f4527; --ink:#eee5d2; --muted:#e3d3bd; --line:#a77750; --accent:#eee5d2; --accent-ink:#8f5c35; --ok:#f0b7ad; --ok-ink:#4a2a14; --lead:#eee5d2; --lead-ink:#8f5c35; --note:#6f4527; --note-line:#f5e14b; color-scheme:dark}
-:root[data-theme="night"]{--paper:#0f0f54; --panel:#18186a; --ink:#eee5d2; --muted:#c7bfd6; --line:#2e2e86; --accent:#3584ba; --accent-ink:#ffffff; --ok:#eee5d2; --ok-ink:#0f0f54; --lead:#3584ba; --lead-ink:#ffffff; --note:#2a2a7a; --note-line:#f5e14b; color-scheme:dark}
-:root[data-theme="peach"]{--paper:#f0b7ad; --panel:#fbeee9; --ink:#0f0f54; --muted:#5c4a66; --line:#e39d92; --accent:#0f0f54; --accent-ink:#f0b7ad; --ok:#882c29; --ok-ink:#ffffff; --lead:#0f0f54; --lead-ink:#f0b7ad; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
+:root[data-theme="peach"]{--title:#882c29; --paper:#f0b7ad; --panel:#fbeee9; --ink:#0f0f54; --muted:#5c4a66; --line:#e39d92; --accent:#0f0f54; --accent-ink:#f0b7ad; --ok:#882c29; --ok-ink:#ffffff; --lead:#0f0f54; --lead-ink:#f0b7ad; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
 </style>
 </head>
 <body>
@@ -307,7 +302,7 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
   <div id="moremenu" class="menu" hidden><p class="menu-h">Theme</p>
     <div class="menu-seg" role="group" aria-label="Theme"><button type="button" data-theme-v="auto">Auto</button><button type="button" data-theme-v="light">Light</button><button type="button" data-theme-v="dark">Dark</button></div>
     <p class="menu-h">Mikkeller colours</p>
-    <div class="menu-seg" role="group" aria-label="Mikkeller colours"><button type="button" data-theme-v="moss"><i style="background:#357c4f"></i>Moss</button><button type="button" data-theme-v="burgundy"><i style="background:#882c29"></i>Burgundy</button><button type="button" data-theme-v="blue"><i style="background:#3584ba"></i>Blue</button><button type="button" data-theme-v="peach"><i style="background:#f0b7ad"></i>Peach</button><button type="button" data-theme-v="mauve"><i style="background:#cfb5bc"></i>Mauve</button><button type="button" data-theme-v="brown"><i style="background:#8f5c35"></i>Brown</button><button type="button" data-theme-v="night"><i style="background:#0f0f54"></i>Night</button></div>
+    <div class="menu-seg" role="group" aria-label="Mikkeller colours"><button type="button" data-theme-v="moss"><i style="background:#357c4f"></i>Moss</button><button type="button" data-theme-v="peach"><i style="background:#f0b7ad"></i>Peach</button></div>
     <div id="ownermenu" hidden>
       <p class="menu-h">View as</p>
       <div class="menu-seg" role="group" aria-label="View as"><button type="button" data-view="me">Me</button><button type="button" data-view="captain">Captain</button><button type="button" data-view="guest">Guest</button></div>
@@ -471,7 +466,8 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
 <script>
 /* ⋯ menu: theme Auto / Light / Dark or a Mikkeller colour theme, remembered on this phone */
 (function(){const root=document.documentElement, btn=document.getElementById("menubtn"), m=document.getElementById("moremenu");
-  const get=()=>{try{return localStorage.getItem("theme")||"auto"}catch(e){return "auto"}};
+  const OLD={blue:"light",night:"dark",mauve:"peach",burgundy:"dark",brown:"moss"};   // removed themes → nearest kept one
+  const get=()=>{try{const t=localStorage.getItem("theme")||"auto"; return OLD[t]||t}catch(e){return "auto"}};
   const metas=[...document.querySelectorAll('meta[name="theme-color"]')]; metas.forEach(x=>x.dataset.orig=x.content);
   const apply=v=>{ if(v==="auto") root.removeAttribute("data-theme"); else root.setAttribute("data-theme",v);
     const bg=getComputedStyle(document.body).backgroundColor; metas.forEach(x=>x.content= v==="auto" ? x.dataset.orig : bg);
