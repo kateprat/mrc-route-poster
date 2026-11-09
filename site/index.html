@@ -25,12 +25,12 @@
   --paper:#eee5d2; --panel:#fbf7ef; --ink:#1a1714; --muted:#6b6358; --line:#ddd2bd;
   /* Mikkeller brand book: Paper ground, Blue (the bar logo blue) as the main colour, Moss Green for coming */
   --burgundy:#882c29; --blue:#3584ba; --accent:#3584ba; --accent-ink:#ffffff;
-  --ok:#357c4f; --ok-ink:#ffffff; --lead:#3584ba; --lead-ink:#ffffff; --note:#f6efc0; --note-line:#e0cf5a;
+  --ok:#0f0f54; --ok-ink:#ffffff; --lead:#3584ba; --lead-ink:#ffffff; --note:#f6efc0; --note-line:#e0cf5a;
   --display:"Windsor",Georgia,serif; --sub:"Gotham","Helvetica Neue",Arial,sans-serif; --body:"Gotham","Helvetica Neue",Arial,sans-serif;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme]){
-  --paper:#0f0f54; --panel:#18186a; --ink:#eee5d2; --muted:#c7bfd6; --line:#2e2e86; --accent:#f0b7ad; --accent-ink:#0f0f54; --lead:#f0b7ad; --lead-ink:#0f0f54; --note:#2a2a7a; --note-line:#f5e14b; color-scheme:dark}}
-:root[data-theme="dark"]{--paper:#0f0f54; --panel:#18186a; --ink:#eee5d2; --muted:#c7bfd6; --line:#2e2e86; --accent:#f0b7ad; --accent-ink:#0f0f54; --lead:#f0b7ad; --lead-ink:#0f0f54; --note:#2a2a7a; --note-line:#f5e14b; color-scheme:dark}
+  --ok:#eee5d2; --ok-ink:#0f0f54; --paper:#0f0f54; --panel:#18186a; --ink:#eee5d2; --muted:#c7bfd6; --line:#2e2e86; --accent:#f0b7ad; --accent-ink:#0f0f54; --lead:#f0b7ad; --lead-ink:#0f0f54; --note:#2a2a7a; --note-line:#f5e14b; color-scheme:dark}}
+:root[data-theme="dark"]{--ok:#eee5d2; --ok-ink:#0f0f54; --paper:#0f0f54; --panel:#18186a; --ink:#eee5d2; --muted:#c7bfd6; --line:#2e2e86; --accent:#f0b7ad; --accent-ink:#0f0f54; --lead:#f0b7ad; --lead-ink:#0f0f54; --note:#2a2a7a; --note-line:#f5e14b; color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0}
 /* every tab at least a full screen tall: on iPhone a short page (Route post before a GPX is loaded) lifted the fixed tab bar */
@@ -289,12 +289,12 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
 
 /* Mikkeller colour themes (⋯ menu) */
 :root[data-theme="moss"]{--paper:#dfe6d6; --panel:#f6f8f1; --ink:#1a1714; --muted:#5a6352; --line:#c5d0b9; --accent:#357c4f; --accent-ink:#ffffff; --ok:#8f5c35; --ok-ink:#ffffff; --lead:#8f5c35; --lead-ink:#ffffff; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
-:root[data-theme="burgundy"]{--paper:#4a1a18; --panel:#5e2421; --ink:#eee5d2; --muted:#d9bdb5; --line:#7a3a35; --accent:#f0b7ad; --accent-ink:#4a1a18; --ok:#357c4f; --ok-ink:#ffffff; --lead:#f0b7ad; --lead-ink:#4a1a18; --note:#5e2421; --note-line:#f5e14b; color-scheme:dark}
-:root[data-theme="blue"]{--paper:#d3e4f0; --panel:#f4f8fb; --ink:#1a1714; --muted:#4f5d68; --line:#b3cde0; --accent:#3584ba; --accent-ink:#ffffff; --ok:#357c4f; --ok-ink:#ffffff; --lead:#f5e14b; --lead-ink:#1a1714; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
-:root[data-theme="mauve"]{--paper:#cfb5bc; --panel:#f3ebed; --ink:#0f0f54; --muted:#4f4766; --line:#b99ca5; --accent:#0f0f54; --accent-ink:#eee5d2; --ok:#357c4f; --ok-ink:#ffffff; --lead:#0f0f54; --lead-ink:#eee5d2; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
-:root[data-theme="brown"]{--paper:#8f5c35; --panel:#6f4527; --ink:#eee5d2; --muted:#e3d3bd; --line:#a77750; --accent:#eee5d2; --accent-ink:#8f5c35; --ok:#357c4f; --ok-ink:#ffffff; --lead:#eee5d2; --lead-ink:#8f5c35; --note:#6f4527; --note-line:#f5e14b; color-scheme:dark}
-:root[data-theme="night"]{--paper:#0f0f54; --panel:#18186a; --ink:#eee5d2; --muted:#c7bfd6; --line:#2e2e86; --accent:#3584ba; --accent-ink:#ffffff; --ok:#357c4f; --ok-ink:#ffffff; --lead:#3584ba; --lead-ink:#ffffff; --note:#2a2a7a; --note-line:#f5e14b; color-scheme:dark}
-:root[data-theme="peach"]{--paper:#f0b7ad; --panel:#fbeee9; --ink:#0f0f54; --muted:#5c4a66; --line:#e39d92; --accent:#0f0f54; --accent-ink:#f0b7ad; --ok:#357c4f; --ok-ink:#ffffff; --lead:#0f0f54; --lead-ink:#f0b7ad; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
+:root[data-theme="burgundy"]{--paper:#4a1a18; --panel:#5e2421; --ink:#eee5d2; --muted:#d9bdb5; --line:#7a3a35; --accent:#f0b7ad; --accent-ink:#4a1a18; --ok:#eee5d2; --ok-ink:#4a1a18; --lead:#f0b7ad; --lead-ink:#4a1a18; --note:#5e2421; --note-line:#f5e14b; color-scheme:dark}
+:root[data-theme="blue"]{--paper:#d3e4f0; --panel:#f4f8fb; --ink:#1a1714; --muted:#4f5d68; --line:#b3cde0; --accent:#3584ba; --accent-ink:#ffffff; --ok:#0f0f54; --ok-ink:#ffffff; --lead:#f5e14b; --lead-ink:#1a1714; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
+:root[data-theme="mauve"]{--paper:#cfb5bc; --panel:#f3ebed; --ink:#0f0f54; --muted:#4f4766; --line:#b99ca5; --accent:#0f0f54; --accent-ink:#eee5d2; --ok:#882c29; --ok-ink:#ffffff; --lead:#0f0f54; --lead-ink:#eee5d2; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
+:root[data-theme="brown"]{--paper:#8f5c35; --panel:#6f4527; --ink:#eee5d2; --muted:#e3d3bd; --line:#a77750; --accent:#eee5d2; --accent-ink:#8f5c35; --ok:#f0b7ad; --ok-ink:#4a2a14; --lead:#eee5d2; --lead-ink:#8f5c35; --note:#6f4527; --note-line:#f5e14b; color-scheme:dark}
+:root[data-theme="night"]{--paper:#0f0f54; --panel:#18186a; --ink:#eee5d2; --muted:#c7bfd6; --line:#2e2e86; --accent:#3584ba; --accent-ink:#ffffff; --ok:#eee5d2; --ok-ink:#0f0f54; --lead:#3584ba; --lead-ink:#ffffff; --note:#2a2a7a; --note-line:#f5e14b; color-scheme:dark}
+:root[data-theme="peach"]{--paper:#f0b7ad; --panel:#fbeee9; --ink:#0f0f54; --muted:#5c4a66; --line:#e39d92; --accent:#0f0f54; --accent-ink:#f0b7ad; --ok:#882c29; --ok-ink:#ffffff; --lead:#0f0f54; --lead-ink:#f0b7ad; --note:#f6efc0; --note-line:#e0cf5a; color-scheme:light}
 </style>
 </head>
 <body>
