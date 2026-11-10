@@ -127,7 +127,8 @@ function computeView(F, W, H){
 
 /* ---------- map (MapLibre, drawn off-screen, copied into the post) ---------- */
 const PALETTE = {
-  classic:{bg:"#eef0f0", park:"#e7eae7", water:"#ffffff", building:"#e2e4e5", road:"#ffffff", minor:"#fafafa", rail:"#cfd2d3", major:"#d6d9da", path:"#dfe2e3"},
+  classic:{bg:"#eef0f0", park:"#e7eae7", water:"#ffffff", building:"#e2e4e5", road:"#ffffff", minor:"#fafafa", rail:"#cfd2d3", major:"#d6d9da", path:"#dfe2e3",
+           calm:true},   // calm: less detail, like the hand-made posts (no driveways/yards, buildings and paths only when zoomed far in)
   grey:  {bg:"#eef0f0", park:"#e8ebe8", water:"#dde2e4", building:"#e6e8e8", road:"#ffffff", minor:"#fbfbfb", rail:"#dfe1e1"},   // light, like the hand-made posts
   night: {bg:"#2a2622", park:"#2b2a22", water:"#24262a", building:"#312c27", road:"#463f37", minor:"#3a342e", rail:"#352f29"}   // map pictures in the dark themes
 };
@@ -137,8 +138,8 @@ function mapStyle(name){
   const c=PALETTE[name]||PALETTE.grey;
   const w=(base)=>["interpolate",["exponential",1.6],["zoom"],10,base*0.25,14,base,18,base*9];
   const roads=[
-    ["path",   ["path","track"],                          0.9, c.path||c.minor, c.path?[2,2]:null],
-    ["minor",  ["minor","service"],                       1.6, c.minor],
+    ["path",   ["path","track"],                          0.9, c.path||c.minor, c.path?[2,2]:null, c.calm?15.5:0],
+    ["minor",  c.calm?["minor"]:["minor","service"],      1.6, c.minor],
     ["street", ["tertiary","secondary"],                  2.6, c.road],
     ["major",  ["primary","trunk"],                       3.4, c.road],
     ["motorway",["motorway"],                             3.8, c.major||c.road],   // classic: grey bands, like the hand-made posts
@@ -152,9 +153,11 @@ function mapStyle(name){
       {id:"landcover", type:"fill", source:"omt", "source-layer":"landcover", filter:["in",["get","class"],["literal",["grass","wood","farmland"]]], paint:{"fill-color":c.park}},
       {id:"water", type:"fill", source:"omt", "source-layer":"water", paint:{"fill-color":c.water}},
       {id:"waterway", type:"line", source:"omt", "source-layer":"waterway", paint:{"line-color":c.water, "line-width":w(1.5)}},
-      {id:"building", type:"fill", source:"omt", "source-layer":"building", minzoom:14, paint:{"fill-color":c.building}},
-      {id:"rail", type:"line", source:"omt", "source-layer":"transportation", filter:["==",["get","class"],"rail"], paint:{"line-color":c.rail, "line-width":w(c.major?2.2:1)}},
-      ...roads.map(([id,cls,width,color,dash])=>({id:"road-"+id, type:"line", source:"omt", "source-layer":"transportation",
+      {id:"building", type:"fill", source:"omt", "source-layer":"building", minzoom:c.calm?15.5:14, paint:{"fill-color":c.building}},
+      {id:"rail", type:"line", source:"omt", "source-layer":"transportation",
+        filter:c.calm?["all",["==",["get","class"],"rail"],["!",["has","service"]]]:["==",["get","class"],"rail"],   // calm: main lines, not yards and sidings
+        paint:{"line-color":c.rail, "line-width":w(c.major?2.2:1)}},
+      ...roads.map(([id,cls,width,color,dash,minz])=>({id:"road-"+id, type:"line", source:"omt", "source-layer":"transportation", ...(minz?{minzoom:minz}:{}),
         filter:["all",["in",["get","class"],["literal",cls]],["!=",["get","brunnel"],"tunnel"]],
         layout:{"line-cap":dash?"butt":"round","line-join":"round"}, paint:{"line-color":color, "line-width":w(width), ...(dash?{"line-dasharray":dash}:{})}})),
     ]
@@ -652,7 +655,7 @@ const routeSVG=(pts, color="#882c29")=>routesSVG([[pts,color]]);
 /* Map behind each route picture in Routes: a small separate map, one route at a time, framed exactly like
    routesSVG() (same centre, line fills 84 % of the square). Pictures are kept on this phone so it's done once per route. */
 const TH={map:null, ready:null, mode:null, queue:[], busy:false, mem:new Map(), size:288};
-const thumbKey=r=>`mrc-thumb-v3-${darkUI()?"night-":""}${r.id}-${r.km.toFixed(3)}-${r.pts.length}`;
+const thumbKey=r=>`mrc-thumb-v4-${darkUI()?"night-":""}${r.id}-${r.km.toFixed(3)}-${r.pts.length}`;
 function thumbFrame(pts){
   const k=Math.cos(pts[0][0]*Math.PI/180), xs=pts.map(p=>p[1]*k), ys=pts.map(p=>-p[0]);
   const x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys);
