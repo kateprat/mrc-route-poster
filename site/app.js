@@ -170,7 +170,7 @@ function ensureMap(W,H){
     M.map=new maplibregl.Map({container:box, style:mapStyle(S.mapstyle), interactive:false, attributionControl:false,
       pixelRatio:1, preserveDrawingBuffer:true, fadeDuration:0, center:[8.53,47.37], zoom:13});
     M.map.on("load",()=>{M.ready=true; scheduleDraw();});
-    M.map.on("render",()=>scheduleDraw());
+    M.map.on("render",()=>{ if(M.pend) M.shown=M.pend; scheduleDraw(); });   // the map picture now shows M.pend
     M.map.on("idle",()=>{M.idle=true; scheduleDraw();});
     M.map.on("error",(e)=>{ console.warn("map", e && e.error && e.error.message); M.error=true; scheduleDraw(); });
   }
@@ -186,7 +186,7 @@ function syncMap(V,W,H){
   const ux=V.cx+(W/2-V.ox)/V.scale, uy=V.cy+(H/2-V.oy)/V.scale;
   const zoom=Math.log2(V.scale/512);
   const c=map.getCenter(), key=[ux,uy,zoom].map(v=>v.toFixed(9)).join();
-  if(M.key!==key){ M.key=key; M.idle=false; map.jumpTo({center:unitToLngLat(ux,uy), zoom}); }
+  if(M.key!==key){ M.key=key; M.idle=false; M.pend={ux, uy, s:V.scale}; map.jumpTo({center:unitToLngLat(ux,uy), zoom}); }
   return map;
 }
 function drawMap(V, W, H){
@@ -194,7 +194,11 @@ function drawMap(V, W, H){
   ctx.fillStyle=S.mapstyle==="none"?"#e6e6e6":bg; ctx.fillRect(0,0,W,H);
   if(S.mapstyle==="none") return true;
   const map=syncMap(V,W,H);
-  if(map && M.ready){ try{ ctx.drawImage(map.getCanvas(),0,0,W,H); }catch(e){ M.error=true; } }
+  // The map picture can lag a frame behind (while loading, zooming or dragging): place it where the view it
+  // actually shows belongs, so map and route always line up.
+  if(map && M.ready){ try{ const d=M.shown||M.pend, k=d?V.scale/d.s:1;
+      const x=d?V.ox+(d.ux-W/2/d.s-V.cx)*V.scale:0, y=d?V.oy+(d.uy-H/2/d.s-V.cy)*V.scale:0;
+      ctx.drawImage(map.getCanvas(), x, y, W*k, H*k); }catch(e){ M.error=true; } }
   return !!(map && M.ready && M.idle);
 }
 function mapSettled(timeout=8000){
