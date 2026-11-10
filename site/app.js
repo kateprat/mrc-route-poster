@@ -1279,12 +1279,10 @@ function init(){
   $("gpx2").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadSecond(f); e.target.value=""; });
   $("route2select").addEventListener("change",e=>{ const id=Number(e.target.value); if(id) addSecondFromLibrary(id); });
   $("route2select").addEventListener("focus",()=>{ if(!LIB.routes) loadRoutes(); });
-  // ✕ on either route: the other one stays; removing the main one makes the second the main one (keeping its colour,
-  // and its name as title if the title was still the main route's name)
+  // ✕ on either route: the other one stays; removing the main one makes the second the main one (keeping its colour; the title stays)
   $("distinfo").addEventListener("click",e=>{ const b=e.target.closest("[data-rmroute]"); if(!b) return;
     if(b.dataset.rmroute==="0" && S.routes.length===2){
       const keep=S.routes[1], col=routeColor(1);
-      if(($("title").value||"").trim().toUpperCase()===cleanTitle(S.routes[0].name).toUpperCase()) $("title").value=cleanTitle(keep.name);
       S.routes=[keep]; S.color=col;
     } else S.routes=S.routes.slice(0,1);
     routesChanged(); });
