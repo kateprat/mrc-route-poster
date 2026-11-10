@@ -504,7 +504,7 @@ function renderStats(){
   const line=r=>`${kmText(r)} km`+(r.up!=null?`${sep}↑ ${r.up} m`:"")+lights(r);
   $("routecard").classList.toggle("two", two);
   $("distinfo").innerHTML=S.routes.map((r,i)=>`<div class="lg"><i style="background:${routeColor(i)}" aria-hidden="true"></i>`+
-    (two?`<span class="who">${i?"Second":"Main"}</span>`:"")+line(r)+
+    line(r)+
     `<button type="button" class="rmx" data-rmroute="${i}" aria-label="${two?`Remove ${i?"second":"main"} route`:"Remove the route and start over"}">✕</button></div>`).join("");
 }
 /* Route post: count the lights once the list is on the phone (first time: a few seconds). */
