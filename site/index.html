@@ -204,7 +204,6 @@ footer a{color:inherit}
 .rcard .km{font:900 13px/1 var(--sub);letter-spacing:.02em;color:var(--ink)}
 .rcard .meta{font-size:13px;color:var(--muted);margin:4px 0 8px}
 .rcard .btns{display:flex;flex-wrap:wrap;gap:6px}
-.filebar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 8px}
 .linkbtn{appearance:none;background:none;border:0;padding:10px 6px;min-height:40px;font:600 14px/1 var(--body);color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 .chip{appearance:none;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;
   padding:8px 14px;min-height:40px;font:900 13px/1 var(--sub);letter-spacing:.04em;cursor:pointer;display:inline-flex;align-items:center}
@@ -334,10 +333,6 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
   </div>
 
   <section id="editor" class="hidden">
-    <div class="filebar">
-      <label class="chip" for="gpx">Change GPX</label>
-      <button type="button" class="linkbtn" id="startover" aria-label="Remove the GPX and start over">Remove</button>
-    </div>
     <div class="card" style="padding:12px">
       <div class="seg" id="fmt" role="group" aria-label="Format">
         <button type="button" data-v="feed" aria-pressed="true">Post 4:5</button>
@@ -446,7 +441,7 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
 <!-- off-screen map used to draw the post; wrapped in a 0×0 box so its 1350 px height can't stretch the page on iPhone -->
 <div aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none"><div id="mapbox" style="position:absolute;left:0;top:0;width:1080px;height:1920px"></div><div id="thumbbox" style="position:absolute;left:0;top:0;width:288px;height:288px"></div></div>
 <script src="vendor/maplibre-gl.js"></script>
-<script src="app.js?v=tap2"></script>
+<script src="app.js?v=rm1"></script>
 <script>
 /* ⋯ menu: theme Auto / Light / Dark or a Mikkeller colour theme, remembered on this phone */
 (function(){const root=document.documentElement, btn=document.getElementById("menubtn"), m=document.getElementById("moremenu");

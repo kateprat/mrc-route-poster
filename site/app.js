@@ -505,7 +505,7 @@ function renderStats(){
   $("routecard").classList.toggle("two", two);
   $("distinfo").innerHTML=S.routes.map((r,i)=>`<div class="lg"><i style="background:${routeColor(i)}" aria-hidden="true"></i>`+
     (two?`<span class="who">${i?"Second":"Main"}</span>`:"")+line(r)+
-    (two?`<button type="button" class="rmx" data-rmroute="${i}" aria-label="Remove ${i?"second":"main"} route">✕</button>`:"")+`</div>`).join("");
+    `<button type="button" class="rmx" data-rmroute="${i}" aria-label="${two?`Remove ${i?"second":"main"} route`:"Remove the route and start over"}">✕</button></div>`).join("");
 }
 /* Route post: count the lights once the list is on the phone (first time: a few seconds). */
 function lightsForPost(){
@@ -1284,9 +1284,9 @@ function init(){
     if(b.dataset.rmroute==="0" && S.routes.length===2){
       const keep=S.routes[1], col=routeColor(1);
       S.routes=[keep]; S.color=col;
-    } else S.routes=S.routes.slice(0,1);
+    } else if(S.routes.length===1) return startOver();   // the only route: back to the empty Route post
+    else S.routes=S.routes.slice(0,1);
     routesChanged(); });
-  $("startover").addEventListener("click",startOver);
   $("distinfo").addEventListener("click",e=>{ if(e.target.closest("[data-sigretry]")){ SIG.error=""; renderStats(); lightsForPost(); } });
   $("pastebtn").addEventListener("click",pasteGpx);
   $("pastetext").addEventListener("paste",async e=>{ const dt=e.clipboardData; if(dt && [...(dt.items||[])].some(i=>i.kind==="file")){ e.preventDefault();

@@ -126,6 +126,10 @@ try:
         pg.click('[data-rmroute="0"]'); pg.wait_for_timeout(500)
         check(pg.evaluate("S.routes.length") == 1 and pg.evaluate("S.routes[0].total") == second_km and pg.evaluate("routeColor(0)") == second_col,
               "main route removed: the second is now the main one, same colour")
+        # one route left: its ✕ goes back to the empty Route post
+        pg.click('[data-rmroute="0"]'); pg.wait_for_timeout(500)
+        check(pg.evaluate("S.routes.length") == 0 and pg.is_hidden("#editor"), "✕ on the only route starts over")
+        check(pg.locator("#startover, .filebar").count() == 0, "no Change GPX / Remove bar")
         pg.set_input_files("#gpx", os.path.join(ROOT, "test", "sample.gpx")); pg.wait_for_timeout(2000)
 
         with pg.expect_download() as dl:
