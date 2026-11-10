@@ -505,7 +505,7 @@ function renderStats(){
   $("routecard").classList.toggle("two", two);
   $("distinfo").innerHTML=S.routes.map((r,i)=>`<div class="lg"><i style="background:${routeColor(i)}" aria-hidden="true"></i>`+
     (two?`<span class="who">${i?"Second":"Main"}</span>`:"")+line(r)+
-    (two&&i?`<button type="button" class="rmx" id="route2remove" aria-label="Remove second route">✕</button>`:"")+`</div>`).join("");
+    (two?`<button type="button" class="rmx" data-rmroute="${i}" aria-label="Remove ${i?"second":"main"} route">✕</button>`:"")+`</div>`).join("");
 }
 /* Route post: count the lights once the list is on the phone (first time: a few seconds). */
 function lightsForPost(){
@@ -1279,7 +1279,15 @@ function init(){
   $("gpx2").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadSecond(f); e.target.value=""; });
   $("route2select").addEventListener("change",e=>{ const id=Number(e.target.value); if(id) addSecondFromLibrary(id); });
   $("route2select").addEventListener("focus",()=>{ if(!LIB.routes) loadRoutes(); });
-  $("distinfo").addEventListener("click",e=>{ if(e.target.closest("#route2remove")){ S.routes=S.routes.slice(0,1); routesChanged(); } });
+  // ✕ on either route: the other one stays; removing the main one makes the second the main one (keeping its colour,
+  // and its name as title if the title was still the main route's name)
+  $("distinfo").addEventListener("click",e=>{ const b=e.target.closest("[data-rmroute]"); if(!b) return;
+    if(b.dataset.rmroute==="0" && S.routes.length===2){
+      const keep=S.routes[1], col=routeColor(1);
+      if(($("title").value||"").trim().toUpperCase()===cleanTitle(S.routes[0].name).toUpperCase()) $("title").value=cleanTitle(keep.name);
+      S.routes=[keep]; S.color=col;
+    } else S.routes=S.routes.slice(0,1);
+    routesChanged(); });
   $("startover").addEventListener("click",startOver);
   $("distinfo").addEventListener("click",e=>{ if(e.target.closest("[data-sigretry]")){ SIG.error=""; renderStats(); lightsForPost(); } });
   $("pastebtn").addEventListener("click",pasteGpx);

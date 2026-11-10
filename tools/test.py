@@ -118,8 +118,15 @@ try:
         save(pg, "feed-two-routes.png")
         pg.click('#fmt button[data-v="route"]'); pg.wait_for_timeout(800); save(pg, "route-two-routes.png")
         pg.click('#fmt button[data-v="feed"]')
-        pg.click("#route2remove"); pg.wait_for_timeout(500)
+        pg.click('[data-rmroute="1"]'); pg.wait_for_timeout(500)
         check(pg.evaluate("S.routes.length") == 1, "second route removed")
+        # removing the main route: the second one becomes the main one, keeping its colour
+        pg.set_input_files("#gpx2", os.path.join(ROOT, "test", "sample2.gpx")); pg.wait_for_timeout(2000)
+        second_km, second_col = pg.evaluate("S.routes[1].total"), pg.evaluate("routeColor(1)")
+        pg.click('[data-rmroute="0"]'); pg.wait_for_timeout(500)
+        check(pg.evaluate("S.routes.length") == 1 and pg.evaluate("S.routes[0].total") == second_km and pg.evaluate("routeColor(0)") == second_col,
+              "main route removed: the second is now the main one, same colour")
+        pg.set_input_files("#gpx", os.path.join(ROOT, "test", "sample.gpx")); pg.wait_for_timeout(2000)
 
         with pg.expect_download() as dl:
             pg.click("#share")
