@@ -355,6 +355,14 @@ function placeDateField(){
 function placeTitleField(F){
   const el=$("title"), show=S.fmt!=="route"; el.style.display = show ? "" : "none"; if(!show) return;
   const h=(S.hits||{}).title, W=cv.width, H=cv.height;
+  if(S.editTitle && h){
+    // typing: the field shows the title itself, same font, size, place and angle, with a cursor you can move
+    const k=cv.getBoundingClientRect().width/W, bw=W*0.9;
+    el.style.left=((h.cx-bw/2)/W*100)+"%"; el.style.width=(bw/W*100)+"%";
+    el.style.top=((h.cy-h.h*h.scale*0.6)/H*100)+"%"; el.style.height=(h.h*h.scale*1.2/H*100)+"%";
+    el.style.fontSize=(S.titleSize*h.scale*k)+"px"; el.style.transform=`rotate(${h.rot}deg)`;
+    return; }
+  el.style.fontSize=""; el.style.transform="";
   const b = h ? {x:h.cx-h.w*h.scale/2, y:h.cy-h.h*h.scale/2, w:h.w*h.scale, h:h.h*h.scale} : {x:W*0.1, y:F.title, w:W*0.8, h:140};
   el.style.left=(b.x/W*100)+"%"; el.style.top=(b.y/H*100)+"%"; el.style.width=(b.w/W*100)+"%"; el.style.height=(b.h/H*100)+"%";
 }
@@ -382,9 +390,10 @@ function drawText(F, W, H){
   const title=($("title").value||"").toUpperCase().trim();
   S.hits={};
   let y=F.title;
-  if(title){ const s=fitText(title,'"MikkelWind"',W*0.86,160,60);
-    ctx.font=`${s}px "MikkelWind"`; const tw=ctx.measureText(mwSplit(title).base).width;
-    drawItem("title", W/2, y+s/2, tw, s, ()=>drawMW(title, 0, -s/2, s)); y+=s*1.02; }
+  if(title || S.editTitle){ const s=fitText(title||"T",'"MikkelWind"',W*0.86,160,60);
+    ctx.font=`${s}px "MikkelWind"`; const tw=Math.max(ctx.measureText(mwSplit(title).base).width, 40);
+    S.titleSize=s;
+    drawItem("title", W/2, y+s/2, tw, s, ()=>{ if(!S.editTitle) drawMW(title, 0, -s/2, s); }); y+=s*1.02; }
   const dy=title?y+8:F.dist;
   // distance(s): one route in black, two routes each in their route colour
   ctx.font=`100px "MikkelWind"`;
@@ -1261,8 +1270,8 @@ function init(){
   loadRoutes();
   seg("fmt","fmt");
   // the title field sits invisibly over the title on the post: show the dashed outline while typing
-  $("title").addEventListener("focus",()=>{ clearTimeout(S.selT); S.sel="title"; scheduleDraw(); });
-  $("title").addEventListener("blur",()=>{ S.sel=null; scheduleDraw(); });
+  $("title").addEventListener("focus",()=>{ clearTimeout(S.selT); S.sel="title"; S.editTitle=true; $("title").classList.add("editing"); scheduleDraw(); });
+  $("title").addEventListener("blur",()=>{ S.sel=null; S.editTitle=false; $("title").classList.remove("editing"); scheduleDraw(); });
   $("title").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); e.target.blur(); } });
   $("beerreset").addEventListener("click",()=>{ delete S.items[S.fmt]; S.zoom=1; S.pan={x:0,y:0}; scheduleDraw(); });
   ["title","date"].forEach(i=>$(i).addEventListener("input",scheduleDraw));

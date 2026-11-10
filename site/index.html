@@ -66,6 +66,8 @@ h2{font-family:var(--sub);font-weight:900;font-size:13px;letter-spacing:.12em;te
 .preview input.datehit{position:absolute;z-index:2;margin:0;padding:0;border:0;min-height:0;width:auto;
   opacity:.011;background:transparent;color:transparent;font-size:16px;cursor:pointer;-webkit-appearance:none;appearance:none}
 .preview input.titlehit{position:absolute;z-index:1;margin:0;padding:0;border:0;min-height:0;opacity:.011;background:transparent;color:transparent;caret-color:transparent;font-size:16px;pointer-events:none}
+/* while typing the field is the title on the post: visible text and cursor (tap inside to move the cursor or select) */
+.preview input.titlehit.editing{opacity:1;color:#141414;caret-color:#3584ba;pointer-events:auto;font-family:"MikkelWind";text-transform:uppercase;text-align:center;line-height:1;transform-origin:50% 50%;outline:none}
 .hint{color:var(--muted);font-size:13px;margin:8px 2px 0;text-align:center}
 .status{font-size:13px;color:var(--muted);min-height:1.2em;margin:6px 2px 0;text-align:center}
 .status.warn{color:var(--burgundy)}
@@ -443,7 +445,7 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
 <!-- off-screen map used to draw the post; wrapped in a 0×0 box so its 1350 px height can't stretch the page on iPhone -->
 <div aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none"><div id="mapbox" style="position:absolute;left:0;top:0;width:1080px;height:1920px"></div><div id="thumbbox" style="position:absolute;left:0;top:0;width:288px;height:288px"></div></div>
 <script src="vendor/maplibre-gl.js"></script>
-<script src="app.js?v=tap1"></script>
+<script src="app.js?v=tap2"></script>
 <script>
 /* ⋯ menu: theme Auto / Light / Dark or a Mikkeller colour theme, remembered on this phone */
 (function(){const root=document.documentElement, btn=document.getElementById("menubtn"), m=document.getElementById("moremenu");
