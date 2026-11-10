@@ -10,6 +10,9 @@ const FORMATS = {
   route:  {w:1080, h:1920, box:[0.12,0.15,0.88,0.85], title:null}
 };
 const TEXT = "#141414";
+/* Map look for posts. "classic" = like the hand-made posts (white water, grey motorways and rail, soft buildings,
+   faint dashed paths). To go back to the previous look, set this to "grey". */
+const POST_MAP = "classic";
 const COLORS = ["#882c29", "#3584ba"];                   // MRC burgundy, MRC blue
 const ADV_DEFAULTS = {width:10, simplify:8};
 const NO_TRIM = {round:false, trimS:0, trimE:0};          // corner rounding and end trimming were removed from the app
@@ -21,7 +24,7 @@ const MAP_SOURCE = params.get("source") || "https://tiles.openfreemap.org/planet
 /* ---------- state ---------- */
 const S = {
   routes: [],        // [{name, pts:[{lat,lon}], cum:[m], total:m}] — one, or two when there are two route options
-  fmt: "feed", color: COLORS[0], mapstyle: "grey",   // always the MRC grey map
+  fmt: "feed", color: COLORS[0], mapstyle: POST_MAP,   // the map look on posts and route pictures
   zoom: 1, ...ADV_DEFAULTS, ...NO_TRIM,
   pan: {x:0, y:0},   // mercator units
   items: {},         // per format: {title|dist|beer: {dx,dy,scale,rot}} once someone moves, turns or resizes them
@@ -124,6 +127,7 @@ function computeView(F, W, H){
 
 /* ---------- map (MapLibre, drawn off-screen, copied into the post) ---------- */
 const PALETTE = {
+  classic:{bg:"#eef0f0", park:"#e7eae7", water:"#ffffff", building:"#e2e4e5", road:"#ffffff", minor:"#fafafa", rail:"#cfd2d3", major:"#d6d9da", path:"#dfe2e3"},
   grey:  {bg:"#eef0f0", park:"#e8ebe8", water:"#dde2e4", building:"#e6e8e8", road:"#ffffff", minor:"#fbfbfb", rail:"#dfe1e1"},   // light, like the hand-made posts
   night: {bg:"#2a2622", park:"#2b2a22", water:"#24262a", building:"#312c27", road:"#463f37", minor:"#3a342e", rail:"#352f29"}   // map pictures in the dark themes
 };
@@ -133,10 +137,11 @@ function mapStyle(name){
   const c=PALETTE[name]||PALETTE.grey;
   const w=(base)=>["interpolate",["exponential",1.6],["zoom"],10,base*0.25,14,base,18,base*9];
   const roads=[
-    ["path",   ["path","track"],                          0.9, c.minor],
+    ["path",   ["path","track"],                          0.9, c.path||c.minor, c.path?[2,2]:null],
     ["minor",  ["minor","service"],                       1.6, c.minor],
     ["street", ["tertiary","secondary"],                  2.6, c.road],
-    ["major",  ["primary","trunk","motorway"],            3.4, c.road],
+    ["major",  ["primary","trunk"],                       3.4, c.road],
+    ["motorway",["motorway"],                             3.8, c.major||c.road],   // classic: grey bands, like the hand-made posts
   ];
   return {
     version:8,
@@ -148,10 +153,10 @@ function mapStyle(name){
       {id:"water", type:"fill", source:"omt", "source-layer":"water", paint:{"fill-color":c.water}},
       {id:"waterway", type:"line", source:"omt", "source-layer":"waterway", paint:{"line-color":c.water, "line-width":w(1.5)}},
       {id:"building", type:"fill", source:"omt", "source-layer":"building", minzoom:14, paint:{"fill-color":c.building}},
-      {id:"rail", type:"line", source:"omt", "source-layer":"transportation", filter:["==",["get","class"],"rail"], paint:{"line-color":c.rail, "line-width":w(1)}},
-      ...roads.map(([id,cls,width,color])=>({id:"road-"+id, type:"line", source:"omt", "source-layer":"transportation",
+      {id:"rail", type:"line", source:"omt", "source-layer":"transportation", filter:["==",["get","class"],"rail"], paint:{"line-color":c.rail, "line-width":w(c.major?2.2:1)}},
+      ...roads.map(([id,cls,width,color,dash])=>({id:"road-"+id, type:"line", source:"omt", "source-layer":"transportation",
         filter:["all",["in",["get","class"],["literal",cls]],["!=",["get","brunnel"],"tunnel"]],
-        layout:{"line-cap":"round","line-join":"round"}, paint:{"line-color":color, "line-width":w(width)}})),
+        layout:{"line-cap":dash?"butt":"round","line-join":"round"}, paint:{"line-color":color, "line-width":w(width), ...(dash?{"line-dasharray":dash}:{})}})),
     ]
   };
 }
@@ -185,7 +190,7 @@ function syncMap(V,W,H){
   return map;
 }
 function drawMap(V, W, H){
-  const bg=(PALETTE[S.mapstyle]||PALETTE.grey).bg;
+  const bg=(PALETTE[S.mapstyle]||PALETTE.grey).bg;   // (same for "classic")
   ctx.fillStyle=S.mapstyle==="none"?"#e6e6e6":bg; ctx.fillRect(0,0,W,H);
   if(S.mapstyle==="none") return true;
   const map=syncMap(V,W,H);
@@ -643,7 +648,7 @@ const routeSVG=(pts, color="#882c29")=>routesSVG([[pts,color]]);
 /* Map behind each route picture in Routes: a small separate map, one route at a time, framed exactly like
    routesSVG() (same centre, line fills 84 % of the square). Pictures are kept on this phone so it's done once per route. */
 const TH={map:null, ready:null, mode:null, queue:[], busy:false, mem:new Map(), size:288};
-const thumbKey=r=>`mrc-thumb-v2-${darkUI()?"night-":""}${r.id}-${r.km.toFixed(3)}-${r.pts.length}`;
+const thumbKey=r=>`mrc-thumb-v3-${darkUI()?"night-":""}${r.id}-${r.km.toFixed(3)}-${r.pts.length}`;
 function thumbFrame(pts){
   const k=Math.cos(pts[0][0]*Math.PI/180), xs=pts.map(p=>p[1]*k), ys=pts.map(p=>-p[0]);
   const x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys);
@@ -652,7 +657,7 @@ function thumbFrame(pts){
   return {center:[(x0+x1)/2/k, lat], zoom:Math.log2(78271.517*Math.cos(lat*Math.PI/180)/mpp)};
 }
 function thumbMap(){
-  const mode=darkUI()?"night":"grey";
+  const mode=darkUI()?"night":POST_MAP;
   if(TH.ready && TH.mode===mode) return TH.ready;
   if(TH.map){ try{ TH.map.remove(); }catch(e){} TH.map=null; }
   TH.mode=mode;
