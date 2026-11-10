@@ -593,21 +593,34 @@ async function loadRoute(read){
   }catch(e){ alert(e.message||String(e)); }
 }
 /* Add a second route: a dropdown of the saved routes (or upload a GPX). */
-function fillSecondSelect(){
-  const sel=$("route2select"); if(!sel) return;
-  const main=S.routes[0], mainC=main && {name:"", km:main.total/1000, pts:thin(main.pts)}, rs=LIB.routes||[];
-  sel.innerHTML=`<option value="">${LIB.routes ? (rs.length?"Saved routes…":"No saved routes yet") : "Loading…"}</option>`+
+/* Add a second route: one sheet with the saved routes (with distance filters) and a GPX file from the phone. */
+const SEC={filter:"all"};
+function fillSecondSelect(){ if($("sheet2") && $("sheet2").open) renderPickList(); }
+function renderPickList(){
+  const box=$("picklist"); if(!box) return;
+  $("pickfilter").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.v===SEC.filter)));
+  if(!LIB.routes){ box.innerHTML=`<p class="picknone">Loading saved routes…</p>`; return; }
+  const main=S.routes[0], mainC=main && {name:"", km:main.total/1000, pts:thin(main.pts)};
+  const km=r=>Number(r.km.toFixed(1)), inRange={all:()=>true, short:r=>km(r)<=5, mid:r=>km(r)>5&&km(r)<=7, long:r=>km(r)>7};
+  const rs=LIB.routes.filter(inRange[SEC.filter]||inRange.all);
+  $("pickfilter").classList.toggle("hidden", LIB.routes.length<6);
+  box.innerHTML = !LIB.routes.length ? `<p class="picknone">No saved routes yet.</p>` : !rs.length ? `<p class="picknone">No saved routes in this range.</p>` :
     rs.map(r=>{ const same=!!mainC && sameRoute(mainC, r);
-      return `<option value="${r.id}" ${same?"disabled":""}>${esc(r.name)} · ${r.km.toFixed(1)} km${same?" (this post)":""}</option>`; }).join("");
-  sel.disabled = !!LIB.routes && !rs.length;
+      return `<button type="button" class="pick" data-pick="${r.id}" ${same?"disabled":""}><div class="thumb" data-thumb="${r.id}">${routeSVG(r.pts)}</div>
+        <span><b>${esc(r.name)}</b><small>${r.km.toFixed(1)} km${r.lights!=null?` · 🚦 ${r.lights}`:""}${same?" · this post":""}</small></span></button>`; }).join("");
+  queueThumbs(rs);
 }
+function openSecondSheet(){
+  const d=$("sheet2"); if(!LIB.routes) loadRoutes();
+  renderPickList(); if(d.showModal) d.showModal(); else d.setAttribute("open","");
+}
+function closeSecondSheet(){ const d=$("sheet2"); if(d.close) d.close(); else d.removeAttribute("open"); }
 async function addSecondFromLibrary(id){
-  const r=(LIB.routes||[]).find(x=>x.id===id), sel=$("route2select"); if(!r) return;
-  sel.disabled=true;
+  const r=(LIB.routes||[]).find(x=>x.id===id); if(!r) return;
+  closeSecondSheet();
   try{ const res=await fetch(`/api/routes/gpx?id=${id}`,{credentials:"include"}); if(!res.ok) throw new Error("Couldn’t load that route.");
     await loadSecond(new File([await res.blob()], `${r.name}.gpx`, {type:"application/gpx+xml"})); }
   catch(e){ alert(e.message||String(e)); }
-  finally{ sel.disabled=false; sel.value=""; }
 }
 async function loadSecond(file){
   try{ const r=await readRoute(file); S.routes=[S.routes[0], r]; routesChanged(); }
@@ -1288,9 +1301,12 @@ function init(){
   $("beerreset").addEventListener("click",()=>{ delete S.items[S.fmt]; S.zoom=1; S.pan={x:0,y:0}; scheduleDraw(); });
   ["title","date"].forEach(i=>$(i).addEventListener("input",scheduleDraw));
   $("gpx").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadFile(f); e.target.value=""; });
-  $("gpx2").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadSecond(f); e.target.value=""; });
-  $("route2select").addEventListener("change",e=>{ const id=Number(e.target.value); if(id) addSecondFromLibrary(id); });
-  $("route2select").addEventListener("focus",()=>{ if(!LIB.routes) loadRoutes(); });
+  $("gpx2").addEventListener("change",e=>{ const f=e.target.files[0]; closeSecondSheet(); if(f) loadSecond(f); e.target.value=""; });
+  $("route2add").addEventListener("click",openSecondSheet);
+  $("sheet2close").addEventListener("click",closeSecondSheet);
+  $("sheet2").addEventListener("click",e=>{ if(e.target===$("sheet2")) closeSecondSheet();   // tap on the dimmed background
+    const b=e.target.closest("[data-pick]"); if(b && !b.disabled) addSecondFromLibrary(Number(b.dataset.pick)); });
+  $("pickfilter").addEventListener("click",e=>{ const b=e.target.closest("[data-v]"); if(!b) return; SEC.filter=b.dataset.v; renderPickList(); });
   // ✕ on either route: the other one stays; removing the main one makes the second the main one (keeping its colour; the title stays)
   $("distinfo").addEventListener("click",e=>{ const b=e.target.closest("[data-rmroute]"); if(!b) return;
     if(b.dataset.rmroute==="0" && S.routes.length===2){

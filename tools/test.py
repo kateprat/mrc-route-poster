@@ -110,7 +110,12 @@ try:
         check(pg.input_value("#title").endswith(" X") and pg.evaluate("document.activeElement.id") != "title", f"typed onto the post, Enter closes: {pg.input_value('#title')}")
         pg.fill("#title", "THE LITTLE DIPPER"); pg.dispatch_event("#title", "input")
 
-        # second route
+        # second route: one button opens a sheet with saved routes and "Upload a GPX file"
+        check(pg.locator("#route2select").count() == 0 and pg.is_visible("#route2add"), "one '+ Add a second route' button, no dropdown")
+        pg.click("#route2add"); pg.wait_for_timeout(400)
+        check(pg.evaluate("$('sheet2').open") and "Upload a GPX file" in pg.inner_text("#sheet2"), "sheet opens with both sources")
+        pg.click("#sheet2close"); pg.wait_for_timeout(200)
+        check(not pg.evaluate("$('sheet2').open"), "sheet closes")
         pg.set_input_files("#gpx2", os.path.join(ROOT, "test", "sample2.gpx")); pg.wait_for_timeout(2500)
         check(pg.evaluate("S.routes.length") == 2, "second route loaded")
         check(pg.inner_text("#distinfo").count("km") == 2, f"both distances shown: {pg.inner_text('#distinfo')}")
