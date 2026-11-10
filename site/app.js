@@ -124,7 +124,7 @@ function computeView(F, W, H){
 
 /* ---------- map (MapLibre, drawn off-screen, copied into the post) ---------- */
 const PALETTE = {
-  grey:  {bg:"#e6e6e6", park:"#dedede", water:"#cfd3d4", building:"#dadada", road:"#ffffff", minor:"#fbfbfb", rail:"#d2d2d2"},
+  grey:  {bg:"#eef0f0", park:"#e8ebe8", water:"#dde2e4", building:"#e6e8e8", road:"#ffffff", minor:"#fbfbfb", rail:"#dfe1e1"},   // light, like the hand-made posts
   night: {bg:"#2a2622", park:"#2b2a22", water:"#24262a", building:"#312c27", road:"#463f37", minor:"#3a342e", rail:"#352f29"}   // map pictures in the dark themes
 };
 /* The dark theme gets dark (warm) map pictures */
@@ -458,7 +458,7 @@ function draw(){
   if(S.fmt!=="route" && M.error && !M.ready){ st.textContent="Map couldn’t load. Check your connection and reload."; st.classList.add("warn"); }
   else if(S.fmt!=="route" && !mapOk){ st.textContent="Loading map…"; st.classList.remove("warn"); }
   else { st.textContent = ""; st.classList.remove("warn"); }
-  cv.style.background = S.fmt==="route" ? "repeating-conic-gradient(#ddd 0 25%, #fff 0 50%) 0 0/24px 24px" : "#e6e6e6";
+  cv.style.background = S.fmt==="route" ? "repeating-conic-gradient(#ddd 0 25%, #fff 0 50%) 0 0/24px 24px" : "#eef0f0";
 }
 
 /* ---------- export ---------- */
@@ -643,7 +643,7 @@ const routeSVG=(pts, color="#882c29")=>routesSVG([[pts,color]]);
 /* Map behind each route picture in Routes: a small separate map, one route at a time, framed exactly like
    routesSVG() (same centre, line fills 84 % of the square). Pictures are kept on this phone so it's done once per route. */
 const TH={map:null, ready:null, mode:null, queue:[], busy:false, mem:new Map(), size:288};
-const thumbKey=r=>`mrc-thumb-v1-${darkUI()?"night-":""}${r.id}-${r.km.toFixed(3)}-${r.pts.length}`;
+const thumbKey=r=>`mrc-thumb-v2-${darkUI()?"night-":""}${r.id}-${r.km.toFixed(3)}-${r.pts.length}`;
 function thumbFrame(pts){
   const k=Math.cos(pts[0][0]*Math.PI/180), xs=pts.map(p=>p[1]*k), ys=pts.map(p=>-p[0]);
   const x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys);
