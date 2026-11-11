@@ -612,7 +612,23 @@ function renderPickList(){
 }
 function openSecondSheet(){
   const d=$("sheet2"); if(!LIB.routes) loadRoutes();
+  d.classList.remove("full"); $("picklist").scrollTop=0;      // opens at half height, pull up for the full list
   renderPickList(); if(d.showModal) d.showModal(); else d.setAttribute("open","");
+}
+/* Half sheet: drag the handle up for the full list, down to shrink or close; scrolling the list also opens it fully. */
+function initSheetDrag(){
+  const d=$("sheet2"), g=$("sheet2grab"); let y0=null, h0=0, moved=false;
+  g.addEventListener("pointerdown",e=>{ if(e.target.closest("button")) return; y0=e.clientY; h0=d.getBoundingClientRect().height; moved=false;
+    d.classList.add("dragging"); try{ g.setPointerCapture(e.pointerId); }catch(err){} });
+  g.addEventListener("pointermove",e=>{ if(y0==null) return; const dy=e.clientY-y0; if(Math.abs(dy)>4) moved=true;
+    d.style.height=Math.max(120, Math.min(innerHeight*0.9, h0-dy))+"px"; });
+  const end=e=>{ if(y0==null) return; const dy=e.clientY-y0, wasFull=d.classList.contains("full"); y0=null;
+    d.classList.remove("dragging"); d.style.height="";
+    if(!moved) return d.classList.toggle("full");            // a tap on the handle switches half ⇄ full
+    if(dy<-40) d.classList.add("full");
+    else if(dy>60){ if(wasFull && dy<h0*0.6) d.classList.remove("full"); else closeSecondSheet(); } };
+  g.addEventListener("pointerup",end); g.addEventListener("pointercancel",end);
+  $("picklist").addEventListener("scroll",()=>{ if($("picklist").scrollTop>8) d.classList.add("full"); },{passive:true});
 }
 function closeSecondSheet(){ const d=$("sheet2"); if(d.close) d.close(); else d.removeAttribute("open"); }
 async function addSecondFromLibrary(id){
@@ -1302,7 +1318,7 @@ function init(){
   ["title","date"].forEach(i=>$(i).addEventListener("input",scheduleDraw));
   $("gpx").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadFile(f); e.target.value=""; });
   $("gpx2").addEventListener("change",e=>{ const f=e.target.files[0]; closeSecondSheet(); if(f) loadSecond(f); e.target.value=""; });
-  $("route2add").addEventListener("click",openSecondSheet);
+  $("route2add").addEventListener("click",openSecondSheet); initSheetDrag();
   $("sheet2close").addEventListener("click",closeSecondSheet);
   $("sheet2").addEventListener("click",e=>{ if(e.target===$("sheet2")) closeSecondSheet();   // tap on the dimmed background
     const b=e.target.closest("[data-pick]"); if(b && !b.disabled) addSecondFromLibrary(Number(b.dataset.pick)); });
