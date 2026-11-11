@@ -32,6 +32,18 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme]){
   --ok:#357c4f; --ok-ink:#ffffff; --title:#3584ba; --paper:#14120f; --panel:#1f1c18; --ink:#efe8dc; --muted:#a39a8c; --line:#3a342d; --accent:#3584ba; --accent-ink:#ffffff; --ring:#6fb98a; --lead:#357c4f; --lead-ink:#ffffff; --note:#1f1c18; --note-line:#f5e14b; color-scheme:dark}}
 :root[data-theme="dark"]{--ok:#357c4f; --ok-ink:#ffffff; --title:#3584ba; --paper:#14120f; --panel:#1f1c18; --ink:#efe8dc; --muted:#a39a8c; --line:#3a342d; --accent:#3584ba; --accent-ink:#ffffff; --ring:#6fb98a; --lead:#357c4f; --lead-ink:#ffffff; --note:#1f1c18; --note-line:#f5e14b; color-scheme:dark}
+/* "Print" themes: Light and Dark with the Mikkeller print look of the crew handbook: 2 px outlines and hard offset shadows */
+:root[data-theme="lightprint"]{--hard:3px 3px 0 var(--ink)}
+:root[data-theme="darkprint"]{--ok:#357c4f; --ok-ink:#ffffff; --title:#3584ba; --paper:#14120f; --panel:#1f1c18; --ink:#efe8dc; --muted:#a39a8c; --line:#3a342d; --accent:#3584ba; --accent-ink:#ffffff; --ring:#6fb98a; --lead:#357c4f; --lead-ink:#ffffff; --note:#1f1c18; --note-line:#f5e14b; --hard:3px 3px 0 #000; color-scheme:dark}
+:root:is([data-theme="lightprint"],[data-theme="darkprint"]) .card,:root:is([data-theme="lightprint"],[data-theme="darkprint"]) .run,:root:is([data-theme="lightprint"],[data-theme="darkprint"]) .rcard,:root:is([data-theme="lightprint"],[data-theme="darkprint"]) .more-menu .menu,:root:is([data-theme="lightprint"],[data-theme="darkprint"]) dialog.sheet{border:2px solid var(--ink);box-shadow:var(--hard)}
+:root:is([data-theme="lightprint"],[data-theme="darkprint"]) .run.next{border-color:var(--accent)}
+:root:is([data-theme="lightprint"],[data-theme="darkprint"]) .preview canvas{border:2px solid var(--ink);box-shadow:var(--hard)}
+:root:is([data-theme="lightprint"],[data-theme="darkprint"]) .btn{border:2px solid var(--ink)} :root:is([data-theme="lightprint"],[data-theme="darkprint"]) .btn:not(.ghost){box-shadow:var(--hard)}
+:root:is([data-theme="lightprint"],[data-theme="darkprint"]) .seg button,:root:is([data-theme="lightprint"],[data-theme="darkprint"]) .more-menu .menu-seg button,:root:is([data-theme="lightprint"],[data-theme="darkprint"]) .rmx,:root:is([data-theme="lightprint"],[data-theme="darkprint"]) #menubtn{border-width:2px;border-color:var(--ink)}
+:root:is([data-theme="lightprint"],[data-theme="darkprint"]) .seg button[aria-pressed="true"],:root:is([data-theme="lightprint"],[data-theme="darkprint"]) .more-menu .menu-seg button[aria-pressed="true"]{border-color:var(--ink)}
+:root:is([data-theme="lightprint"],[data-theme="darkprint"]) .who button{border-width:2px} :root:is([data-theme="lightprint"],[data-theme="darkprint"]) .who button.tbd{border-color:var(--ink)}
+:root:is([data-theme="lightprint"],[data-theme="darkprint"]) .addslot{border:2px dashed var(--ink)}
+
 *{box-sizing:border-box}
 html,body{margin:0}
 /* every tab at least a full screen tall: on iPhone a short page (Route post before a GPX is loaded) lifted the fixed tab bar */
@@ -315,6 +327,8 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
     <div class="more-menu"><button type="button" id="menubtn" aria-label="More options" aria-expanded="false" aria-controls="moremenu">⋯</button>
   <div id="moremenu" class="menu" hidden><p class="menu-h">Theme</p>
     <div class="menu-seg" role="group" aria-label="Theme"><button type="button" data-theme-v="auto">Auto</button><button type="button" data-theme-v="light">Light</button><button type="button" data-theme-v="dark">Dark</button></div>
+    <p class="menu-h">Print look</p>
+    <div class="menu-seg" role="group" aria-label="Print look"><button type="button" data-theme-v="lightprint">Light</button><button type="button" data-theme-v="darkprint">Dark</button></div>
     <div id="ownermenu" hidden>
       <p class="menu-h">View as</p>
       <div class="menu-seg" role="group" aria-label="View as"><button type="button" data-view="me">Me</button><button type="button" data-view="captain">Captain</button><button type="button" data-view="guest">Guest</button></div>
