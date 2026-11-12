@@ -1319,6 +1319,9 @@ function init(){
   $("gpx").addEventListener("change",e=>{ const f=e.target.files[0]; if(f) loadFile(f); e.target.value=""; });
   $("gpx2").addEventListener("change",e=>{ const f=e.target.files[0]; closeSecondSheet(); if(f) loadSecond(f); e.target.value=""; });
   $("route2add").addEventListener("click",openSecondSheet); initSheetDrag();
+  // WhatsApp community QR: button next to ⋯ on every tab; tap anywhere or Close to hide it
+  $("qrbtn").addEventListener("click",()=>{ const d=$("qrsheet"); if(d.showModal) d.showModal(); else d.setAttribute("open",""); });
+  $("qrsheet").addEventListener("click",()=>{ const d=$("qrsheet"); if(d.close) d.close(); else d.removeAttribute("open"); });
   $("sheet2close").addEventListener("click",closeSecondSheet);
   $("sheet2").addEventListener("click",e=>{ if(e.target===$("sheet2")) closeSecondSheet();   // tap on the dimmed background
     const b=e.target.closest("[data-pick]"); if(b && !b.disabled) addSecondFromLibrary(Number(b.dataset.pick)); });

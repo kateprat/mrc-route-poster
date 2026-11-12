@@ -297,7 +297,17 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
 
 /* ⋯ menu with the theme choice (Auto follows the phone) */
 [hidden]{display:none!important}
-.more-menu{position:relative;margin-left:auto;align-self:center}
+.more-menu{position:relative;align-self:center}
+/* WhatsApp community QR: round button next to ⋯, opens the code full screen on white (scanners need dark on light) */
+.qrbtn{appearance:none;margin-left:auto;margin-right:8px;align-self:center;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;width:40px;height:40px;display:grid;place-items:center;padding:0;cursor:pointer}
+.qrbtn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+:root:is([data-theme="lightprint"],[data-theme="darkprint"]) .qrbtn{border-width:2px;border-color:var(--ink)}
+dialog.qr{border:0;padding:0;margin:auto;background:transparent;max-width:min(92vw,460px);width:100%}
+dialog.qr::backdrop{background:rgba(20,18,15,.82)}
+dialog.qr .qrcard{background:#fff;border-radius:18px;padding:18px 18px 14px;text-align:center}
+dialog.qr img{display:block;width:100%;height:auto}
+dialog.qr p{margin:10px 0 0;color:#6b6357;font-size:14px}
+dialog.qr .qrclose{appearance:none;display:block;margin:14px auto 0;border:1.5px solid rgba(255,255,255,.6);background:transparent;color:#fff;border-radius:999px;padding:10px 22px;font:900 15px/1 var(--sub);cursor:pointer}
 .more-menu>button{appearance:none;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);border-radius:999px;width:40px;height:40px;font:900 20px/1 system-ui,sans-serif;cursor:pointer;display:grid;place-items:center;padding:0 0 4px}
 .more-menu .menu{position:absolute;right:0;top:46px;z-index:50;min-width:230px;background:var(--panel);color:var(--ink);border:1.5px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);display:grid;gap:8px}
 .more-menu .menu-h{margin:0;font:900 12px/1 var(--sub);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -326,6 +336,7 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
     <div class="head-title"><div class="titlerow"><h1>MRC <span>ZH</span></h1>
     <button type="button" id="viewpill" class="viewpill hidden" aria-label="Seeing the app as others do. Tap to go back to your own view."><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span id="viewpilltext"></span><span class="x" aria-hidden="true">✕</span></button></div>
     <p>Mikkeller Run Club Zurich</p></div>
+    <button type="button" id="qrbtn" class="qrbtn" aria-label="Show the WhatsApp community QR code"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="6" height="6" rx="1"/><rect x="14.5" y="3.5" width="6" height="6" rx="1"/><rect x="3.5" y="14.5" width="6" height="6" rx="1"/><path d="M14.5 14.5h2.5v2.5M20.5 14.5v0M14.5 20.5h2.5M20 17.5v3h-3"/></svg></button>
     <div class="more-menu"><button type="button" id="menubtn" aria-label="More options" aria-expanded="false" aria-controls="moremenu">⋯</button>
   <div id="moremenu" class="menu" hidden><p class="menu-h">Theme</p>
     <div class="menu-seg" role="group" aria-label="Theme"><button type="button" data-theme-v="auto">Auto</button><button type="button" data-theme-v="light">Light</button><button type="button" data-theme-v="dark">Dark</button></div>
@@ -464,6 +475,11 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
 <!-- off-screen map used to draw the post; wrapped in a 0×0 box so its 1350 px height can't stretch the page on iPhone -->
 <div aria-hidden="true" style="position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none"><div id="mapbox" style="position:absolute;left:0;top:0;width:1080px;height:1920px"></div><div id="thumbbox" style="position:absolute;left:0;top:0;width:288px;height:288px"></div></div>
 <script src="vendor/maplibre-gl.js"></script>
+<!-- WhatsApp community QR, for new runners to scan -->
+<dialog id="qrsheet" class="qr" aria-label="WhatsApp community QR code">
+  <div class="qrcard"><img src="img/whatsapp-community.png" alt="QR code to join the Mikkeller Running Club Zurich WhatsApp community"><p>Scan with the phone camera to join</p></div>
+  <button type="button" class="qrclose" id="qrclose">Close</button>
+</dialog>
 <!-- Add a second route: one sheet, both sources -->
 <dialog id="sheet2" class="sheet" aria-labelledby="sheet2t">
   <div class="grabzone" id="sheet2grab"><div class="grab" aria-hidden="true"></div>
@@ -475,7 +491,7 @@ hr.divider{border:0;border-top:1px solid var(--line);margin:14px 0 12px}
   <div id="picklist" class="picklist"></div>
   <label class="btn ghost filebtn" for="gpx2"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V9"/><path d="M7 14l5-5 5 5"/><path d="M5 4h14"/></svg><span>Upload a GPX file</span></label>
 </dialog>
-<script src="app.js?v=half1"></script>
+<script src="app.js?v=qr1"></script>
 <script>
 /* ⋯ menu: theme Auto / Light / Dark or a Mikkeller colour theme, remembered on this phone */
 (function(){const root=document.documentElement, btn=document.getElementById("menubtn"), m=document.getElementById("moremenu");
