@@ -1,7 +1,7 @@
 {
   "name": "MRC ZH",
   "short_name": "MRC ZH",
-  "description": "Turn a GPX file into a Mikkeller Run Club route post.",
+  "description": "Turn a GPX file into a Mikkeller Running Club Zürich route post.",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#5189c4",

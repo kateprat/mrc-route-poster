@@ -1,6 +1,6 @@
 # MRC ZH (mrc-route-poster)
 
-A phone app for the Mikkeller Run Club Zurich captains: choose a GPX file, type the title, and get a route post in the MRC style, ready to share to Instagram.
+A phone app for the Mikkeller Running Club Zürich captains: choose a GPX file, type the title, and get a route post in the MRC style, ready to share to Instagram.
 
 It replaces the old Inkscape workflow (GPX → SVG converter → Snazzy Maps screenshot → line up by hand → node editing → export).
 
