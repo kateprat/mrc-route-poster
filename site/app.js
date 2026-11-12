@@ -1055,21 +1055,19 @@ function niceDate(iso){ const d=new Date(iso+"T12:00:00"); return `${DAYS[d.getD
 function nextRun(){ return SCH.data ? SCH.data.runs.find(r=>r.date>=SCH.today && !r.cancelled) : null; }
 function runOn(date){ return SCH.data ? SCH.data.runs.find(r=>r.date===date) : null; }
 /* ---------- Kate's view switch (⋯ menu): see the app as a captain or a guest does ----------
-   The server sends Kate a few extra things (me.owner, me.hide, who last changed a run).
+   The server sends Kate a few extra things (me.owner, who last changed a run).
    "Captain" and "Guest" strip those here, on her phone only; "Guest" also turns off editing. */
 const OWNER_ONLY = [
   "Who last changed a run (Schedule)",
   "This View as switch",
 ];
-let OWNER_HIDDEN=[];   // names left out of upcoming runs in Kate's view (set in src/worker.js, OWNER_HIDES)
 let IS_OWNER=false;
 const viewAs = () => { try{ return localStorage.getItem("mrc-view")||"me"; }catch(e){ return "me"; } };   // only Kate can set it
 function asViewed(j){
   IS_OWNER = !!(j.me && j.me.owner);
-  if(IS_OWNER) OWNER_HIDDEN=(j.me.hide||[]).map(id=>(j.captains.find(c=>c.id===id)||{}).name).filter(Boolean);
   const v=viewAs(); if(v==="me") return j;
   const c=JSON.parse(JSON.stringify(j));
-  c.me.owner=false; c.me.hide=[]; c.runs.forEach(r=>r.changedBy="");
+  c.me.owner=false; c.runs.forEach(r=>r.changedBy="");
   if(v==="guest") c.me.captain=null;
   return c;
 }
@@ -1077,7 +1075,7 @@ function renderOwnerMenu(){
   $("ownermenu").hidden=!IS_OWNER; if(!IS_OWNER) return;
   const v=viewAs();
   $("ownermenu").querySelectorAll("[data-view]").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.view===v)));
-  const items=[...OWNER_ONLY]; if(OWNER_HIDDEN.length) items.splice(1,0,`${OWNER_HIDDEN.join(", ")} left out of upcoming runs (shown if coming or leading)`);
+  const items=[...OWNER_ONLY];
   $("onlyyou").innerHTML=items.map(t=>`<li>${esc(t)}</li>`).join("");
   $("viewpill").classList.toggle("hidden", v==="me");
   $("viewpilltext").textContent = v==="guest" ? "Guest" : "Captain";
@@ -1088,7 +1086,14 @@ function setView(v){
 }
 function captain(id){ return SCH.data ? SCH.data.captains.find(c=>c.id===id) : null; }
 const statusText = st => st==="yes" ? "coming" : st==="tbd" ? "doesn’t know yet" : "not coming";
-/* "Kate", "Kate & Felix", "Kate, Felix & Ale" */
+/* Captains on two lines: the shorter names on top, the longer ones below (each line A–Z). */
+function capRows(caps){
+  if(caps.length<4) return [caps];
+  const byLen=[...caps].sort((a,b)=>a.name.length-b.name.length || a.name.localeCompare(b.name)), top=Math.ceil(caps.length/2);
+  const az=l=>l.sort((a,b)=>a.name.localeCompare(b.name));
+  return [az(byLen.slice(0,top)), az(byLen.slice(top))];
+}
+/* "Kate", "Kate & Felix", "Kate, Felix & Andrea" */
 function names(ids){ const n=(ids||[]).map(captain).filter(Boolean).map(c=>c.name); return n.length<2 ? (n[0]||"") : n.slice(0,-1).join(", ")+" & "+n[n.length-1]; }
 
 async function schedCall(path, body){
@@ -1151,8 +1156,8 @@ function renderSchedule(){
       ${r.note?`<p class="run-note">${esc(r.note)}</p>`:""}
       ${r.cancelled && !past ? `<div class="todo"><strong>To do for ${leadNames?esc(leadNames):"the captain who was going to lead"}:</strong>
         Post an Instagram story (and edit the run post) saying the run is off and why, update the “next run” board in the bar, and tell the other captains. A cancelled run should stay the exception.</div>` : ""}
-      <div class="who" role="group" aria-label="Captains on ${niceDate(r.date)}">${D.captains.filter(c=>!(D.me.hide||[]).includes(c.id) || ["yes","lead"].includes(stateOf(r,c.id))).map(c=>{ const st=stateOf(r,c.id);
-        return `<button type="button" class="${st}" data-cap="${c.id}" ${editable?"":"disabled"} aria-label="${esc(c.name)}: ${STATE_TEXT[st]}${editable?". Tap to change.":""}" aria-haspopup="menu">${esc(c.name)}${st==="lead"?'<span class="leadmark">lead</span>':""}</button>`; }).join("")}${editable && !meta?EDIT:""}</div>
+      <div class="who" role="group" aria-label="Captains on ${niceDate(r.date)}">${capRows(D.captains).map((row,ri,all)=>`<div class="whorow">${row.map(c=>{ const st=stateOf(r,c.id);
+        return `<button type="button" class="${st}" data-cap="${c.id}" ${editable?"":"disabled"} aria-label="${esc(c.name)}: ${STATE_TEXT[st]}${editable?". Tap to change.":""}" aria-haspopup="menu">${esc(c.name)}${st==="lead"?'<span class="leadmark">lead</span>':""}</button>`; }).join("")}${ri===all.length-1 && editable && !meta?EDIT:""}</div>`).join("")}</div>
       ${meta?`<div class="runfoot"><p class="run-meta">${meta}</p>${editable?EDIT:""}</div>`:""}
       ${editable ? `<details class="runedit" style="margin-top:8px"><summary>Edit run</summary>
         <div class="grid" style="margin-top:10px">

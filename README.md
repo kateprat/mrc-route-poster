@@ -42,7 +42,7 @@ Every route we've run, shortest first, each with a picture of the line on the ma
 ### Only for Kate
 
 - The ⋯ menu has **View as: Me · Captain · Guest**, to see the app the way others do (on Kate's phone only; nothing changes for anyone else). A small tag next to the logo shows which view is on; tap it to go back.
-- The menu also lists **what only Kate sees** (who last changed a run; anyone hidden from upcoming runs in her view, set with `OWNER_HIDES` in `src/worker.js`).
+- The menu also lists **what only Kate sees** (who last changed a run).
 
 ### Schedule tab
 

@@ -39,14 +39,13 @@ try:
         kate = page_for(b, "captain@example.com")
         kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1500)
         check(kate.is_visible("#taphint"), "Kate is recognised from her email; tap hint shown")
-        own = [n.split()[0] for n in kate.locator(".run").first.locator(".who button[data-cap]").all_inner_texts()]
-        check(own == ["Andrea", "Fabio", "Felix", "Kate"], f"Kate's own view leaves Ale out (OWNER_HIDES): {own}")
         # the rest of the test runs as "View as: Captain", which shows every captain
         kate.evaluate("localStorage.setItem('mrc-view','captain')"); kate.reload(); kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1500)
         first = kate.locator(".run").first
         date = first.get_attribute("data-date")
         names = [n.split()[0] for n in first.locator(".who button[data-cap]").all_inner_texts()]
-        check(names == ["Ale", "Andrea", "Fabio", "Felix", "Kate"], f"each captain listed once, A–Z: {names}")
+        check(names == ["Ale", "Fabio", "Kate", "Andrea", "Felix"], f"each captain listed once, on two lines (shorter names on top, A–Z per line): {names}")
+        rows = first.locator(".whorow").count(); check(rows == 2, f"two lines of names: {rows}")
         check(first.locator(".nexttab", has_text="Next run").count() == 1, f"next run highlighted: {date}")
         check(first.locator(".mine, .leadpick").count() == 0, "no separate availability buttons or lead dropdown")
         state = lambda who, d=date: kate.locator(f'.run[data-date="{d}"] .who button[data-cap]', has_text=re.compile(rf"^{who}(lead)?$", re.I)).get_attribute("class")
@@ -74,7 +73,6 @@ try:
         kate.evaluate("localStorage.setItem('mrc-view','me')"); kate.reload(); kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1200)
         meta = kate.locator(".run").first.locator(".run-meta").last.inner_text()
         check("last change by Kate" in meta, f"Kate sees who changed the run: {meta!r}")
-        check(state("Ale") == "lead", "Ale still shown in Kate's view when she leads")
         kate.evaluate("localStorage.setItem('mrc-view','captain')"); kate.reload(); kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1200)
         pick("Kate", "lead"); kate.wait_for_timeout(1500)
         leadnames = [n for n in kate.locator(".run").first.locator(".who button[data-cap]").evaluate_all("bs=>bs.filter(b=>b.classList.contains('lead')).map(b=>b.textContent.trim())")]
