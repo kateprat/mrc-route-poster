@@ -266,17 +266,30 @@ function pointAt(px, c, d){ let i=1; while(i<px.length-1 && c[i]<d) i++;
 function strokeWithStart(px, w, color, dir){
   if(!dir || px.length<2) return strokeRoute(px, w, color);
   const p=dir===2 ? px.slice().reverse() : px, c=alongLine(p), L=c[c.length-1];
-  const r=1.9*w, len=2.6*w, pitch=3*w, first=r+1.1*w, rest=first+2*pitch+len+w, h=2*w;
+  const r=1.9*w, len=2.6*w, pitch=3*w, first=r+0.9*w, rest=first+2*pitch+len+w, h=2*w;
   if(L<rest*3) return strokeRoute(px, w, color);                     // too short to fit the start: plain line
-  // the way back to the bar stops short of the start, so it doesn't run over the circle and chevrons
-  const q=pointAt(p,c,rest), head=[...p.slice(0,q.i), q];
-  let end=p.length-1; const keep=Math.max(r,h)+1.2*w;
-  while(end>q.i && distToLine(p[end], head)<keep) end--; strokeRoute([q, ...p.slice(q.i, end+1)], w, color);
+  // the chevrons point straight from the bar to where the route is first `rest` away from it,
+  // so a GPS wiggle at the bar doesn't twist them
+  const o=p[0], dist=pt=>Math.hypot(pt.x-o.x, pt.y-o.y);
+  let j=1; while(j<p.length && dist(p[j])<rest) j++;
+  if(j>=p.length-1) return strokeRoute(px, w, color);
+  const d0=dist(p[j-1]), d1=dist(p[j]), f=d1>d0 ? (rest-d0)/(d1-d0) : 1;
+  const E={x:p[j-1].x+(p[j].x-p[j-1].x)*f, y:p[j-1].y+(p[j].y-p[j-1].y)*f};
+  const ux=(E.x-o.x)/rest, uy=(E.y-o.y)/rest, ang=Math.atan2(uy,ux);
+  // the way back to the bar stops just before it would run over the circle and chevrons
+  let end=p.length-1; const keep=h+0.8*w;
+  const near=pt=>distToLine(pt,[o,E])<keep;
+  while(end>j && near(p[end])) end--;
+  const tail=p.slice(j, end+1);
+  if(end<p.length-1){ const A=p[end], B=p[end+1]; let lo=0, hi=1;          // run on until just before the start
+    for(let k=0;k<20;k++){ const m=(lo+hi)/2; if(near({x:A.x+(B.x-A.x)*m, y:A.y+(B.y-A.y)*m})) hi=m; else lo=m; }
+    tail.push({x:A.x+(B.x-A.x)*lo, y:A.y+(B.y-A.y)*lo}); }
+  strokeRoute([E, ...tail], w, color);
   ctx.save(); ctx.fillStyle=color;
-  ctx.beginPath(); ctx.arc(p[0].x, p[0].y, r, 0, 2*Math.PI); ctx.fill();
-  for(let k=0;k<3;k++){ const s0=first+k*pitch, a=pointAt(p,c,s0), b=pointAt(p,c,s0+len);
-    const ang=Math.atan2(b.y-a.y, b.x-a.x), t=1.3*w;
-    ctx.save(); ctx.translate(a.x,a.y); ctx.rotate(ang); ctx.beginPath();
+  ctx.beginPath(); ctx.arc(o.x, o.y, r, 0, 2*Math.PI); ctx.fill();
+  const t=1.3*w;
+  for(let k=0;k<3;k++){ const s0=first+k*pitch;
+    ctx.save(); ctx.translate(o.x+ux*s0, o.y+uy*s0); ctx.rotate(ang); ctx.beginPath();
     ctx.moveTo(0,-h); ctx.lineTo(t,-h); ctx.lineTo(len,0); ctx.lineTo(t,h); ctx.lineTo(0,h); ctx.lineTo(len-t,0); ctx.closePath(); ctx.fill(); ctx.restore(); }
   ctx.restore();
 }
