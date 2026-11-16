@@ -44,6 +44,15 @@ try:
             pg.click(f'#fmt button[data-v="{fmt}"]'); pg.wait_for_timeout(2000); save(pg, f"{fmt}.png")
         pg.click('#fmt button[data-v="feed"]'); pg.wait_for_timeout(1500)
 
+        # ⇄ direction arrows: on → reversed → off
+        check(pg.evaluate("!S.routes[0].dir") and pg.get_attribute('[data-dir="0"]', "aria-pressed") == "false", "direction arrows off by default")
+        pg.click('[data-dir="0"]'); pg.wait_for_timeout(800); save(pg, "feed-arrows.png")
+        check(pg.evaluate("S.routes[0].dir") == 1 and pg.get_attribute('[data-dir="0"]', "aria-pressed") == "true", "⇄ once: arrows on")
+        pg.click('[data-dir="0"]'); pg.wait_for_timeout(800); save(pg, "feed-arrows-reversed.png")
+        check(pg.evaluate("S.routes[0].dir") == 2, "⇄ twice: reversed")
+        pg.click('[data-dir="0"]'); pg.wait_for_timeout(800)
+        check(pg.evaluate("S.routes[0].dir") == 0 and pg.get_attribute('[data-dir="0"]', "aria-pressed") == "false", "⇄ three times: off")
+
         # every text item: drag it, then two fingers to turn (past 45°) and resize; map stays put
         pg.evaluate("document.getElementById('cv').scrollIntoView({block:'start'})"); pg.wait_for_timeout(200)
         check(pg.locator("#beersize, #beerrot").count() == 0, "no size/angle sliders any more")
@@ -120,6 +129,8 @@ try:
         check(pg.evaluate("S.routes.length") == 2, "second route loaded")
         check(pg.inner_text("#distinfo").count("km") == 2, f"both distances shown: {pg.inner_text('#distinfo')}")
         check("↑" in pg.inner_text("#distinfo"), f"climb from the GPX elevation: {pg.inner_text('#distinfo')}")
+        pg.click('[data-dir="0"]'); pg.click('[data-dir="1"]'); pg.wait_for_timeout(800)
+        check(pg.evaluate("S.routes[0].dir") == 1 and pg.evaluate("S.routes[1].dir") == 1, "each route has its own ⇄")
         save(pg, "feed-two-routes.png")
         pg.click('#fmt button[data-v="route"]'); pg.wait_for_timeout(800); save(pg, "route-two-routes.png")
         pg.click('#fmt button[data-v="feed"]')

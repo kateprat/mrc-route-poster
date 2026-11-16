@@ -258,6 +258,28 @@ function strokeRoute(px, w, color){
   ctx.save(); ctx.lineJoin="round"; ctx.lineCap="round"; ctx.lineWidth=w; ctx.strokeStyle=color;
   ctx.beginPath(); px.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke(); ctx.restore();
 }
+/* Direction (⇄): dir 1 = as recorded, 2 = reversed. The route starts with a circle and three chevrons
+   (›››) in the route colour, then the line carries on. Sizes follow the line width. */
+function alongLine(px){ const c=[0]; for(let i=1;i<px.length;i++) c.push(c[i-1]+Math.hypot(px[i].x-px[i-1].x, px[i].y-px[i-1].y)); return c; }
+function pointAt(px, c, d){ let i=1; while(i<px.length-1 && c[i]<d) i++;
+  const a=px[i-1], b=px[i], t=c[i]>c[i-1] ? Math.min(1,Math.max(0,(d-c[i-1])/(c[i]-c[i-1]))) : 0; return {x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t, i}; }
+function strokeWithStart(px, w, color, dir){
+  if(!dir || px.length<2) return strokeRoute(px, w, color);
+  const p=dir===2 ? px.slice().reverse() : px, c=alongLine(p), L=c[c.length-1];
+  const r=1.9*w, len=2.6*w, pitch=3*w, first=r+1.1*w, rest=first+2*pitch+len+w, h=2*w;
+  if(L<rest*3) return strokeRoute(px, w, color);                     // too short to fit the start: plain line
+  // the way back to the bar stops short of the start, so it doesn't run over the circle and chevrons
+  const q=pointAt(p,c,rest), head=[...p.slice(0,q.i), q];
+  let end=p.length-1; const keep=Math.max(r,h)+1.2*w;
+  while(end>q.i && distToLine(p[end], head)<keep) end--; strokeRoute([q, ...p.slice(q.i, end+1)], w, color);
+  ctx.save(); ctx.fillStyle=color;
+  ctx.beginPath(); ctx.arc(p[0].x, p[0].y, r, 0, 2*Math.PI); ctx.fill();
+  for(let k=0;k<3;k++){ const s0=first+k*pitch, a=pointAt(p,c,s0), b=pointAt(p,c,s0+len);
+    const ang=Math.atan2(b.y-a.y, b.x-a.x), t=1.3*w;
+    ctx.save(); ctx.translate(a.x,a.y); ctx.rotate(ang); ctx.beginPath();
+    ctx.moveTo(0,-h); ctx.lineTo(t,-h); ctx.lineTo(len,0); ctx.lineTo(t,h); ctx.lineTo(0,h); ctx.lineTo(len-t,0); ctx.closePath(); ctx.fill(); ctx.restore(); }
+  ctx.restore();
+}
 /* MikkelWind has no Ä Ö Ü (and no accented capitals), and its ä ö ü have no dots. So letters
    with marks are drawn as the plain letter, plus dots made from the font's own full stop
    (or a small accent stroke) placed above it. ß is written SS. */
@@ -455,8 +477,8 @@ function draw(){
     const long=S.routes[0].total>=S.routes[1].total?0:1, short=1-long;
     const tol=Math.max(S.width*1.3, 15*V.scale/metresPerUnit(S.routes[0].pts[0].lat));
     const [a,b]=sideBySide(lines[long], lines[short], S.width, tol);
-    strokeRoute(a, S.width, routeColor(long)); strokeRoute(b, S.width, routeColor(short)); S.drawn=[a,b];
-  } else { lines.forEach((px,i)=>strokeRoute(px, S.width, routeColor(i))); S.drawn=lines; }
+    strokeWithStart(a, S.width, routeColor(long), S.routes[long].dir); strokeWithStart(b, S.width, routeColor(short), S.routes[short].dir); S.drawn=[a,b];
+  } else { lines.forEach((px,i)=>strokeWithStart(px, S.width, routeColor(i), S.routes[i].dir)); S.drawn=lines; }
   if(S.fmt!=="route") drawText(F,W,H);
   if(S.guides && S.fmt!=="route"){ // centre guide lines while text sticks to them (preview only)
     ctx.save(); ctx.strokeStyle="#3584ba"; ctx.lineWidth=3; ctx.setLineDash([16,12]);
@@ -517,6 +539,7 @@ function renderStats(){
   $("routecard").classList.toggle("two", two);
   $("distinfo").innerHTML=S.routes.map((r,i)=>`<div class="lg"><i style="background:${routeColor(i)}" aria-hidden="true"></i>`+
     line(r)+
+    `<button type="button" class="rmx dirb" data-dir="${i}" aria-pressed="${!!r.dir}" aria-label="${["Show direction arrows","Reverse direction","Hide direction arrows"][r.dir||0]}">⇄</button>`+
     `<button type="button" class="rmx" data-rmroute="${i}" aria-label="${two?`Remove ${i?"second":"main"} route`:"Remove the route and start over"}">✕</button></div>`).join("");
 }
 /* Route post: count the lights once the list is on the phone (first time: a few seconds). */
@@ -1339,6 +1362,9 @@ function init(){
     } else if(S.routes.length===1) return startOver();   // the only route: back to the empty Route post
     else S.routes=S.routes.slice(0,1);
     routesChanged(); });
+  // ⇄: arrows on → reversed → off
+  $("distinfo").addEventListener("click",e=>{ const b=e.target.closest("[data-dir]"); if(!b) return;
+    const r=S.routes[Number(b.dataset.dir)]; if(!r) return; r.dir=((r.dir||0)+1)%3; renderStats(); scheduleDraw(); });
   $("distinfo").addEventListener("click",e=>{ if(e.target.closest("[data-sigretry]")){ SIG.error=""; renderStats(); lightsForPost(); } });
   $("pastebtn").addEventListener("click",pasteGpx);
   $("pastetext").addEventListener("paste",async e=>{ const dt=e.clipboardData; if(dt && [...(dt.items||[])].some(i=>i.kind==="file")){ e.preventDefault();
