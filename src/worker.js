@@ -2,8 +2,8 @@
 //
 // Who is calling: Cloudflare Access sits in front of the whole app and adds the
 // signed-in email as the `cf-access-authenticated-user-email` header. Requests
-// without it are refused. src/captains.js links each email to a captain; emails
-// that aren't in that list can look at the schedule but not change it.
+// without it are refused. The secret CAPTAIN_EMAILS links each email to a captain
+// in src/captains.js; other emails can look at the schedule but not change it.
 //
 // Storage: one SQLite-backed Durable Object ("Schedule"). Cloudflare creates it
 // on deploy (see wrangler.jsonc); no database to set up by hand.
@@ -13,14 +13,25 @@ import SEED from "./seed.json";
 import CAPTAINS from "./captains.js";
 import RUN_PROFILE from "./mrc-run.brf";
 
-/** The captain for a login email, from src/captains.js (or null). */
-function captainFor(email) {
-  return CAPTAINS.find((c) => c.emails.map((e) => e.toLowerCase()).includes(email)) || null;
+/* Login emails are kept out of the code (the repo is public). They live in the Cloudflare
+   secret CAPTAIN_EMAILS, one "Name=email" per captain, separated by commas or new lines,
+   e.g. "Kate=kate@example.com, Felix=felix@example.com". A captain can be listed more than once. */
+function emailMap(env) {
+  const map = {};
+  for (const part of String(env.CAPTAIN_EMAILS || "").split(/[,\n]/)) {
+    const [name, email] = part.split("=").map((s) => (s || "").trim());
+    if (name && email) map[email.toLowerCase()] = name;
+  }
+  return map;
+}
+
+/** The captain for a login email (or null). */
+function captainFor(email, env) {
+  const name = emailMap(env)[email];
+  return CAPTAINS.find((c) => c.name.toLowerCase() === (name || "").toLowerCase()) || null;
 }
 
 const STATUSES = ["yes", "no", "tbd"];
-/* Kate (who runs the app) sees a few things nobody else does. The app lists them in her ⋯ menu. */
-const OWNER = "captain@example.com";
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || "");
 const isTime = (s) => /^\d{2}:\d{2}$/.test(s || "");
 const clean = (s, n = 200) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, n);
@@ -141,7 +152,7 @@ export class Schedule extends DurableObject {
     for (const a of this.sql.exec("SELECT date, captain, status FROM avail").toArray()) (avail[a.date] ||= {})[a.captain] = a.status;
     const leads = {};
     for (const l of this.sql.exec("SELECT l.date, l.captain FROM leads l JOIN captains c ON c.id = l.captain ORDER BY c.name COLLATE NOCASE").toArray()) (leads[l.date] ||= []).push(l.captain);
-    const isKate = viewer.email === OWNER;   // only Kate sees who changed a run last
+    const isKate = viewer.owner;   // only Kate (who runs the app) sees who changed a run last
     const runs = this.sql.exec("SELECT date, time, note, cancelled, changed_by FROM runs ORDER BY date").toArray()
       .map((r) => ({ date: r.date, time: r.time, note: r.note, cancelled: !!r.cancelled, leads: leads[r.date] || [], changedBy: isKate ? (r.changed_by || "") : "", avail: avail[r.date] || {} }));
     const me = this.me(viewer.name);
@@ -325,7 +336,8 @@ async function planRoute(env, url) {
 async function api(request, env, url, ctx) {
   const email = (request.headers.get("cf-access-authenticated-user-email") || "").trim().toLowerCase();
   if (!email) return json({ error: "Not signed in." }, 401);
-  const viewer = { email, name: captainFor(email)?.name || null };
+  const c = captainFor(email, env);
+  const viewer = { email, name: c?.name || null, owner: !!c?.owner };
   const stub = env.SCHEDULE.get(env.SCHEDULE.idFromName("mrc-zurich"));
   try {
     if (request.method === "GET" && url.pathname === "/api/state") return json(await stub.state(viewer, zurichToday()));

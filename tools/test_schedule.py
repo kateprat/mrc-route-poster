@@ -14,7 +14,7 @@ OUT = os.path.join(ROOT, "test", "out"); os.makedirs(OUT, exist_ok=True)
 WRANGLER = sys.argv[1] if len(sys.argv) > 1 else "npx wrangler"
 APP, TILES = 8787, 8765
 shutil.rmtree(os.path.join(ROOT, ".wrangler"), ignore_errors=True)
-dev = subprocess.Popen(f"{WRANGLER} dev --port {APP} --ip 127.0.0.1", shell=True, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+dev = subprocess.Popen(f"{WRANGLER} dev --port {APP} --ip 127.0.0.1 --var 'CAPTAIN_EMAILS:Kate=kate@example.com'", shell=True, cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 tiles = subprocess.Popen([sys.executable, os.path.join(ROOT, "tools", "mock_tiles.py"), str(TILES)], cwd=ROOT)
 for _ in range(60):
     try: urllib.request.urlopen(f"http://127.0.0.1:{APP}/"); break
@@ -36,7 +36,7 @@ def page_for(browser, email, extra=""):
 try:
     with sync_playwright() as p:
         b = p.chromium.launch(args=["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
-        kate = page_for(b, "captain@example.com")
+        kate = page_for(b, "kate@example.com")
         kate.click("#tabbtn-schedule"); kate.wait_for_timeout(1500)
         check(kate.is_visible("#taphint"), "Kate is recognised from her email; tap hint shown")
         # the rest of the test runs as "View as: Captain", which shows every captain
@@ -103,7 +103,7 @@ try:
         check(before != after == expected, f"other captain sees Kate's change to Andrea without reloading ({before} -> {after})")
         # ...but not while they're in the middle of editing a run
         other.close()
-        kate2 = page_for(b, "captain@example.com", "&poll=1000")
+        kate2 = page_for(b, "kate@example.com", "&poll=1000")
         kate2.click("#tabbtn-schedule"); kate2.wait_for_timeout(1200)
         kate2.locator(f'.run[data-date="{d3}"] [data-editrun]').click()
         pick("Fabio", "lead", d3); kate.wait_for_timeout(2500)

@@ -30,7 +30,7 @@ try:
         pg.on("console", lambda m: m.type == "error" and errors.append(m.text))
         # this test serves only site/, without the Worker API: give it an empty schedule
         pg.route("**/api/**", lambda r: r.fulfill(status=200, content_type="application/json", body='{"me":{"email":"","captain":null},"captains":[],"runs":[]}'))
-        pg.route("**/cdn-cgi/access/get-identity", lambda r: r.fulfill(status=200, content_type="application/json", body='{"email":"captain@example.com"}'))
+        pg.route("**/cdn-cgi/access/get-identity", lambda r: r.fulfill(status=200, content_type="application/json", body='{"email":"kate@example.com"}'))
         pg.goto(f"http://127.0.0.1:{PORT}/index.html?source=http://127.0.0.1:{PORT}/tilejson")
         pg.set_input_files("#gpx", os.path.join(ROOT, "test", "sample.gpx"))
         pg.wait_for_selector("#editor:not(.hidden)"); pg.wait_for_timeout(4000)
@@ -39,7 +39,7 @@ try:
         check(pg.locator("#dist, #cropB, #beer, #capcard, #cap, #marker, #mapstyle").count() == 0, "removed: distance box, crop, FREE BEER switch, caption, marker, map style")
         check(pg.locator("#width, #simplify, #advanced, #color").count() == 0, "no line width / wobble sliders or colour buttons")
         check(pg.input_value("#title") == "THE LITTLE DIPPER" and pg.input_value("#date") >= "2026-11-04", f"title and date filled: {pg.input_value('#date')}")
-        check("Signed in as captain@example.com" in pg.inner_text("#whoami"), "signed-in line")
+        check("Signed in as kate@example.com" in pg.inner_text("#whoami"), "signed-in line")
         for fmt in ["feed", "square", "route"]:
             pg.click(f'#fmt button[data-v="{fmt}"]'); pg.wait_for_timeout(2000); save(pg, f"{fmt}.png")
         pg.click('#fmt button[data-v="feed"]'); pg.wait_for_timeout(1500)

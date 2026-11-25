@@ -6,7 +6,7 @@ This is already done. The steps are here in case it ever needs redoing or moving
 
 ## 1. Repository and GitHub access
 
-1. The code lives in the private repo `kateprat/mrc-route-poster`.
+1. The code lives in the public repo `kateprat/mrc-route-poster`.
 2. Cloudflare needs to see it: https://github.com/settings/installations → **Cloudflare Workers and Pages** → **Configure** → **Repository access** → add `mrc-route-poster` → **Save**.
 
 ## 2. Publish it as a Cloudflare Worker
@@ -28,6 +28,14 @@ The site is public at this moment, so do step 3 straight away.
 
 The free plan covers 50 users in total across your Access apps, so the crew handbook and this app share that limit.
 
+## 3b. Tell the app which email is which captain
+
+The repo is public, so login emails are kept in a Cloudflare secret, not in the code.
+
+1. **Workers & Pages → mrc-route-poster → Settings → Variables and Secrets → Add**.
+2. Type **Secret**, name `CAPTAIN_EMAILS`, value: one `Name=email` per captain, separated by commas, for example `Kate=kate@example.com, Felix=felix@example.com`. The names must match `src/captains.js`.
+3. **Deploy**.
+
 ## 4. Share it with the captains
 
 - Send them the link. On first visit they enter their email and the code they receive.
@@ -37,7 +45,8 @@ The free plan covers 50 users in total across your Access apps, so the crew hand
 ## Adding a captain
 
 1. **Zero Trust → Access → Policies → MRC-captains → Edit** → add their email under **Emails** → Save. Now they can log in.
-2. Add the same email and their Instagram handle to `src/captains.js` and push (or ask Claude). Now the Schedule knows who they are; until then they can look but not change anything.
+2. Add their name and Instagram handle to `src/captains.js` and push.
+3. Add `Name=email` to the `CAPTAIN_EMAILS` secret (step 3b) and deploy. Now the Schedule knows who they are; until then they can look but not change anything.
 
 ## Updating
 

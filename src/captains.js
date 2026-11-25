@@ -1,13 +1,12 @@
-// The captains: who they are, the email(s) they log in with (Cloudflare Access),
-// and their Instagram handle. Logging in with one of these emails = being that captain.
+// The captains: who they are and their Instagram handle. owner: true = the one who runs the app.
 //
-// To add a captain or an email: edit this list, commit and push. Emails in lower case.
-// Every email here must also be in the Cloudflare Access policy "MRC-captains",
-// otherwise that person can't log in at all.
+// Login emails are NOT here (the repo is public). They're in the Cloudflare secret
+// CAPTAIN_EMAILS as "Name=email" pairs (see SETUP.md). Every email there must also be
+// in the Cloudflare Access policy "MRC-captains", otherwise that person can't log in at all.
 export default [
-  { name: "Felix",  emails: ["captain@example.com"],            handle: "@_nordic_by_nature" },
-  { name: "Kate",   emails: ["captain@example.com"],  handle: "@kates.turn" },
-  { name: "Ale",    emails: [],                            handle: "" },
-  { name: "Andrea", emails: ["captain@example.com"], handle: "@abecker86" },
-  { name: "Fabio",  emails: ["captain@example.com"], handle: "@vic2vic2vic" },
+  { name: "Felix",  handle: "@_nordic_by_nature" },
+  { name: "Kate",   handle: "@kates.turn", owner: true },
+  { name: "Ale",    handle: "" },
+  { name: "Andrea", handle: "@abecker86" },
+  { name: "Fabio",  handle: "@vic2vic2vic" },
 ];
