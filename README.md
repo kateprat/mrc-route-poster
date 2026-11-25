@@ -108,3 +108,7 @@ The map is drawn in the phone's browser from [OpenFreeMap](https://openfreemap.o
 
 - Use your own Snazzy Maps screenshot as the background.
 - A recap template for the group photo.
+
+---
+
+Built with help from Claude.
